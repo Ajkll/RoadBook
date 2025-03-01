@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+//generator client {
+//  provider = "prisma-client-js"
+//}
+
+//datasource db {
+//  provider = "postgresql"
+//  url      = env("DATABASE_URL")
+//}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  firebaseUid   String    @unique
+  email         String    @unique
+  displayName   String?
+  role          UserRole  @default(APPRENTICE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  roadbooks     RoadBook[]
+  mentoring     RoadBook[] @relation("Mentoring")
+  sessions      Session[]
+  comments      Comment[]
+}
+
+enum UserRole {
+  APPRENTICE
+  GUIDE
+  INSTRUCTOR
+  ADMIN
+}
+
+model RoadBook {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?
+  userId        String
+  mentorId      String?
+  status        RoadBookStatus @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+  mentor        User?     @relation("Mentoring", fields: [mentorId], references: [id])
+  sessions      Session[]
+  competencies  CompetencyProgress[]
+}
+
+enum RoadBookStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Session {
+  id            String    @id @default(uuid())
+  roadbookId    String
+  date          DateTime
+  duration      Int       // in minutes
+  startLocation String?
+  endLocation   String?
+  distance      Float?    // in kilometers
+  routeData     Json?     // GeoJSON for the route
+  notes         String?
+  weather       String?
+  roadbook      RoadBook  @relation(fields: [roadbookId], references: [id])
+  comments      Comment[]
+  competenciesProgress CompetencyValidation[]
+}
+
+model Competency {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  category      CompetencyCategory
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  progressRecords CompetencyProgress[]
+  validations   CompetencyValidation[]
+}
+
+enum CompetencyCategory {
+  BASIC_CONTROL
+  MANEUVERING
+  TRAFFIC
+  ROAD_TYPES
+  SPECIAL_CONDITIONS
+  SAFETY
+}
+
+model CompetencyProgress {
+  id            String    @id @default(uuid())
+  roadbookId    String
+  competencyId  String
+  status        CompetencyStatus @default(NOT_STARTED)
+  lastPracticed DateTime?
+  notes         String?
+  roadbook      RoadBook  @relation(fields: [roadbookId], references: [id])
+  competency    Competency @relation(fields: [competencyId], references: [id])
+}
+
+enum CompetencyStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  MASTERED
+}
+
+model CompetencyValidation {
+  id            String    @id @default(uuid())
+  sessionId     String
+  competencyId  String
+  validated     Boolean   @default(false)
+  validatedBy   String?   // Guide or instructor ID
+  notes         String?
+  session       Session   @relation(fields: [sessionId], references: [id])
+  competency    Competency @relation(fields: [competencyId], references: [id])
+}
+
+model Comment {
+  id            String    @id @default(uuid())
+  sessionId     String
+  userId        String
+  content       String
+  createdAt     DateTime  @default(now())
+  session       Session   @relation(fields: [sessionId], references: [id])
+  user          User      @relation(fields: [userId], references: [id])
+}

@@ -1,5 +1,12 @@
-__pycache__/
-*.log
-*.env
-node_modules/
-.vscode/
+#__pycache__/
+#*.log
+#*.env
+#node_modules/
+#.vscode/
+# Environment variables
+.env
+.env.local
+.env.development
+client/.env
+server/.env
+node_modules
