@@ -27,14 +27,19 @@
     "husky": "^8.0.0",
     "lint-staged": "^13.3.0"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged --no-stash --verbose --concurrent false"
+    }
+  },
   "lint-staged": {
     "client/**/*.{js,jsx,ts,tsx}": [
-      "cd client && eslint --fix",
-      "cd client && prettier --write"
+      "cd client && npx eslint --fix",
+      "cd client && npx prettier --write"
     ],
     "server/**/*.{js,ts}": [
-      "cd server && eslint --fix",
-      "cd server && prettier --write"
+      "cd server && npx eslint --fix",
+      "cd server && npx prettier --write"
     ]
   }
 }

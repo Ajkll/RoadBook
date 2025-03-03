@@ -9,3 +9,4 @@
 npx lint-staged
 cd client && npm run lint
 cd ../server && npm run lint
+npx lint-staged --config .lintstagedrc.js # je travaille sur une vm avec 4Go de ram, donc evitons de faire les foufous

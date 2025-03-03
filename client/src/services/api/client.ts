@@ -1,16 +1,15 @@
-import axios from "axios";
-import Constants from "expo-constants";
-import { auth } from "../firebase/auth";
+import axios from 'axios';
+import Constants from 'expo-constants';
+import { auth } from '../firebase/auth';
 
 // Get API URL from environment variables
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl || "http://localhost:4000/api";
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api';
 
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 

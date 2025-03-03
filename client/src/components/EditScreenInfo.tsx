@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 
 export default function EditScreenInfo({ path }: { path: string }) {
   return (
@@ -12,18 +12,18 @@ export default function EditScreenInfo({ path }: { path: string }) {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    alignItems: 'center',
     marginHorizontal: 50,
     marginVertical: 20,
   },
   text: {
     fontSize: 17,
     lineHeight: 24,
-    textAlign: "center",
+    textAlign: 'center',
   },
   path: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginTop: 8,
   },
 });

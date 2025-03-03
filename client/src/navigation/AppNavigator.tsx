@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { useSelector, useDispatch } from "react-redux";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../services/firebase/auth";
-import { login, logout } from "../store/slices/authSlice";
-import AuthNavigator from "./AuthNavigator";
-import RoadbookNavigator from "./RoadbookNavigator";
-import { View, Text } from "react-native";
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../services/firebase/auth';
+import { login, logout } from '../store/slices/authSlice';
+import AuthNavigator from './AuthNavigator';
+import RoadbookNavigator from './RoadbookNavigator';
+import { View, Text } from 'react-native';
 
 const AppNavigator = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,7 @@ const AppNavigator = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading...</Text>
       </View>
     );

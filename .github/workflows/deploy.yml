@@ -34,3 +34,14 @@ jobs:
         run: |
           cd client
           expo publish --non-interactive
+      - name: Diagnostic ESLint
+        run: |
+          cd client
+          echo "ESLint version:"
+          npx eslint --version
+          echo "Content of eslint.config.mjs:"
+          cat eslint.config.mjs
+          echo "Content of babel.config.js:"
+          cat babel.config.js
+          echo "Content of jest.config.js:"
+          cat jest.config.js
