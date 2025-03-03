@@ -41,7 +41,7 @@ jobs:
           npx eslint --version
           echo "Content of eslint.config.mjs:"
           cat eslint.config.mjs
-          echo "Content of babel.config.js:"
-          cat babel.config.js
-          echo "Content of jest.config.js:"
-          cat jest.config.js
+          echo "Content of babel.config.mjs:"
+          cat babel.config.mjs
+          echo "Content of jest.config.mjs:"
+          cat jest.config.mjs
