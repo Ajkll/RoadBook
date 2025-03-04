@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "roadbook-backend"
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          appdir: "server"
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+      - name: Publish to Expo
+        run: |
+          cd client
+          expo publish --non-interactive
+      - name: Diagnostic ESLint
+        run: |
+          cd client
+          echo "ESLint version:"
+          npx eslint --version
+          echo "Content of eslint.config.mjs:"
+          cat eslint.config.mjs
+          echo "Content of babel.config.mjs:"
+          cat babel.config.mjs
+          echo "Content of jest.config.mjs:"
+          cat jest.config.mjs
