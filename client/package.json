@@ -10,9 +10,6 @@
     "test": "jest --config=jest.config.mjs",
     "lint": "eslint --fix ."
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/native": "^7.0.14",
