@@ -1,6 +1,6 @@
-import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "./slices/authSlice";
-import roadbookReducer from "./slices/roadbookSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './slices/authSlice';
+import roadbookReducer from './slices/roadbookSlice';
 
 export const store = configureStore({
   reducer: {
