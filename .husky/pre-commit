@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
-#. "$(dirname -- "$0")/_/husky.sh"
+. "$(dirname -- "$0")/_/husky.sh"
 
-#npm test
+# Exécuter lint-staged dans le dossier client
+cd client && npx lint-staged
 
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+# Revenir à la racine
+cd ..
 
-npx lint-staged
-cd client && npm run lint
-cd ../server && npm run lint
+# Exécuter lint-staged pour les fichiers serveur si nécessaire
+cd server && npx lint-staged

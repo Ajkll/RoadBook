@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from "react-native";
 export default function EditScreenInfo({ path }: { path: string }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Welcome to RoadBook 360!</Text>
+      <Text style={styles.text}>Welcome to RoadBook !</Text>
       <Text style={styles.path}>Path: {path}</Text>
     </View>
   );

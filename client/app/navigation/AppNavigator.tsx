@@ -21,7 +21,7 @@ const AppNavigator = () => {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
-          })
+          }),
         );
       } else {
         dispatch(logout());
