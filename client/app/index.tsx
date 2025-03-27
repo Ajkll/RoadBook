@@ -1,14 +1,13 @@
-// src/App.tsx
-import React from "react";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import HomeScreen from "./screens/HomeScreen";
+import React from 'react';
+import { Redirect } from 'expo-router';
 
-const App = () => {
-  return (
-    <SafeAreaProvider>
-      <HomeScreen />
-    </SafeAreaProvider>
-  );
-};
+export default function Index() {
+  // You can add authentication logic here
+  const isLoggedIn = true;
 
-export default App;
+  if (isLoggedIn) {
+    return <Redirect href="/(tabs)" />;
+  } else {
+    return <Redirect href="/login" />;
+  }
+}

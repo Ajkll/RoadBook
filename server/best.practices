@@ -1,0 +1,38 @@
+Error Handling:
+
+Create a centralized error handling middleware
+Define custom error classes for different scenarios
+Log errors with appropriate detail
+Return standardized error responses to clients
+
+
+Authentication and Authorization:
+
+Implement JWT-based authentication
+Create middleware for role-based access control
+Securely store and validate credentials
+Set appropriate token expiration and refresh mechanisms
+
+
+Validation:
+
+Validate all incoming request data
+Use a validation library like Zod or Joi
+Provide clear error messages for validation failures
+Sanitize inputs to prevent injection attacks
+
+
+Database Operations:
+
+Use transactions for operations that modify multiple records
+Implement pagination for list endpoints
+Add appropriate indexes for query performance
+Use Prisma's relations for efficient data loading
+
+
+Testing:
+
+Write tests for all endpoints and business logic
+Create a test database with representative test data
+Use mocks for external dependencies
+Include both positive and negative test cases

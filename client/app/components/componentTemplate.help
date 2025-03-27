@@ -1,0 +1,37 @@
+/**
+ * ComponentName.tsx
+ * 
+ * Description: Brief description of what this component does
+ * 
+ * Props:
+ * - propName: Type - Description of what this prop controls
+ * - anotherProp: Type - Description of another prop
+ * 
+ * Usage:
+ * ```tsx
+ * <ComponentName propName="value" anotherProp={42} />
+ * ```
+ * 
+ * Notes:
+ * - Any special considerations when using this component
+ * - Performance notes or limitations
+ */
+
+import React from 'react';
+import { View, Text } from 'react-native';
+
+interface ComponentNameProps {
+  propName: string;
+  anotherProp: number;
+}
+
+export const ComponentName: React.FC<ComponentNameProps> = ({ propName, anotherProp }) => {
+  return (
+    <View>
+      <Text>{propName}: {anotherProp}</Text>
+    </View>
+  );
+};
+
+// Always include a default export for Expo Router compatibility
+export default ComponentName;

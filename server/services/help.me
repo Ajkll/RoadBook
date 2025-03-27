@@ -1,0 +1,36 @@
+/**
+ * /server/services
+ * 
+ * Services encapsulate the business logic and external integrations.
+ * They're called by controllers and provide a layer of abstraction
+ * between controllers and data access/external APIs.
+ * 
+ * Common services:
+ * - Database interactions (beyond basic CRUD)
+ * - Complex business logic implementation
+ * - Third-party API integrations
+ * - Cross-cutting concerns (email, notifications, etc.)
+ * 
+ * Service principles:
+ * - Single responsibility: Each service should focus on one aspect
+ * - Reusability: Services should be usable by multiple controllers
+ * - Testability: Services should be easy to mock for testing
+ * - Statelessness: Avoid maintaining state in services when possible
+ * 
+ * Example service pattern:
+ * ```typescript
+ * export class RoadbookService {
+ *   async createSession(userId: string, sessionData: SessionCreateInput) {
+ *     // Validate session data
+ *     // Check user permissions
+ *     // Interact with database
+ *     return prisma.session.create({
+ *       data: {
+ *         ...sessionData,
+ *         user: { connect: { id: userId } }
+ *       }
+ *     });
+ *   }
+ * }
+ * ```
+ */

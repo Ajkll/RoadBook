@@ -1,57 +1,63 @@
-// src/components/layout/Header.tsx
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-//import { COLORS } from '../constants/theme';
+// app/components/layout/Header.tsx
 
-const Header = () => {
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+// Define prop types
+interface HeaderProps {
+  title?: string;
+  onMenuPress?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+
+  // Use default menu press handler if none provided
+  const handleMenuPress =
+    onMenuPress ??
+    (() => {
+      navigation.dispatch(DrawerActions.openDrawer());
+    });
+
   return (
     <View style={styles.header}>
-      {/* Bouton menu hamburger */}
-      <TouchableOpacity style={styles.menuButton}>
-        <View style={styles.menuBar}></View>
-        <View style={styles.menuBar}></View>
-        <View style={styles.menuBar}></View>
+      <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
+        <Ionicons name="menu" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Titre de l'application */}
-      <Text style={styles.title}>RoadBook Tracker</Text>
+      <Text style={styles.title}>{title}</Text>
 
-      {/* Espace réservé pour équilibrer le header */}
-      <View style={styles.placeholder}></View>
+      {/* Empty view to balance layout symmetry */}
+      <View style={styles.rightPlaceholder} />
     </View>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   header: {
     height: 60,
-    backgroundColor: "#424242", // Couleur gris foncé pour le header
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
+    backgroundColor: '#1A1A1A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  } as ViewStyle,
   menuButton: {
-    width: 30,
-    height: 25,
-    justifyContent: "space-between",
-  },
-  menuBar: {
-    height: 3,
-    width: "100%",
-    backgroundColor: "#888", // Couleur gris clair pour les barres
-    borderRadius: 5,
-  },
+    padding: 8,
+  } as ViewStyle,
   title: {
-    color: "#ccc", // Couleur gris clair pour le texte
+    color: '#ffffff',
     fontSize: 18,
-    fontWeight: "500",
-  },
-  placeholder: {
-    width: 30, // Même largeur que le bouton menu pour équilibrer
-  },
+    fontWeight: 'bold',
+  } as TextStyle,
+  rightPlaceholder: {
+    width: 40, // Same size as menu button to center title
+  } as ViewStyle,
 });
 
 export default Header;

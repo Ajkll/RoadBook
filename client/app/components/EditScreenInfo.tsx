@@ -1,4 +1,4 @@
-import React from 'react';
+/*import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function EditScreenInfo({ path }: { path: string }) {
@@ -27,3 +27,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
+*/
