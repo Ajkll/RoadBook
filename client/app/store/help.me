@@ -1,0 +1,33 @@
+/**
+ * /app/store
+ * 
+ * This directory contains Redux state management code.
+ * Redux provides a centralized store for application state.
+ * 
+ * Key parts:
+ * - /actions: Action creators (if using traditional Redux)
+ * - /reducers: State reducers (if using traditional Redux) 
+ * - /slices: Redux Toolkit slices (modern approach)
+ * - store.ts: Redux store configuration
+ * 
+ * Using Redux Toolkit:
+ * - Create slices that combine reducers, actions, and selectors
+ * - Use createSlice() to define reducers and actions together
+ * - Use the Redux DevTools for debugging
+ * 
+ * Best practices:
+ * - Keep state normalized (avoid duplicating data)
+ * - Use selectors to access state
+ * - Consider what truly needs to be in global state
+ * - Each slice should have a default export of the reducer
+ */
+
+
+ /store
+  /actions                 # Action creators grouped by domain
+  /reducers                # Reducers grouped by domain
+  /slices                  # Redux Toolkit slices (alternative to the above)
+    authSlice.ts
+    roadbookSlice.ts
+    settingsSlice.ts
+  store.ts                 # Store configuration

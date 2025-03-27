@@ -1,18 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-//generator client {
-//  provider = "prisma-client-js"
-//}
-
-//datasource db {
-//  provider = "postgresql"
-//  url      = env("DATABASE_URL")
-//}
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -22,41 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(uuid())
-  firebaseUid   String    @unique
-  email         String    @unique
-  displayName   String?
-  role          UserRole  @default(APPRENTICE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  roadbooks     RoadBook[]
-  mentoring     RoadBook[] @relation("Mentoring")
-  sessions      Session[]
-  comments      Comment[]
-}
+// ---- USER MANAGEMENT ----
 
 enum UserRole {
-  APPRENTICE
-  GUIDE
-  INSTRUCTOR
-  ADMIN
+  APPRENTICE  // Learning driver
+  GUIDE       // Parent or friend mentoring the apprentice
+  INSTRUCTOR  // Professional driving instructor
+  ADMIN       // System administrator
 }
 
-model RoadBook {
-  id            String    @id @default(uuid())
-  title         String
-  description   String?
-  userId        String
-  mentorId      String?
-  status        RoadBookStatus @default(ACTIVE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id])
-  mentor        User?     @relation("Mentoring", fields: [mentorId], references: [id])
-  sessions      Session[]
-  competencies  CompetencyProgress[]
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  passwordHash      String
+  displayName       String
+  firstName         String?
+  lastName          String?
+  nationalRegisterNumber String? @unique  
+  birthDate         DateTime?
+  phoneNumber       String?
+  profilePicture    String?
+  address           String?
+  role              UserRole    @default(APPRENTICE)
+  bio               String?     
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations - Roadbooks
+  ownedRoadbooks    RoadBook[]  @relation("Owner")
+  guidedRoadbooks   RoadBook[]  @relation("Guide")
+  
+  // Relations - Sessions
+  participatedSessions Session[] @relation("Participant")
+  validatedSessions    Session[] @relation("Validator")
+  
+  // Relations - Competencies
+  competencyValidations CompetencyValidation[] @relation("Validator")
+  competencyProgress    CompetencyProgress[]   @relation("Learner")
+  
+  // Relations - Community
+  createdPosts     Post[]
+  comments         Comment[]
+  receivedBadges   UserBadge[]
+  likes            Like[]
+  
+  // Relations - Marketplace
+  createdListings  MarketplaceListing[] @relation("Seller")
+  purchases        Purchase[]           @relation("Buyer")
+  
+  // Notifications
+  notifications    Notification[]
+  
+  // Auth
+  refreshTokens    RefreshToken[]
 }
+
+// ---- ROADBOOK CORE ----
 
 enum RoadBookStatus {
   ACTIVE
@@ -64,51 +70,106 @@ enum RoadBookStatus {
   ARCHIVED
 }
 
-model Session {
-  id            String    @id @default(uuid())
-  roadbookId    String
-  date          DateTime
-  duration      Int       // in minutes
-  startLocation String?
-  endLocation   String?
-  distance      Float?    // in kilometers
-  routeData     Json?     // GeoJSON for the route
-  notes         String?
-  weather       String?
-  roadbook      RoadBook  @relation(fields: [roadbookId], references: [id])
-  comments      Comment[]
-  competenciesProgress CompetencyValidation[]
+model RoadBook {
+  id                String         @id @default(uuid())
+  title             String
+  description       String?
+  status            RoadBookStatus @default(ACTIVE)
+  targetHours       Int            @default(30)     
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Owner (apprentice) relation
+  apprenticeId      String
+  apprentice        User           @relation("Owner", fields: [apprenticeId], references: [id])
+  
+  // Guide/Instructor relations
+  guideId           String?
+  guide             User?          @relation("Guide", fields: [guideId], references: [id])
+  
+  // Sessions and progress tracking
+  sessions          Session[]
+  competencyProgress CompetencyProgress[]
+  
+  // PDF export/import tracking
+  lastExportDate    DateTime?
+  lastSignatureDate DateTime?
+  officialDocumentUrl String?
 }
 
-model Competency {
-  id            String    @id @default(uuid())
-  name          String
-  description   String
-  category      CompetencyCategory
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  progressRecords CompetencyProgress[]
-  validations   CompetencyValidation[]
+// ---- SESSIONS & TRAINING ----
+
+model Session {
+  id                String    @id @default(uuid())
+  roadbookId        String
+  roadbook          RoadBook  @relation(fields: [roadbookId], references: [id])
+  
+  // Session details
+  date              DateTime
+  startTime         DateTime
+  endTime           DateTime?
+  duration          Int?      
+  
+  // Location data
+  startLocation     String?
+  endLocation       String?
+  distance          Float?    
+  routeData         Json?     
+  
+  // Environment conditions
+  weather           WeatherCondition? @default(CLEAR)
+  daylight          DaylightCondition? @default(DAY)
+  roadTypes         String[]  // Store as array of strings
+  
+  // Notes and feedback
+  notes             String?
+  
+  // Participants
+  apprenticeId      String
+  apprentice        User       @relation("Participant", fields: [apprenticeId], references: [id])
+  validatorId       String?    
+  validator         User?      @relation("Validator", fields: [validatorId], references: [id])
+  validationDate    DateTime?
+  
+  // Relations
+  competencyValidations CompetencyValidation[]
+  comments         Comment[]   @relation("SessionComments")
+}
+
+enum WeatherCondition {
+  CLEAR
+  CLOUDY
+  RAINY
+  SNOWY
+  FOGGY
+  WINDY
+  OTHER
+}
+
+enum DaylightCondition {
+  DAY
+  NIGHT
+  DAWN_DUSK
+}
+
+// ---- COMPETENCIES & SKILLS ----
+
+enum LearningPhase {
+  PHASE1
+  PHASE2
+  PHASE3
+  PHASE4
+  PHASE5
 }
 
 enum CompetencyCategory {
-  BASIC_CONTROL
+  CONTROL
   MANEUVERING
-  TRAFFIC
-  ROAD_TYPES
+  TRAFFIC_RULES
+  RISK_PERCEPTION
+  ECOFRIENDLY_DRIVING
   SPECIAL_CONDITIONS
   SAFETY
-}
-
-model CompetencyProgress {
-  id            String    @id @default(uuid())
-  roadbookId    String
-  competencyId  String
-  status        CompetencyStatus @default(NOT_STARTED)
-  lastPracticed DateTime?
-  notes         String?
-  roadbook      RoadBook  @relation(fields: [roadbookId], references: [id])
-  competency    Competency @relation(fields: [competencyId], references: [id])
 }
 
 enum CompetencyStatus {
@@ -117,23 +178,226 @@ enum CompetencyStatus {
   MASTERED
 }
 
+model Competency {
+  id                String     @id @default(uuid())
+  name              String
+  description       String
+  phase             LearningPhase
+  category          CompetencyCategory
+  order             Int        
+  officialCode      String?    
+  
+  // Relations
+  progressRecords   CompetencyProgress[]
+  validations       CompetencyValidation[]
+  
+  // Metadata
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}
+
+model CompetencyProgress {
+  id                String           @id @default(uuid())
+  roadbookId        String
+  roadbook          RoadBook         @relation(fields: [roadbookId], references: [id])
+  competencyId      String
+  competency        Competency       @relation(fields: [competencyId], references: [id])
+  
+  // Progress tracking
+  status            CompetencyStatus @default(NOT_STARTED)
+  lastPracticed     DateTime?
+  notes             String?
+  
+  // Learner relation
+  apprenticeId      String
+  apprentice        User             @relation("Learner", fields: [apprenticeId], references: [id])
+  
+  // Metadata
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  @@unique([roadbookId, competencyId])
+}
+
 model CompetencyValidation {
-  id            String    @id @default(uuid())
-  sessionId     String
-  competencyId  String
-  validated     Boolean   @default(false)
-  validatedBy   String?   // Guide or instructor ID
-  notes         String?
-  session       Session   @relation(fields: [sessionId], references: [id])
-  competency    Competency @relation(fields: [competencyId], references: [id])
+  id                String     @id @default(uuid())
+  sessionId         String
+  session           Session    @relation(fields: [sessionId], references: [id])
+  competencyId      String
+  competency        Competency @relation(fields: [competencyId], references: [id])
+  
+  // Validation details
+  validated         Boolean    @default(false)
+  validatorId       String     
+  validator         User       @relation("Validator", fields: [validatorId], references: [id])
+  validationDate    DateTime   @default(now())
+  notes             String?
+  
+  @@unique([sessionId, competencyId])
+}
+
+// ---- COMMUNITY FEATURES ----
+
+model Post {
+  id                String    @id @default(uuid())
+  title             String
+  content           String
+  mediaUrls         String[]  
+  
+  // Author relation
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id])
+  
+  // Post metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  comments          Comment[] @relation("PostComments")
+  likes             Like[]
 }
 
 model Comment {
-  id            String    @id @default(uuid())
-  sessionId     String
-  userId        String
-  content       String
-  createdAt     DateTime  @default(now())
-  session       Session   @relation(fields: [sessionId], references: [id])
-  user          User      @relation(fields: [userId], references: [id])
+  id                String    @id @default(uuid())
+  content           String
+  
+  // Author relation
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id])
+  
+  // Comment can be on a post or session
+  postId            String?
+  post              Post?     @relation("PostComments", fields: [postId], references: [id])
+  sessionId         String?
+  session           Session?  @relation("SessionComments", fields: [sessionId], references: [id])
+  
+  // Comment metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Like {
+  id                String    @id @default(uuid())
+  postId            String
+  post              Post      @relation(fields: [postId], references: [id])
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  createdAt         DateTime  @default(now())
+
+  @@unique([postId, userId])
+}
+
+// ---- GAMIFICATION ----
+
+model Badge {
+  id                String      @id @default(uuid())
+  name              String      @unique
+  description       String
+  imageUrl          String
+  category          String      
+  criteria          String      
+  
+  // Relations
+  userBadges        UserBadge[]
+}
+
+model UserBadge {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  badgeId           String
+  badge             Badge     @relation(fields: [badgeId], references: [id])
+  awardedAt         DateTime  @default(now())
+  
+  @@unique([userId, badgeId])
+}
+
+// ---- MARKETPLACE ----
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  ARCHIVED
+}
+
+enum ListingType {
+  PRODUCT
+  SERVICE
+  COURSE
+}
+
+model MarketplaceListing {
+  id                String        @id @default(uuid())
+  title             String
+  description       String
+  price             Float
+  type              ListingType
+  status            ListingStatus @default(DRAFT)
+  imageUrls         String[]
+  
+  // Seller relation
+  sellerId          String
+  seller            User          @relation("Seller", fields: [sellerId], references: [id])
+  
+  // Metadata
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  purchases         Purchase[]
+}
+
+model Purchase {
+  id                String    @id @default(uuid())
+  listingId         String
+  listing           MarketplaceListing @relation(fields: [listingId], references: [id])
+  
+  // Buyer relation
+  buyerId           String
+  buyer             User      @relation("Buyer", fields: [buyerId], references: [id])
+  
+  // Purchase details
+  quantity          Int       @default(1)
+  totalPrice        Float
+  status            String    
+  
+  // Metadata
+  purchaseDate      DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ---- NOTIFICATIONS ----
+
+enum NotificationType {
+  SESSION_REMINDER
+  SESSION_VALIDATION
+  COMPETENCY_MASTERED
+  BADGE_EARNED
+  COMMENT_RECEIVED
+  MARKETPLACE_UPDATE
+}
+
+model Notification {
+  id                String           @id @default(uuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  type              NotificationType
+  title             String
+  message           String
+  isRead            Boolean          @default(false)
+  linkUrl           String?          
+  createdAt         DateTime         @default(now())
+}
+
+// ---- AUTHENTICATION ----
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked     Boolean   @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 }

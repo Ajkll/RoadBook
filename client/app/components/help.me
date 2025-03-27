@@ -1,0 +1,39 @@
+/**
+ * /app/components
+ * 
+ * This directory contains reusable UI components that are used across different screens.
+ * Components should be focused, reusable, and independent.
+ * 
+ * Key subdirectories:
+ * - /common: Basic components used throughout the app (buttons, inputs, etc.)
+ * - /layout: Components that define the structure of the app (headers, footers, etc.)
+ * - /roadbook: Components specific to the roadbook feature
+ * - /ui: UI components with styling but minimal business logic
+ * 
+ * Individual files:
+ * - EditScreenInfo.tsx: Component for editing screen information
+ * - Themed.tsx: Theme-aware components that adjust based on current theme
+ * 
+ * Principles:
+ * - Components should be focused on a single responsibility
+ * - Each component should export a default for Expo Router compatibility
+ * - Separate business logic from presentation when possible
+ */
+
+
+ /components
+  /common                  # Shared across the app
+    Button.tsx
+    Card.tsx
+    Input.tsx
+  /layout                  # Layout elements
+    Header.tsx
+    Footer.tsx
+  /roadbook                # Feature-specific components
+    RoadbookCard.tsx
+    SessionForm.tsx
+  /ui                      # UI components
+    BottomNavigation.tsx
+    DrawerContent.tsx
+    ProgressBar.tsx
+    WeatherCard.tsx

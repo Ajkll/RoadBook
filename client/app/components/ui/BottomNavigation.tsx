@@ -1,37 +1,123 @@
-// src/components/ui/BottomNavigation.tsx
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-//import { COLORS } from '../constants/theme';
+// app/components/ui/BottomNavigation.tsx (complete)
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../constants/theme';
 
-// Dans une application réelle, nous utiliserions des icônes importées
-// Pour ce tutoriel, nous utilisons des émojis comme placeholders
 const BottomNavigation = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+
+  // Helper to check which tab is active
+  const isActive = (path) => {
+    return pathname === path || pathname.startsWith(path);
+  };
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={[styles.navIcon, styles.activeIcon]}>🏠</Text>
-        <Text style={[styles.navText, styles.activeText]}>Home</Text>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.border,
+        },
+      ]}
+    >
+      {/* Home Tab */}
+      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
+        <Ionicons
+          name={isActive('/(tabs)/') ? 'home' : 'home-outline'}
+          size={24}
+          color={isActive('/(tabs)/') ? colors.primary : colors.tabBarInactive}
+        />
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('/(tabs)/') ? colors.primary : colors.tabBarInactive },
+          ]}
+        >
+          Accueil
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>🔍</Text>
-        <Text style={styles.navText}>Explorer</Text>
+      {/* Explorer Tab */}
+      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
+        <Ionicons
+          name={isActive('/(tabs)/explorer') ? 'search' : 'search-outline'}
+          size={24}
+          color={isActive('/(tabs)/explorer') ? colors.primary : colors.tabBarInactive}
+        />
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('/(tabs)/explorer') ? colors.primary : colors.tabBarInactive },
+          ]}
+        >
+          Explorer
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.recordButton}>
-        <View style={styles.recordIcon}>
-          <Text style={styles.recordText}>⏺️</Text>
+      {/* Record Button (Center) */}
+      <TouchableOpacity
+        style={styles.recordButton}
+        onPress={() => router.push('/(tabs)/start-drive')}
+      >
+        <View
+          style={[
+            styles.recordIcon,
+            {
+              backgroundColor: colors.recordButton,
+              borderColor: isActive('/(tabs)/start-drive')
+                ? colors.primary
+                : colors.recordButtonBorder,
+            },
+          ]}
+        >
+          <Ionicons
+            name={isActive('/(tabs)/start-drive') ? 'radio-button-on' : 'radio-button-off'}
+            size={28}
+            color={isActive('/(tabs)/start-drive') ? colors.primary : colors.tabBarInactive}
+          />
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>🛣️</Text>
-        <Text style={styles.navText}>Mes trajets</Text>
+      {/* My Routes Tab */}
+      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
+        <Ionicons
+          name={isActive('/(tabs)/my-routes') ? 'map' : 'map-outline'}
+          size={24}
+          color={isActive('/(tabs)/my-routes') ? colors.primary : colors.tabBarInactive}
+        />
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('/(tabs)/my-routes') ? colors.primary : colors.tabBarInactive },
+          ]}
+        >
+          Mes trajets
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>👤</Text>
-        <Text style={styles.navText}>Profil</Text>
+      {/* Profile Tab */}
+      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
+        <Ionicons
+          name={isActive('/(tabs)/profile') ? 'person' : 'person-outline'}
+          size={24}
+          color={isActive('/(tabs)/profile') ? colors.primary : colors.tabBarInactive}
+        />
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('/(tabs)/profile') ? colors.primary : colors.tabBarInactive },
+          ]}
+        >
+          Profil
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -39,53 +125,48 @@ const BottomNavigation = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    height: 60,
-    backgroundColor: "#303030",
+    flexDirection: 'row',
+    height: Platform.OS === 'ios' ? 80 : 60, // Taller on iOS to accommodate safe area
     borderTopWidth: 1,
-    borderTopColor: "#444",
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    paddingTop: 6,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    zIndex: 1000,
   },
   navItem: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  navIcon: {
-    fontSize: 22,
-    color: "#888",
-    marginBottom: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   navText: {
-    fontSize: 12,
-    color: "#888",
-  },
-  activeIcon: {
-    color: "#4f89c5", // Bleu actif
-  },
-  activeText: {
-    color: "#4f89c5", // Bleu actif
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   recordButton: {
     width: 70,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -20, // Raises the button above the bar
   },
   recordIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 3,
-    borderColor: "#5c5c5c",
-  },
-  recordText: {
-    fontSize: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
 

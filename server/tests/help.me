@@ -1,0 +1,46 @@
+/**
+ * /server/tests
+ * 
+ * This directory contains test files and testing utilities.
+ * Comprehensive testing is crucial for maintaining code quality.
+ * 
+ * Test organization:
+ * - unit/: Tests for individual functions and components
+ * - integration/: Tests for interactions between components
+ * - e2e/: End-to-end tests for complete API flows
+ * - fixtures/: Test data and mock objects
+ * - helpers/: Testing utility functions
+ * 
+ * Testing best practices:
+ * - Use descriptive test names that explain expected behavior
+ * - Arrange-Act-Assert pattern for test structure
+ * - Mock external dependencies when appropriate
+ * - Test both success and failure cases
+ * - Maintain test isolation (tests shouldn't depend on each other)
+ * 
+ * Example test pattern:
+ * ```typescript
+ * describe('AuthController', () => {
+ *   describe('login', () => {
+ *     it('should return a token when credentials are valid', async () => {
+ *       // Arrange
+ *       const req = mockRequest({ body: { email: 'test@example.com', password: 'password' } });
+ *       const res = mockResponse();
+ *       const next = jest.fn();
+ *       
+ *       // Mock the service
+ *       jest.spyOn(authService, 'authenticate').mockResolvedValue(mockUser);
+ *       
+ *       // Act
+ *       await authController.login(req, res, next);
+ *       
+ *       // Assert
+ *       expect(res.status).toHaveBeenCalledWith(200);
+ *       expect(res.json).toHaveBeenCalledWith(
+ *         expect.objectContaining({ token: expect.any(String) })
+ *       );
+ *     });
+ *   });
+ * });
+ * ```
+ */

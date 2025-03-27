@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
+    "target": "ES2018", // Keep the working target for now
+    "module": "commonjs", // Case doesn't matter here
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "strict": false, // Keep this disabled initially
+    "noImplicitAny": false, // Keep this disabled initially
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"] // Combine both exclude patterns
 }

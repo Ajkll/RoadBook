@@ -1,0 +1,49 @@
+front-end
+
+app/
+├── (tabs)/                    # Tab navigation group
+│   ├── _layout.tsx            # Tab navigation configuration
+│   ├── index.tsx              # Home tab
+│   ├── explorer.tsx           # Explorer tab
+│   ├── start-drive.tsx        # Start drive tab
+│   ├── my-routes.tsx          # My routes tab
+│   └── profile.tsx            # Profile tab
+├── _layout.tsx                # Root layout with drawer
+├── index.tsx                  # App entry point
+├── AboutUsScreen.tsx          # Drawer screens
+├── HelpScreen.tsx
+├── PrivacyScreen.tsx
+├── SettingsScreen.tsx
+├── ShareScreen.tsx
+├── components/                # UI components
+│   ├── common/
+│   ├── layout/
+│   │   ├── CustomDrawerContent.tsx
+│   │   └── Header.tsx
+│   ├── roadbook/
+│   └── ui/
+├── assets/                    # Static resources
+├── constants/                 # App constants
+├── hooks/                     # Custom hooks
+├── services/                  # API services
+├── store/                     # Redux store
+├── types/                     # TypeScript types
+└── utils/                     # Utility functions
+
+back-end
+
+/server                   # Root of your backend application
+  /api                    # API definition and routing
+    /routes               # Route definitions and handlers
+  /controllers            # Controllers that implement business logic
+  /middleware             # Express middleware functions
+  /prisma                 # Prisma ORM configuration and models
+  /services               # Service layer for external integrations
+  /src                    # Source code directory
+    /config               # Configuration files and environment setup
+    index.ts              # Main application entry point
+  /tests                  # Test files and test utilities
+  /utils                  # Helper functions and utilities
+  .env                    # Environment variables
+  docker-compose.yml      # Docker configuration for development
+  Dockerfile.server       # Docker configuration for the server

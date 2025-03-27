@@ -1,0 +1,41 @@
+/**
+ * /server/src/config
+ * 
+ * This directory contains configuration settings and setup code.
+ * It helps centralize and organize application configuration.
+ * 
+ * Typical config files:
+ * - database.ts: Database connection configuration
+ * - express.ts: Express application setup and middleware configuration
+ * - logger.ts: Logging configuration
+ * - environment.ts: Environment variable processing and validation
+ * 
+ * Best practices:
+ * - Load configuration from environment variables
+ * - Validate configuration values on startup
+ * - Provide sensible defaults for non-critical settings
+ * - Keep sensitive configuration separate (use .env file)
+ * 
+ * Example config pattern:
+ * ```typescript
+ * import dotenv from 'dotenv';
+ * 
+ * // Load environment variables
+ * dotenv.config();
+ * 
+ * // Validate required environment variables
+ * const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+ * for (const envVar of requiredEnvVars) {
+ *   if (!process.env[envVar]) {
+ *     throw new Error(`Missing required environment variable: ${envVar}`);
+ *   }
+ * }
+ * 
+ * export const config = {
+ *   port: parseInt(process.env.PORT || '4000', 10),
+ *   jwtSecret: process.env.JWT_SECRET,
+ *   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+ *   environment: process.env.NODE_ENV || 'development'
+ * };
+ * ```
+ */

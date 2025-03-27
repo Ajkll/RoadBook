@@ -1,0 +1,30 @@
+/**
+ * /server/controllers
+ * 
+ * Controllers handle the application logic for each API endpoint.
+ * They process requests, interact with services/models, and return responses.
+ * 
+ * Key files:
+ * - auth.controller.ts: Handles authentication-related requests
+ * - roadbook.controller.ts: Manages roadbook data operations
+ * - user.controller.ts: Manages user-related operations
+ * 
+ * Controller responsibilities:
+ * - Extract and validate data from requests
+ * - Call appropriate services to perform business logic
+ * - Handle errors and return appropriate responses
+ * - Format response data according to API standards
+ * 
+ * Example controller pattern:
+ * ```typescript
+ * export const login = async (req: Request, res: Response, next: NextFunction) => {
+ *   try {
+ *     const { email, password } = req.body;
+ *     const user = await authService.authenticate(email, password);
+ *     return res.status(200).json({ user, token: authService.generateToken(user) });
+ *   } catch (error) {
+ *     next(error); // Pass to error middleware
+ *   }
+ * };
+ * ```
+ */
