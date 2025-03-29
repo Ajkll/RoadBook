@@ -1,32 +1,41 @@
 // app/constants/theme.tsx
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
+import { blue, red } from 'react-native-reanimated/lib/typescript/Colors';
 
 // Define your color palette
 export const Colors = {
   light: {
-    primary: '#4f89c5',
-    background: '#f5f5f5',
-    card: '#ffffff',
-    text: '#333333',
-    secondaryText: '#757575',
-    border: '#e0e0e0',
-    tabBar: '#ff0000',
-    tabBarInactive: '#d9d9d9',
-    recordButton: '#ffffff',
-    recordButtonBorder: '#4f89c5',
+    background: '#ffffff',
+    card: '#7CA7D8',
+    darkerBlue: '#7CA7D8',
+    text: '#FFFFFF',
+    secondaryText: '#5F5F5F',
+    icon: '#D9D9D9',
+    secondaryIcon: '#FFFFFF',
+    tabBar: '#7CA7D8',
+    drawerIcon: '#5F5F5F',
+    activeItem: '#5F5F5F',
+    border: '#444444',
+    separation: '#444444',
+    red: '#e57373',
+    test: '#ff0000',
   },
   dark: {
-    primary: '#4f89c5',
     background: '#5F5F5F',
     card: '#7CA7D8',
+    darkerBlue: '#7CA7D8',
     text: '#ffffff',
     secondaryText: '#D9D9D9',
+    icon: '#D9D9D9',
+    secondaryIcon: '#D9D9D9',
+    tabBar: '#D9D9D9',
+    drawerIcon: '#D9D9D9',
+    activeItem: '#7CA7D8',
     border: '#444444',
-    tabBar: '#5F5F5F',
-    tabBarInactive: '#D9D9D9',
-    recordButton: '#676767',
-    recordButtonBorder: '#D9D9D9',
+    separation: '#444444',
+    red: '#e57373',
+    test: '#ff0000',
   },
 };
 

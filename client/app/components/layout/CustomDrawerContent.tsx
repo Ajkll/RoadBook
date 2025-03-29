@@ -1,6 +1,7 @@
 // app/components/layout/CustomDrawerContent.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useTheme } from '../../constants/theme';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
@@ -10,6 +11,9 @@ const CustomDrawerContent = (props) => {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  
 
   // Helper to check active route
   const isActive = (path) => pathname === path;
@@ -47,7 +51,7 @@ const CustomDrawerContent = (props) => {
       style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
       onPress={() => router.push(item.route)}
     >
-      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? '#4f89c5' : '#D9D9D9'} />
+      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? colors.activeItem : colors.drawerIcon} />
       <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
         {item.name}
       </Text>
@@ -83,34 +87,35 @@ const CustomDrawerContent = (props) => {
 
         {/* Logout option */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#e57373" />
+          <Ionicons name="log-out-outline" size={22} color={colors.red} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
       </DrawerContentScrollView>
 
       {/* Footer */}
       <TouchableOpacity style={styles.aboutButton} onPress={() => router.push('/AboutUsScreen')}>
-        <Ionicons name="information-circle-outline" size={20} color="#4B89DC" />
+        <Ionicons name="people" size={20} color={colors.darkerBlue} />
         <Text style={styles.aboutText}>À propos de nous</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#5A5A5A',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#5A5A5A',
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#444444',
+    borderBottomColor: colors.separation,
   },
   menuText: {
-    color: '#FFFFFF',
+    color: colors.secondaryText,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 10,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.separation,
   },
   sectionHeaderText: {
     color: '#fff',
@@ -141,12 +146,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   activeItem: {
-    backgroundColor: 'rgba(79, 137, 197, 0.15)',
+    backgroundColor: colors.activeItem,
     borderLeftWidth: 3,
-    borderLeftColor: '#4f89c5',
+    borderLeftColor: colors.activeItem,
   },
   drawerItemLabel: {
-    color: '#D9D9D9',
+    color: colors.secondaryText,
     fontSize: 16,
     marginLeft: 32,
   },
@@ -161,10 +166,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 20,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.separation,
   },
   logoutText: {
-    color: '#e57373',
+    color: colors.red,
     marginLeft: 32,
     fontSize: 16,
   },
@@ -174,10 +179,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.separation,
   },
   aboutText: {
-    color: '#D9D9D9',
+    color: colors.secondaryText,
     fontSize: 14,
     textAlign: 'center',
     marginLeft: 8,
