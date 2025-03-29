@@ -28,7 +28,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ title, progress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#5d8bb3", // Même bleu que la carte météo
+    backgroundColor: "#7CA7D8", 
     borderRadius: 12,
     padding: 15,
     margin: 10,
@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    height: 110,
   },
   cardTitle: {
     fontSize: 18,
@@ -51,22 +52,22 @@ const styles = StyleSheet.create({
   progressBackground: {
     width: "100%",
     height: 20,
-    backgroundColor: "#bdbdbd", // Gris clair pour l'arrière-plan
+    backgroundColor: "#D9D9D9", // Gris clair pour l'arrière-plan
     borderRadius: 10,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#2196f3", // Bleu pour la barre de progression
+    backgroundColor: "#2B86EE", // Bleu pour la barre de progression
     borderRadius: 10,
   },
   percentageBubble: {
-    backgroundColor: "#5d8bb3", // Même couleur que la carte
+    backgroundColor: "#6B98CC", // Même couleur que la carte
     borderRadius: 15,
     paddingHorizontal: 10,
     paddingVertical: 5,
     position: "absolute",
-    bottom: -15,
+    bottom: -18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,

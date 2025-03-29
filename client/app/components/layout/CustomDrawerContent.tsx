@@ -4,10 +4,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CustomDrawerContent = (props) => {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   // Helper to check active route
   const isActive = (path) => pathname === path;
@@ -45,7 +47,7 @@ const CustomDrawerContent = (props) => {
       style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
       onPress={() => router.push(item.route)}
     >
-      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? '#4f89c5' : '#bdbdbd'} />
+      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? '#4f89c5' : '#D9D9D9'} />
       <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
         {item.name}
       </Text>
@@ -53,9 +55,9 @@ const CustomDrawerContent = (props) => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.menuText}>RoadBook Tracker</Text>
       </View>
 
@@ -98,14 +100,14 @@ const CustomDrawerContent = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333333',
+    backgroundColor: '#5A5A5A',
   },
   header: {
-    padding: 16,
-    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#5A5A5A',
     borderBottomWidth: 1,
     borderBottomColor: '#444444',
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
   },
   menuText: {
     color: '#FFFFFF',
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#444444',
   },
   sectionHeaderText: {
-    color: '#9e9e9e',
+    color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -144,12 +146,12 @@ const styles = StyleSheet.create({
     borderLeftColor: '#4f89c5',
   },
   drawerItemLabel: {
-    color: '#bdbdbd',
+    color: '#D9D9D9',
     fontSize: 16,
     marginLeft: 32,
   },
   activeItemLabel: {
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: '500',
   },
   logoutButton: {
@@ -169,14 +171,16 @@ const styles = StyleSheet.create({
   aboutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
     borderTopWidth: 0.5,
     borderTopColor: '#444444',
   },
   aboutText: {
-    color: '#4B89DC',
-    marginLeft: 10,
+    color: '#D9D9D9',
     fontSize: 14,
+    textAlign: 'center',
+    marginLeft: 8,
   },
 });
 

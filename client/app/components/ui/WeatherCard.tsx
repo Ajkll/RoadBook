@@ -1,6 +1,8 @@
 // src/components/ui/WeatherCard.tsx
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 // Pour un composant statique, nous définissons les propriétés directement
 // Dans une application réelle, ces données viendraient d'une API météo
@@ -24,25 +26,25 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
       <View style={styles.weatherGrid}>
         {/* Température */}
         <View style={styles.weatherItem}>
-          <Text style={styles.weatherIcon}>🌡️</Text>
+          <Ionicons name="thermometer" size={24} color="white" style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{temperature} °C</Text>
         </View>
 
         {/* Vitesse du vent */}
         <View style={styles.weatherItem}>
-          <Text style={styles.weatherIcon}>💨</Text>
+          <MaterialIcons name="air" size={24} color="white" style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{windSpeed} km/h</Text>
         </View>
 
         {/* Condition météo */}
         <View style={styles.weatherItem}>
-          <Text style={styles.weatherIcon}>☁️</Text>
+          <Ionicons name="cloud" size={24} color="white" style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{condition}</Text>
         </View>
 
         {/* Visibilité */}
         <View style={styles.weatherItem}>
-          <Text style={styles.weatherIcon}>👁️</Text>
+          <Ionicons name="eye" size={24} color="white" style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{visibility} km</Text>
         </View>
       </View>
@@ -52,7 +54,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#5d8bb3", // Bleu comme sur l'image
+    backgroundColor: "#7CA7D8", 
     borderRadius: 12,
     padding: 15,
     margin: 10,
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     fontWeight: "500",
-    marginBottom: 15,
+    marginBottom: 25,
     textAlign: "center",
   },
   weatherGrid: {
@@ -83,11 +85,11 @@ const styles = StyleSheet.create({
   weatherIcon: {
     fontSize: 24,
     marginRight: 8,
-    color: "#e0e0e0",
+    color: "#fff",
   },
   weatherValue: {
     fontSize: 16,
-    color: "#e0e0e0",
+    color: "#fff",
   },
 });
 

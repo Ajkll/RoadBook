@@ -1,22 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import Header from '../components/layout/Header';
 import WeatherCard from '../components/ui/WeatherCard';
 import ProgressBar from '../components/ui/ProgressBar';
 
+const { width } = Dimensions.get('window');
+
+
 export default function HomeScreen() {
-  const navigation = useNavigation();
-
-  const openDrawer = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left']}>
-      <Header title="RoadBook Tracker" onMenuPress={openDrawer} />
-
       <ScrollView style={styles.content}>
         <Text style={styles.welcomeTitle}>Bienvenue</Text>
 
@@ -36,15 +29,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333333',
+    backgroundColor: '#5F5F5F',
+    alignItems: 'center',
   },
   content: {
+    width: width * 0.94,
     flex: 1,
   },
   welcomeTitle: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#bdbdbd',
+    color: '#D9D9D9',
     textAlign: 'center',
     marginVertical: 20,
   },

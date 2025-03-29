@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../constants/theme';
 
@@ -78,11 +79,11 @@ const BottomNavigation = () => {
             },
           ]}
         >
-          <Ionicons
-            name={isActive('/(tabs)/start-drive') ? 'radio-button-on' : 'radio-button-off'}
-            size={28}
-            color={isActive('/(tabs)/start-drive') ? colors.primary : colors.tabBarInactive}
-          />
+        <MaterialIcons
+          name={isActive('/(tabs)/start-drive') ? 'square' : 'circle'}
+          size={isActive('/(tabs)/start-drive') ? 30 : 40}
+          color={isActive('/(tabs)/start-drive') ? "#e57373" : colors.tabBarInactive}
+        />
         </View>
       </TouchableOpacity>
 
@@ -116,7 +117,7 @@ const BottomNavigation = () => {
             { color: isActive('/(tabs)/profile') ? colors.primary : colors.tabBarInactive },
           ]}
         >
-          Profil
+          Profile
         </Text>
       </TouchableOpacity>
     </View>
@@ -158,7 +159,8 @@ const styles = StyleSheet.create({
   recordIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    padding: 0,
+    borderRadius: 34,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
