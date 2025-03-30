@@ -11,10 +11,8 @@ const BottomNavigation = () => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
-  // Normalise le pathname en retirant le "/" initial
   const normalizedPathname = pathname.startsWith('/') ? pathname.slice(1) : pathname;
 
-  // Renvoie true si le normalizedPathname correspond exactement à la route passée
   const isActive = (path: string) => {
     return normalizedPathname === path;
   };
@@ -27,9 +25,9 @@ const BottomNavigation = () => {
         <Ionicons
           name={isActive('') ? 'home' : 'home-outline'}
           size={24}
-          color={isActive('') ? colors.activeItem : colors.tabBar}
+          color={isActive('') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('') ? colors.activeItem : colors.tabBar }]}>
+        <Text style={[styles.navText, { color: isActive('') ? colors.activeItem : colors.inactiveItem }]}>
           Accueil
         </Text>
       </TouchableOpacity>
@@ -38,19 +36,19 @@ const BottomNavigation = () => {
         <Ionicons
           name={isActive('explorer') ? 'search' : 'search-outline'}
           size={24}
-          color={isActive('explorer') ? colors.activeItem : colors.tabBar}
+          color={isActive('explorer') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('explorer') ? colors.activeItem : colors.tabBar }]}>
+        <Text style={[styles.navText, { color: isActive('explorer') ? colors.activeItem : colors.inactiveItem }]}>
           Explorer
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.recordButton} onPress={() => router.push('/(tabs)/start-drive')}>
-        <View style={[styles.recordIcon, { backgroundColor: colors.background, borderColor: isActive('start-drive') ? colors.activeItem : colors.tabBar }]}>
+        <View style={[styles.recordIcon, { backgroundColor: colors.background, borderColor: isActive('start-drive') ? colors.activeItem : colors.inactiveItem }]}>
           <MaterialIcons
             name={isActive('start-drive') ? 'square' : 'circle'}
             size={isActive('start-drive') ? 30 : 40}
-            color={isActive('start-drive') ? '#e57373' : colors.tabBar}
+            color={isActive('start-drive') ? '#e57373' : colors.inactiveItem}
           />
         </View>
       </TouchableOpacity>
@@ -59,9 +57,9 @@ const BottomNavigation = () => {
         <Ionicons
           name={isActive('my-routes') ? 'map' : 'map-outline'}
           size={24}
-          color={isActive('my-routes') ? colors.activeItem : colors.tabBar}
+          color={isActive('my-routes') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('my-routes') ? colors.activeItem : colors.tabBar }]}>
+        <Text style={[styles.navText, { color: isActive('my-routes') ? colors.activeItem : colors.inactiveItem }]}>
           Mes trajets
         </Text>
       </TouchableOpacity>
@@ -70,9 +68,9 @@ const BottomNavigation = () => {
         <Ionicons
           name={isActive('profile') ? 'person' : 'person-outline'}
           size={24}
-          color={isActive('profile') ? colors.activeItem : colors.tabBar}
+          color={isActive('profile') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('profile') ? colors.activeItem : colors.tabBar }]}>
+        <Text style={[styles.navText, { color: isActive('profile') ? colors.activeItem : colors.inactiveItem }]}>
           Profile
         </Text>
       </TouchableOpacity>
@@ -84,7 +82,7 @@ const createStyles = (colors: any, insets: any) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
-      height: Platform.OS === 'ios' ? 80 : 60,
+      height: Platform.OS === 'ios' ? 85 : 65,
       borderTopWidth: 1,
       position: 'absolute',
       bottom: 0,
@@ -95,7 +93,7 @@ const createStyles = (colors: any, insets: any) =>
       justifyContent: 'space-around',
       zIndex: 1000,
       backgroundColor: colors.background,
-      borderTopColor: colors.icon,
+      borderTopColor: colors.primaryIcon,
     },
     navItem: {
       flex: 1,

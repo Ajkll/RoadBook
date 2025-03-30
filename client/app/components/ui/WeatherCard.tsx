@@ -31,25 +31,25 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
       <View style={styles.weatherGrid}>
         {/* Température */}
         <View style={styles.weatherItem}>
-          <Ionicons name="thermometer" size={24} color={colors.icon} style={styles.weatherIcon} />
+          <Ionicons name="thermometer" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{temperature} °C</Text>
         </View>
 
         {/* Vitesse du vent */}
         <View style={styles.weatherItem}>
-          <MaterialIcons name="air" size={24} color={colors.icon} style={styles.weatherIcon} />
+          <MaterialIcons name="air" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{windSpeed} km/h</Text>
         </View>
 
         {/* Condition météo */}
         <View style={styles.weatherItem}>
-          <Ionicons name="cloud" size={24} color={colors.icon} style={styles.weatherIcon} />
+          <Ionicons name="cloud" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{condition}</Text>
         </View>
 
         {/* Visibilité */}
         <View style={styles.weatherItem}>
-          <Ionicons name="eye" size={24} color={colors.icon} style={styles.weatherIcon} />
+          <Ionicons name="eye" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{visibility} km</Text>
         </View>
       </View>
@@ -60,7 +60,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
 const createStyles = (colors) =>
   StyleSheet.create({
     card: {
-      backgroundColor: colors.card,
+      backgroundColor: colors.primary,
       borderRadius: 12,
       padding: 15,
       margin: 10,
@@ -72,7 +72,7 @@ const createStyles = (colors) =>
     },
     cardTitle: {
       fontSize: 18,
-      color: colors.text,
+      color: colors.primaryText,
       fontWeight: "500",
       marginBottom: 25,
       textAlign: "center",
@@ -83,7 +83,7 @@ const createStyles = (colors) =>
       justifyContent: "space-between",
     },
     weatherItem: {
-      width: "48%", // Légèrement moins de 50% pour avoir un petit espace
+      width: "48%",
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 15,
@@ -91,11 +91,11 @@ const createStyles = (colors) =>
     weatherIcon: {
       fontSize: 24,
       marginRight: 8,
-      color: colors.icon, 
+      color: colors.primaryIcon, 
     },
     weatherValue: {
       fontSize: 16,
-      color: colors.text,
+      color: colors.primaryText,
     },
   });
 

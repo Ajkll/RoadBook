@@ -51,7 +51,7 @@ const CustomDrawerContent = (props) => {
       style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
       onPress={() => router.push(item.route)}
     >
-      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? colors.activeItem : colors.drawerIcon} />
+      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? colors.activeItem : colors.inactiveItem} />
       <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
         {item.name}
       </Text>
@@ -94,7 +94,7 @@ const CustomDrawerContent = (props) => {
 
       {/* Footer */}
       <TouchableOpacity style={styles.aboutButton} onPress={() => router.push('/AboutUsScreen')}>
-        <Ionicons name="people" size={20} color={colors.darkerBlue} />
+        <Ionicons name="people" size={20} color={colors.primaryDarker} />
         <Text style={styles.aboutText}>À propos de nous</Text>
       </TouchableOpacity>
     </View>
@@ -112,10 +112,10 @@ const createStyles = (colors) =>
     paddingVertical: 16,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.separation,
+    borderBottomColor: colors.border,
   },
   menuText: {
-    color: colors.secondaryText,
+    color: colors.backgroundText,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -130,7 +130,7 @@ const createStyles = (colors) =>
     paddingVertical: 8,
     marginTop: 10,
     borderTopWidth: 0.5,
-    borderTopColor: colors.separation,
+    borderTopColor: colors.border,
   },
   sectionHeaderText: {
     color: '#fff',
@@ -146,12 +146,12 @@ const createStyles = (colors) =>
     paddingHorizontal: 16,
   },
   activeItem: {
-    backgroundColor: colors.activeItem,
+    backgroundColor: colors.background,
     borderLeftWidth: 3,
     borderLeftColor: colors.activeItem,
   },
   drawerItemLabel: {
-    color: colors.secondaryText,
+    color: colors.inactiveItem,
     fontSize: 16,
     marginLeft: 32,
   },
@@ -166,7 +166,7 @@ const createStyles = (colors) =>
     paddingHorizontal: 16,
     marginTop: 20,
     borderTopWidth: 0.5,
-    borderTopColor: colors.separation,
+    borderTopColor: colors.border,
   },
   logoutText: {
     color: colors.red,
@@ -179,10 +179,10 @@ const createStyles = (colors) =>
     justifyContent: 'center',
     padding: 16,
     borderTopWidth: 0.5,
-    borderTopColor: colors.separation,
+    borderTopColor: colors.border,
   },
   aboutText: {
-    color: colors.secondaryText,
+    color: colors.inactiveItem,
     fontSize: 14,
     textAlign: 'center',
     marginLeft: 8,

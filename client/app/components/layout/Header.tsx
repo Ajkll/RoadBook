@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-        <Ionicons name="menu" size={24} color={colors.secondaryText} />
+        <Ionicons name="menu" size={24} color={colors.backgroundIcon} />
       </TouchableOpacity>
 
       <Text style={styles.title}>{title}</Text>
@@ -58,7 +58,7 @@ const createStyles = (colors: any, insets: any) =>
       padding: 8,
     } as ViewStyle,
     title: {
-      color: colors.secondaryText, 
+      color: colors.backgroundTextSoft, 
       fontSize: 18,
       fontWeight: 'bold',
     } as TextStyle,

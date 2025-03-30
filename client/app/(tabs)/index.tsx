@@ -43,7 +43,7 @@ const createStyles = (colors) =>
     welcomeTitle: {
       fontSize: 32,
       fontWeight: 'bold',
-      color: colors.secondaryText, 
+      color: colors.backgroundTextSoft, 
       textAlign: 'center',
       marginVertical: 20,
     },
