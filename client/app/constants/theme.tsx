@@ -1,9 +1,30 @@
-// app/constants/theme.tsx
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
-// Define your color palette
-export const Colors = {
+export type ThemeColors = {
+  background: string;
+  backgroundText: string;
+  backgroundTextSoft: string;
+  backgroundIcon: string;
+  border: string;
+  primary: string;
+  primaryDark: string;
+  primaryDarker: string;
+  primaryText: string;
+  primaryTextSoft: string;
+  primaryIcon: string;
+  secondary: string;
+  secondaryDark: string;
+  secondaryDarker: string;
+  secondaryText: string;
+  secondaryIcon: string;
+  activeItem: string;
+  inactiveItem: string;
+  red: string;
+  test: string;
+};
+
+export const Colors: { light: ThemeColors; dark: ThemeColors } = {
   light: {
     background: '#ffffff',
     backgroundText: '#6A6A6A',
@@ -50,29 +71,29 @@ export const Colors = {
   },
 };
 
-// Define theme context type
+// Définition du contexte avec un typage explicite
 type ThemeContextType = {
-  colors: typeof Colors.light;
+  colors: ThemeColors;
   dark: boolean;
 };
 
-// Create a theme context
+// Création du contexte
 const ThemeContext = createContext<ThemeContextType>({
   colors: Colors.light,
   dark: false,
 });
 
-// Define props interface for ThemeProvider
+// Props du ThemeProvider
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
-// Theme provider component with proper typing
+// ThemeProvider avec détection du mode clair/sombre
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const theme = {
+  const theme: ThemeContextType = {
     colors: isDark ? Colors.dark : Colors.light,
     dark: isDark,
   };
@@ -80,9 +101,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 
-// Hook to use theme
-export function useTheme() {
+// Hook pour récupérer le thème
+export function useTheme(): ThemeContextType {
   return useContext(ThemeContext);
 }
-
-export default Colors;

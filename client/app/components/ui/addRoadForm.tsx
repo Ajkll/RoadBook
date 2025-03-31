@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTheme } from '../../constants/theme';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useTheme, ThemeColors } from '../../constants/theme';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function AddRouteForm({ visible, onClose, onSave }) {
     const { colors } = useTheme();
@@ -18,14 +18,12 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
             <View style={styles.modalView}>
             <Text style={styles.modalTitle}>Ajouter un trajet</Text>
             
-            {/* Champ nom du trajet - pleine largeur */}
             <TextInput 
                 style={styles.fullWidthInput} 
                 placeholder="Trajet 3"
                 placeholderTextColor="#999"
             />
             
-            {/* Groupe de champs côte à côte avec indication obligatoire */}
             <View style={styles.groupForm}>
                 <View style={styles.inputWithRequired}>
                     <Text style={styles.requiredStar}>*</Text>
@@ -42,7 +40,6 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                 />
             </View>
             
-            {/* Champs avec ":" en placeholder centrés et reliés */}
             <View style={styles.timeInputContainer}>
                 <TextInput 
                     style={styles.timeInput} 
@@ -59,7 +56,6 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                 />
             </View>
             
-            {/* Champ accompagnant aligné à gauche */}
             <View style={styles.accompagnantContainer}>
                 <TextInput 
                     style={styles.halfWidthInput}
@@ -67,9 +63,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                     placeholderTextColor="#999"
                 />
             </View>
-            
-            {/* Autres champs... */}
-            
+                        
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                     <Text style={styles.buttonText}>Annuler</Text>
@@ -85,7 +79,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
     );
 }
 
-const createStyles = (colors) =>
+const createStyles = (colors: ThemeColors) =>
     StyleSheet.create({
     // Styles pour le modal
     centeredView: {
@@ -122,7 +116,7 @@ const createStyles = (colors) =>
         width: '100%',
         marginBottom: 15,
         paddingHorizontal: 10,
-        color: colors.text
+        color: colors.primaryText
     },
     // Input demi-largeur (pour date et météo)
     halfWidthInput: {
@@ -132,7 +126,7 @@ const createStyles = (colors) =>
         width: '48%', 
         marginBottom: 15,
         paddingHorizontal: 10,
-        color: colors.text
+        color: colors.primaryText
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -196,7 +190,7 @@ const createStyles = (colors) =>
         height: 50,
         width: '45%',
         paddingHorizontal: 10,
-        color: colors.text,
+        color: colors.primaryText,
     },
     timeConnector: {
         width: '6%',

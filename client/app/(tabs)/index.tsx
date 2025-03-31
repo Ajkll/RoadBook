@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { useTheme } from '../constants/theme';
+import { useTheme, ThemeColors } from '../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import WeatherCard from '../components/ui/WeatherCard';
 import ProgressBar from '../components/ui/ProgressBar';
@@ -29,7 +29,7 @@ export default function HomeScreen() {
   );
 }
 
-const createStyles = (colors) =>
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

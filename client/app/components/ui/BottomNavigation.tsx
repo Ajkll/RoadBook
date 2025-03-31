@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
+
 
 const BottomNavigation = () => {
   const router = useRouter();
@@ -78,7 +79,7 @@ const BottomNavigation = () => {
   );
 };
 
-const createStyles = (colors: any, insets: any) =>
+const createStyles = (colors: ThemeColors, insets: any) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',

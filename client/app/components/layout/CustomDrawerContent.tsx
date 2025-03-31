@@ -1,7 +1,7 @@
 // app/components/layout/CustomDrawerContent.tsx
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useTheme } from '../../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
@@ -101,7 +101,7 @@ const CustomDrawerContent = (props) => {
   );
 };
 
-const createStyles = (colors) =>
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
   container: {
     flex: 1,

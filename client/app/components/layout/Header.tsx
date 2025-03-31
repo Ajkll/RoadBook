@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from '
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 interface HeaderProps {
@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress
   );
 };
 
-const createStyles = (colors: any, insets: any) =>
+const createStyles = (colors: ThemeColors, insets: any) =>
   StyleSheet.create({
     header: {
       backgroundColor: colors.background, 
@@ -46,12 +46,12 @@ const createStyles = (colors: any, insets: any) =>
       paddingHorizontal: 16,
       paddingTop: insets.top,
       height: 60 + insets.top,
-      // Ombre pour iOS
+      // Shadow for iOS
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 5,
-      // Ombre pour Android
+      // Shadow for Android
       elevation: 10,
     } as ViewStyle,
     menuButton: {

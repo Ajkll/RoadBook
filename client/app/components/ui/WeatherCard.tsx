@@ -1,7 +1,7 @@
 // src/components/ui/WeatherCard.tsx
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from '../../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -29,25 +29,25 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
       <Text style={styles.cardTitle}>Météo</Text>
 
       <View style={styles.weatherGrid}>
-        {/* Température */}
+        {/* Temperature */}
         <View style={styles.weatherItem}>
           <Ionicons name="thermometer" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{temperature} °C</Text>
         </View>
 
-        {/* Vitesse du vent */}
+        {/* Wind speed */}
         <View style={styles.weatherItem}>
           <MaterialIcons name="air" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{windSpeed} km/h</Text>
         </View>
 
-        {/* Condition météo */}
+        {/* Weather conditions */}
         <View style={styles.weatherItem}>
           <Ionicons name="cloud" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{condition}</Text>
         </View>
 
-        {/* Visibilité */}
+        {/* Visibility */}
         <View style={styles.weatherItem}>
           <Ionicons name="eye" size={24} color={colors.primaryIcon} style={styles.weatherIcon} />
           <Text style={styles.weatherValue}>{visibility} km</Text>
@@ -57,7 +57,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   );
 };
 
-const createStyles = (colors) =>
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     card: {
       backgroundColor: colors.primary,
