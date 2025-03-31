@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme, ThemeColors } from '../../constants/theme';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 export default function AddRouteForm({ visible, onClose, onSave }) {
     const { colors } = useTheme();
@@ -25,21 +25,31 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
             />
             
             <View style={styles.groupForm}>
-                <View style={styles.inputWithRequired}>
+                <TouchableOpacity style={styles.halfWidthInput}>
                     <Text style={styles.requiredStar}>*</Text>
-                    <TextInput 
-                        style={styles.halfWidthInput} 
-                        placeholder="Date"
-                        placeholderTextColor="#999"
-                    />
-                </View>
-                <TextInput 
-                    style={styles.halfWidthInput}
-                    placeholder="Meteo"
-                    placeholderTextColor="#999"
-                />
+                    <Text style={styles.text}>Date</Text>
+                    <View style={styles.iconContairner}>
+                        <Ionicons name="calendar-outline" size={30} color={colors.secondaryIcon} />
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.halfWidthInput}>
+                    <Text style={styles.text}>Météo</Text>
+                    <View style={styles.iconContairner}>
+                        <MaterialCommunityIcons name="weather-snowy-rainy" size={30} color={colors.secondaryIcon} />
+                    </View>
+                </TouchableOpacity>
             </View>
             
+            <View style={styles.accompagnantContainer}>
+                <TouchableOpacity style={styles.halfWidthInput}>
+                    <Text style={styles.text}>Accompagnant</Text>
+                    <View style={styles.iconContairner}>
+                        <MaterialIcons name="person" size={30} color={colors.secondaryIcon} />                        
+                    </View>
+                </TouchableOpacity>
+            </View>
+
             <View style={styles.timeInputContainer}>
                 <TextInput 
                     style={styles.timeInput} 
@@ -55,15 +65,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                     textAlign="center"
                 />
             </View>
-            
-            <View style={styles.accompagnantContainer}>
-                <TextInput 
-                    style={styles.halfWidthInput}
-                    placeholder="Accompagnant"
-                    placeholderTextColor="#999"
-                />
-            </View>
-                        
+                                    
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                     <Text style={styles.buttonText}>Annuler</Text>
@@ -112,7 +114,7 @@ const createStyles = (colors: ThemeColors) =>
     fullWidthInput: {
         backgroundColor: colors.secondary,
         borderRadius: 10,
-        height: 50,
+        height: 55,
         width: '100%',
         marginBottom: 15,
         paddingHorizontal: 10,
@@ -122,11 +124,20 @@ const createStyles = (colors: ThemeColors) =>
     halfWidthInput: {
         backgroundColor: colors.secondary,
         borderRadius: 10,
-        height: 50,
+        height: 55,
         width: '48%', 
         marginBottom: 15,
-        paddingHorizontal: 10,
-        color: colors.primaryText
+        paddingHorizontal: 25, 
+        color: colors.primaryText,
+        alignItems: 'center', 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+    },
+    
+    text: {
+        color: colors.secondaryText,
+        fontSize: 14,
+        marginLeft: 10,
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -164,17 +175,12 @@ const createStyles = (colors: ThemeColors) =>
         justifyContent: 'space-between',
         width: '100%',
     },
-    // Container pour le champ avec indicateur obligatoire
-    inputWithRequired: {
-        width: '48%',
-        position: 'relative',
-    },
     requiredStar: {
-        color: 'red',
-        fontSize: 20,
+        color: colors.red,
+        fontSize: 25,
         position: 'absolute',
-        left: -10,
-        top: -5,
+        left: "3%",
+        top: "19%",
         zIndex: 1,
     },
     timeInputContainer: {
@@ -187,7 +193,7 @@ const createStyles = (colors: ThemeColors) =>
     timeInput: {
         backgroundColor: colors.secondary,
         borderRadius: 10,
-        height: 50,
+        height: 55,
         width: '45%',
         paddingHorizontal: 10,
         color: colors.primaryText,
@@ -200,7 +206,15 @@ const createStyles = (colors: ThemeColors) =>
     },
     // Conteneur pour aligner Accompagnant à gauche
     accompagnantContainer: {
-        width: '100%',
-        alignItems: 'flex-start',
-    }
+        width: '130%',
+        alignItems: 'center',
+    },
+    iconContairner: {
+        backgroundColor: colors.secondaryDark,
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
