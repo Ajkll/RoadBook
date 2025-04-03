@@ -44,7 +44,6 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
         <View style={styles.groupForm}>
             <TouchableOpacity style={styles.halfWidthInput} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.requiredStar}>*</Text>
                 <Text style={styles.inputText}>
                     {date ? date.toLocaleDateString() : 'Date'}
                 </Text>
