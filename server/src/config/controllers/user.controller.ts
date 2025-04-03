@@ -4,7 +4,7 @@ import * as userService from "../services/user.service";
 export const createUser = async (
   req: Request,
   res: Response,
-  NextFunction: NextFunction
+  next: NextFunction
 ) => {
   try {
     const userData = {

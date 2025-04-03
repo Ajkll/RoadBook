@@ -21,38 +21,29 @@ const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 
 // Fonction de login
-export const login = async (
-  email: string,
-  password: string
-): Promise<LoginResult> => {
-  // Récupérer l'utilisateur avec son mot de passe haché
-  const user = await getUserByEmail(email);
-
-  // Vérifier si l'utilisateur existe
+// At the beginning of your auth.service.ts or similar
+export const login = async (email: string, password: string) => {
+  console.log(`Attempting login for email: ${email}`);
+  
+  // Find the user
+  const user = await prisma.user.findUnique({ where: { email } });
+  
   if (!user) {
-    throw new Error("Email ou mot de passe incorrect");
+    console.log(`Login failed: User with email ${email} not found`);
+    throw new Error("Invalid credentials");
   }
-
-  // Vérifier le mot de passe
-  const passwordMatch = await bcrypt.compare(password, user.passwordHash);
-  if (!passwordMatch) {
-    throw new Error("Email ou mot de passe incorrect");
+  
+  // Check password
+  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+  
+  if (!isPasswordValid) {
+    console.log(`Login failed: Invalid password for user ${email}`);
+    throw new Error("Invalid credentials");
   }
-
-  // Générer les tokens
-  const { accessToken, refreshToken } = generateTokens(user);
-
-  // Stocker le refresh token en base de données
-  await storeRefreshToken(user.id, refreshToken);
-
-  // Retourner les informations sans le mot de passe
-  const { passwordHash, ...userWithoutPassword } = user;
-  return {
-    user: userWithoutPassword,
-    accessToken,
-    refreshToken,
-  };
-};
+  
+  console.log(`Login successful for user ${email}`);
+  // Rest of function...
+}
 
 // Fonction pour rafraîchir le token
 export const refreshToken = async (token: string) => {

@@ -4,14 +4,15 @@ FROM node:18-alpine
 RUN apk add --no-cache openssl libc6-compat
 
 # Define work directory
-WORKDIR /src
+WORKDIR /app
+COPY . .
 
 # Copy package.json and install dependencies
 COPY package*.json ./
 RUN npm install
-
+RUN npm install bcrypt
+RUN npm run dev
 # Copy the rest of the application
-COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate

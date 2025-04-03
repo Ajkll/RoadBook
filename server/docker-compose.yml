@@ -50,7 +50,7 @@ services:
       - PORT=4000
       - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - .:/src
+      - ./src:/app/src
       - /src/node_modules
 
 volumes:
