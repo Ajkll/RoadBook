@@ -1,13 +1,19 @@
 // app/components/layout/CustomDrawerContent.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CustomDrawerContent = (props) => {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  
 
   // Helper to check active route
   const isActive = (path) => pathname === path;
@@ -45,7 +51,7 @@ const CustomDrawerContent = (props) => {
       style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
       onPress={() => router.push(item.route)}
     >
-      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? '#4f89c5' : '#bdbdbd'} />
+      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? colors.activeItem : colors.inactiveItem} />
       <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
         {item.name}
       </Text>
@@ -53,9 +59,9 @@ const CustomDrawerContent = (props) => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.menuText}>RoadBook Tracker</Text>
       </View>
 
@@ -81,34 +87,35 @@ const CustomDrawerContent = (props) => {
 
         {/* Logout option */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#e57373" />
+          <Ionicons name="log-out-outline" size={22} color={colors.red} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
       </DrawerContentScrollView>
 
       {/* Footer */}
       <TouchableOpacity style={styles.aboutButton} onPress={() => router.push('/AboutUsScreen')}>
-        <Ionicons name="information-circle-outline" size={20} color="#4B89DC" />
+        <Ionicons name="people" size={20} color={colors.primaryDarker} />
         <Text style={styles.aboutText}>À propos de nous</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333333',
+    backgroundColor: colors.background,
   },
   header: {
-    padding: 16,
-    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#444444',
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
+    borderBottomColor: colors.border,
   },
   menuText: {
-    color: '#FFFFFF',
+    color: colors.backgroundText,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -123,10 +130,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 10,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.border,
   },
   sectionHeaderText: {
-    color: '#9e9e9e',
+    color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -139,17 +146,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   activeItem: {
-    backgroundColor: 'rgba(79, 137, 197, 0.15)',
+    backgroundColor: colors.background,
     borderLeftWidth: 3,
-    borderLeftColor: '#4f89c5',
+    borderLeftColor: colors.activeItem,
   },
   drawerItemLabel: {
-    color: '#bdbdbd',
+    color: colors.inactiveItem,
     fontSize: 16,
     marginLeft: 32,
   },
   activeItemLabel: {
-    color: '#ffffff',
+    color: '#fff',
     fontWeight: '500',
   },
   logoutButton: {
@@ -159,24 +166,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 20,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.border,
   },
   logoutText: {
-    color: '#e57373',
+    color: colors.red,
     marginLeft: 32,
     fontSize: 16,
   },
   aboutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
     borderTopWidth: 0.5,
-    borderTopColor: '#444444',
+    borderTopColor: colors.border,
   },
   aboutText: {
-    color: '#4B89DC',
-    marginLeft: 10,
+    color: colors.inactiveItem,
     fontSize: 14,
+    textAlign: 'center',
+    marginLeft: 8,
   },
 });
 

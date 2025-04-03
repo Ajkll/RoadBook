@@ -1,14 +1,17 @@
-// src/components/ui/ProgressBar.tsx
-import React from "react";
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from "react-native";
-//import { COLORS } from '../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
+
 
 interface ProgressBarProps {
   title: string;
-  progress: number; // Valeur entre 0 et 100
+  progress: number; // between 0 and 100
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ title, progress }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{title}</Text>
@@ -26,9 +29,10 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ title, progress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: "#5d8bb3", // Même bleu que la carte météo
+    backgroundColor: colors.primary, 
     borderRadius: 12,
     padding: 15,
     margin: 10,
@@ -37,10 +41,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    height: 110,
   },
   cardTitle: {
     fontSize: 18,
-    color: "#fff",
+    color: colors.primaryText,
     fontWeight: "500",
     marginBottom: 15,
     textAlign: "center",
@@ -51,22 +56,22 @@ const styles = StyleSheet.create({
   progressBackground: {
     width: "100%",
     height: 20,
-    backgroundColor: "#bdbdbd", // Gris clair pour l'arrière-plan
+    backgroundColor: colors.secondary,
     borderRadius: 10,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#2196f3", // Bleu pour la barre de progression
+    backgroundColor: "#2B86EE",
     borderRadius: 10,
   },
   percentageBubble: {
-    backgroundColor: "#5d8bb3", // Même couleur que la carte
+    backgroundColor: colors.primaryDarker,
     borderRadius: 15,
     paddingHorizontal: 10,
     paddingVertical: 5,
     position: "absolute",
-    bottom: -15,
+    bottom: -18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,

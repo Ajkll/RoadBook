@@ -1,22 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { useTheme, ThemeColors } from '../constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import Header from '../components/layout/Header';
 import WeatherCard from '../components/ui/WeatherCard';
 import ProgressBar from '../components/ui/ProgressBar';
 
-export default function HomeScreen() {
-  const navigation = useNavigation();
+const { width } = Dimensions.get('window');
 
-  const openDrawer = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  };
+export default function HomeScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left']}>
-      <Header title="RoadBook Tracker" onMenuPress={openDrawer} />
-
       <ScrollView style={styles.content}>
         <Text style={styles.welcomeTitle}>Bienvenue</Text>
 
@@ -33,22 +29,25 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#333333',
-  },
-  content: {
-    flex: 1,
-  },
-  welcomeTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#bdbdbd',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  bottomSpacer: {
-    height: 70,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background, 
+      alignItems: 'center',
+    },
+    content: {
+      width: width * 0.94,
+      flex: 1,
+    },
+    welcomeTitle: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: colors.backgroundTextSoft, 
+      textAlign: 'center',
+      marginVertical: 20,
+    },
+    bottomSpacer: {
+      height: 70,
+    },
+  });
