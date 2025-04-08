@@ -15,7 +15,8 @@ const prisma_1 = __importDefault(require("./config/prisma"));
 dotenv_1.default.config();
 // Initialize Express app
 const app = (0, express_1.default)();
-const PORT = Number(process.env.PORT || 4000);
+// Use a different port (4000 is already in use)
+const PORT = Number(process.env.PORT || 4002);
 // Security middleware
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
