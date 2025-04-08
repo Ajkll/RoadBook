@@ -1,58 +1,47 @@
+version: '3.8'
+
 services:
-  # Base de données principale (développement)
   postgres:
     image: postgres:14
+    container_name: postgres
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=roadbook
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
       timeout: 5s
       retries: 5
+    command: ["postgres", "-c", "log_statement=all"]
 
-  # Base de données pour les tests
-  postgres_test:
-    image: postgres:14
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}_test
-    ports:
-      - "5433:5432"  # Port différent pour éviter les conflits
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}_test"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Serveur backend
   server:
     build:
       context: .
       dockerfile: Dockerfile.server
+    container_name: server
     ports:
       - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-      - TEST_DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres_test:5432/${DB_NAME}_test
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/roadbook
+      - JWT_SECRET=your-very-secure-jwt-secret-for-development
+      - JWT_REFRESH_SECRET=your-very-secure-refresh-token-secret-for-development
       - PORT=4000
-      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=development
+      - CORS_ORIGINS=http://localhost:19000,http://localhost:19006,http://localhost:3000,exp://localhost:19000,https://haep9vw-anonymous-8081.exp.direct,https://*.exp.direct,exp://*-*.exp.direct,exp://*
     volumes:
-      - ./src:/app/src
-      - /src/node_modules
+      - ./:/app
+      - /app/node_modules
+    restart: always
 
 volumes:
   postgres_data:
-  postgres_test_data:
+    name: roadbook-postgres-data

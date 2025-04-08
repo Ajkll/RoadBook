@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,11 +17,11 @@ import { validateEmail, validatePassword } from '../utils/validation';
 
 export default function LoginScreen() {
   // Utiliser notre hook personnalisé pour accéder au contexte d'authentification
-  const { login, isLoading, error, isAuthenticated, clearError } = useAuth();
+  const { login, isLoading, error, clearError } = useAuth();
 
-  // État local pour les champs du formulaire
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // État local pour les champs du formulaire - pré-rempli avec notre test DB user
+  const [email, setEmail] = useState('test@example.com');
+  const [password, setPassword] = useState('Password123!');
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
@@ -55,13 +54,31 @@ export default function LoginScreen() {
     if (!validateForm()) return;
 
     try {
-      // Appeler la fonction login du contexte d'authentification
-      await login({ email, password });
-      // La redirection est gérée dans la fonction login du contexte
+      console.log('⭐ LOGIN FORM SUBMIT - Values:', { email, password: '***HIDDEN***' });
+
+      // Ensure we have valid form data before submitting
+      if (!email.trim() || !password.trim()) {
+        console.error('Form validation passed but values are empty!');
+        setValidationErrors({
+          email: !email.trim() ? 'Email cannot be empty' : undefined,
+          password: !password.trim() ? 'Password cannot be empty' : undefined,
+        });
+        return;
+      }
+
+      // Construct credentials object explicitly
+      const credentials = {
+        email: email.trim(),
+        password: password.trim(),
+      };
+
+      // Call login function from AuthContext
+      await login(credentials);
+
+      // Redirection is handled in the login function in AuthContext
     } catch (err) {
-      // Les erreurs sont déjà gérées par le contexte, mais on peut ajouter
-      // des traitements spécifiques ici si nécessaire
-      console.error('Erreur supplémentaire lors de la connexion:', err);
+      // Errors are already handled by the context
+      console.error('Extra login error handling:', err);
     }
   };
 
@@ -119,6 +136,17 @@ export default function LoginScreen() {
               <Text style={styles.buttonText}>Se connecter</Text>
             )}
           </TouchableOpacity>
+
+          {/* Information sur le compte de démonstration */}
+          <View style={styles.demoInfoContainer}>
+            <Text style={styles.demoInfoText}>
+              <Text style={{ fontWeight: 'bold' }}>UTILISATEUR DB: </Text>
+              test@example.com / Password123!
+            </Text>
+            <Text style={styles.demoInfoText}>
+              ✅ Ce compte est enregistré dans la base de données PostgreSQL, pas un mock!
+            </Text>
+          </View>
 
           {/* Lien vers l'inscription */}
           <View style={styles.linkContainer}>
@@ -187,6 +215,20 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     marginTop: 4,
     fontSize: 14,
+  },
+  demoInfoContainer: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: '#e0f2fe',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  demoInfoText: {
+    color: '#0369a1',
+    fontSize: 12,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   linkContainer: {
     flexDirection: 'row',

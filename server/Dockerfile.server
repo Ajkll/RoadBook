@@ -1,18 +1,19 @@
 FROM node:18-alpine
 
 # Install OpenSSL and other necessary packages
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat postgresql-client
 
 # Define work directory
 WORKDIR /app
-COPY . .
 
-# Copy package.json and install dependencies
+# Copy package.json and package-lock.json
 COPY package*.json ./
-RUN npm install
-RUN npm install bcrypt
-RUN npm run dev
+
+# Install dependencies
+RUN npm ci
+
 # Copy the rest of the application
+COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -20,5 +21,57 @@ RUN npx prisma generate
 # Expose the port the app runs on
 EXPOSE 4000
 
-# Command to run the application with proper debugging
-CMD ["npm", "run", "dev"]
+# Create a script to wait for the database and then start the application
+RUN echo '#!/bin/sh \n\
+echo "Waiting for PostgreSQL..." \n\
+while ! pg_isready -h postgres -p 5432 -U postgres; do \n\
+  sleep 1 \n\
+done \n\
+echo "PostgreSQL started" \n\
+\n\
+echo "Running migrations..." \n\
+npx prisma migrate deploy \n\
+\n\
+echo "Creating test users..." \n\
+node -e "const { PrismaClient } = require('\''@prisma/client'\''); \n\
+const bcrypt = require('\''bcrypt'\''); \n\
+\n\
+const prisma = new PrismaClient(); \n\
+\n\
+async function seed() { \n\
+  console.log('\''Starting database seed...'\''); \n\
+  const passwordHash = await bcrypt.hash('\''Password123!'\'', 10); \n\
+  const users = [ \n\
+    { email: '\''user@roadbook.com'\'', passwordHash, displayName: '\''Demo User'\'', firstName: '\''Demo'\'', lastName: '\''User'\'', role: '\''APPRENTICE'\'' }, \n\
+    { email: '\''guide@roadbook.com'\'', passwordHash, displayName: '\''Demo Guide'\'', firstName: '\''Guide'\'', lastName: '\''Demo'\'', role: '\''GUIDE'\'' }, \n\
+    { email: '\''admin@roadbook.com'\'', passwordHash, displayName: '\''Admin'\'', firstName: '\''Admin'\'', lastName: '\''User'\'', role: '\''ADMIN'\'' } \n\
+  ]; \n\
+  for (const userData of users) { \n\
+    try { \n\
+      const existingUser = await prisma.user.findUnique({ where: { email: userData.email } }); \n\
+      if (!existingUser) { \n\
+        await prisma.user.create({ data: userData }); \n\
+        console.log('\''Created user: '\'' + userData.email); \n\
+      } else { \n\
+        console.log('\''User already exists: '\'' + userData.email); \n\
+      } \n\
+    } catch (error) { \n\
+      console.error('\''Error creating user: '\'' + userData.email, error); \n\
+    } \n\
+  } \n\
+  await prisma.$disconnect(); \n\
+} \n\
+\n\
+seed().catch(e => { \n\
+  console.error('\''Seed error:'\'', e); \n\
+  process.exit(1); \n\
+});" \n\
+\n\
+echo "Starting application..." \n\
+npm run dev \n\
+' > /app/start.sh
+
+RUN chmod +x /app/start.sh
+
+# Command to run the application
+CMD ["/app/start.sh"]

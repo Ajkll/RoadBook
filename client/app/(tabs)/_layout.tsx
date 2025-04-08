@@ -20,6 +20,13 @@ export default function TabsLayout() {
       <Tabs.Screen name="start-drive" options={{ title: 'Démarrer' }} />
       <Tabs.Screen name="my-routes" options={{ title: 'Mes trajets' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
+      <Tabs.Screen
+        name="api-test"
+        options={{
+          title: 'API Test',
+          headerShown: true, // Show header for this screen
+        }}
+      />
     </Tabs>
   );
 }

@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
@@ -21,15 +22,16 @@ import {
   validateNationalRegisterNumber,
 } from '../utils/validation';
 import { UserRole } from '../types/auth.types';
+import apiClient from '../services/api/client';
 
 export default function RegisterScreen() {
   const { register, isLoading, error, clearError } = useAuth();
 
-  // Champs obligatoires
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  // Champs obligatoires - pré-remplis pour faciliter les tests
+  const [email, setEmail] = useState('new_test@example.com');
+  const [password, setPassword] = useState('Password123!');
+  const [confirmPassword, setConfirmPassword] = useState('Password123!');
+  const [displayName, setDisplayName] = useState('New Test User');
 
   // Champs optionnels
   const [firstName, setFirstName] = useState('');
@@ -42,6 +44,35 @@ export default function RegisterScreen() {
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [isGuide, setIsGuide] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>(
+    'unknown'
+  );
+
+  // Vérifie la connectivité au démarrage
+  useEffect(() => {
+    testConnection();
+  }, []);
+
+  // Test de connexion avec le serveur
+  const testConnection = async () => {
+    try {
+      setConnectionStatus('unknown');
+      console.log('Testing connection to server...');
+      const response = await apiClient.get('/health');
+      console.log('Connection successful:', response.data);
+      setConnectionStatus('connected');
+      return true;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      setConnectionStatus('error');
+      Alert.alert(
+        'Problème de connexion',
+        'Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.',
+        [{ text: 'Réessayer', onPress: testConnection }]
+      );
+      return false;
+    }
+  };
 
   // Mise à jour du rôle quand le switch change
   useEffect(() => {
@@ -86,27 +117,58 @@ export default function RegisterScreen() {
 
   // Soumission du formulaire
   const handleRegister = async () => {
-    if (!validateForm()) return;
-
     try {
-      // Préparer les données d'inscription
+      // Vérifier d'abord la connexion
+      const isConnected = await testConnection();
+      if (!isConnected) {
+        Alert.alert(
+          'Problème de connexion',
+          'Impossible de se connecter au serveur. Veuillez vérifier votre connexion et réessayer.'
+        );
+        return;
+      }
+
+      // Valider le formulaire
+      if (!validateForm()) {
+        Alert.alert(
+          'Formulaire incomplet',
+          'Veuillez corriger les erreurs dans le formulaire avant de continuer.'
+        );
+        return;
+      }
+
+      console.log('==== FORM SUBMISSION ====');
+      console.log('Preparing registration data:');
+
+      // Données d'inscription complètes
       const registerData = {
-        email,
-        password,
-        displayName,
-        role,
-        // Inclure les champs optionnels seulement s'ils sont remplis
-        ...(firstName ? { firstName } : {}),
-        ...(lastName ? { lastName } : {}),
-        ...(phoneNumber ? { phoneNumber } : {}),
-        ...(nationalRegisterNumber ? { nationalRegisterNumber } : {}),
+        email: email.trim(),
+        password: password.trim(),
+        displayName: displayName.trim(),
+        role: role,
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        phoneNumber: phoneNumber.trim() || undefined,
+        nationalRegisterNumber: nationalRegisterNumber.trim() || undefined,
       };
 
-      // Appeler l'API d'inscription
-      await register(registerData);
-      // La redirection est gérée dans la fonction register du contexte
+      console.log('Registration data prepared:', {
+        ...registerData,
+        password: '***HIDDEN***',
+      });
+
+      console.log('Calling register API...');
+      const response = await register(registerData);
+      console.log('Register API response received');
+      return response;
+
+      // La redirection est gérée dans la fonction register d'AuthContext
     } catch (err) {
       console.error("Erreur d'inscription:", err);
+      Alert.alert(
+        "Erreur d'inscription",
+        err.message || "L'inscription a échoué. Veuillez réessayer."
+      );
     }
   };
 
@@ -117,6 +179,28 @@ export default function RegisterScreen() {
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>Créer un compte</Text>
+
+        {/* Connection status */}
+        {connectionStatus === 'connected' && (
+          <View style={styles.connectedContainer}>
+            <Text style={styles.connectedText}>✅ Connecté au serveur</Text>
+          </View>
+        )}
+        {connectionStatus === 'error' && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ Pas de connexion au serveur</Text>
+            <TouchableOpacity onPress={testConnection}>
+              <Text style={styles.retryText}>Réessayer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Test info */}
+        <View style={styles.testInfoContainer}>
+          <Text style={styles.testInfoText}>
+            ⚠️ Compte test pré-rempli! Ce compte sera créé dans la base de données.
+          </Text>
+        </View>
 
         {/* Afficher l'erreur globale s'il y en a une */}
         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -291,6 +375,51 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
     paddingBottom: 40,
+  },
+  testInfoContainer: {
+    backgroundColor: '#fff8e1',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffcc80',
+    marginBottom: 16,
+  },
+  testInfoText: {
+    color: '#e65100',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  connectedContainer: {
+    backgroundColor: '#e6f4ea',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#a8dab5',
+    marginBottom: 16,
+  },
+  connectedText: {
+    color: '#1e8e3e',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    backgroundColor: '#fce8e8',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f8c9c9',
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  retryText: {
+    color: '#0366d6',
+    fontSize: 14,
+    fontWeight: '500',
   },
   title: {
     fontSize: 28,

@@ -37,18 +37,16 @@ export const resetDatabase = async () => {
   await prisma.$executeRaw`SET session_replication_role = 'origin';`;
 };
 
-// Configuration globale avant tous les tests
-beforeAll(async () => {
+// Configure Jest hooks
+export const setupBeforeAll = async () => {
   // S'assure que nous utilisons la base de données de test
   process.env.NODE_ENV = "test";
-});
+};
 
-// Nettoyage avant chaque test
-beforeEach(async () => {
+export const setupBeforeEach = async () => {
   await resetDatabase();
-});
+};
 
-// Fermeture de la connexion après tous les tests
-afterAll(async () => {
+export const teardownAfterAll = async () => {
   await prisma.$disconnect();
-});
+};

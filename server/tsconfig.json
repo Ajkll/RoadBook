@@ -11,6 +11,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "prisma"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"] // Combine both exclude patterns
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "prisma"] // Exclude prisma from build
 }

@@ -1,5 +1,5 @@
 // client/app/services/api/auth.api.ts
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Platform } from 'react-native';
 import {
   LoginRequest,
@@ -12,16 +12,37 @@ import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureSto
 
 // Environment-specific API URL configuration
 const getDevelopmentApiUrl = () => {
-  // Android emulator needs to use 10.0.2.2 to reach localhost
+  // Using direct IP address instead of localhost
+  const SERVER_IP = '127.0.0.1';
+  const SERVER_PORT = '4000';
+  const TUNNEL_URL = `http://${SERVER_IP}:${SERVER_PORT}/api`;
+
+  // When running on a physical device with Expo Go, we need to use a tunneled URL
+  // This could be ngrok, localtunnel, or other service that exposes your localhost
+  if (Platform.OS === 'android' || Platform.OS === 'ios') {
+    // Check if this is a simulator/emulator or a physical device
+    // In a real device through Expo Go, we need to use the tunnel URL
+    const isDevice = !(__DEV__ && !process.env.EXPO_PUBLIC_USE_PHYSICAL_DEVICE);
+
+    if (isDevice) {
+      // On a physical device, use tunnel URL
+      console.log('🔄 AUTH API: Using tunnel URL for physical device:', TUNNEL_URL);
+      return TUNNEL_URL;
+    }
+  }
+
+  // For emulators and simulators
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:4000/api';
+    console.log('🔄 AUTH API: Using Android emulator URL: http://10.0.2.2:4000/api');
+    return 'http://10.0.2.2:4000/api'; // Special IP for Android emulator
+  } else if (Platform.OS === 'ios') {
+    console.log('🔄 AUTH API: Using iOS simulator URL: http://127.0.0.1:4000/api');
+    return 'http://127.0.0.1:4000/api'; // For iOS simulator
   }
-  // iOS simulator can use localhost
-  else if (Platform.OS === 'ios') {
-    return 'http://localhost:4000/api';
-  }
+
   // Web version
-  return 'http://localhost:4000/api';
+  console.log('🔄 AUTH API: Using web URL: http://127.0.0.1:4000/api');
+  return 'http://127.0.0.1:4000/api';
 };
 
 // Configuration API URL
@@ -31,7 +52,7 @@ const API_URL = __DEV__ ? getDevelopmentApiUrl() : 'https://your-production-api.
 const DEBUG = true;
 
 // Utility for logging important information during development
-const logDebug = (message: string, data?: any) => {
+const logDebug = (message: string, data?: unknown) => {
   if (DEBUG) {
     if (data) {
       console.log(`🔹 AUTH API: ${message}`, data);
@@ -42,7 +63,7 @@ const logDebug = (message: string, data?: any) => {
 };
 
 // Utility for logging errors
-const logError = (message: string, error: any) => {
+const logError = (message: string, error: unknown) => {
   console.error(`❌ AUTH API ERROR: ${message}`, error);
 
   // Extract and log additional error details if available
@@ -71,7 +92,7 @@ const logError = (message: string, error: any) => {
         const sanitizedData = { ...configData };
         if (sanitizedData.password) sanitizedData.password = '******';
         console.error('- Request Data (sanitized):', sanitizedData);
-      } catch (e) {
+      } catch {
         console.error('- Request Data: [Could not parse]');
       }
     }
@@ -123,7 +144,7 @@ apiClient.interceptors.request.use(
         // Sanitize sensitive information
         if (requestData.password) requestData.password = '******';
         logDebug('Request payload (sanitized):', requestData);
-      } catch (e) {
+      } catch {
         logDebug('Request payload: [Could not stringify]');
       }
     }
@@ -250,45 +271,34 @@ apiClient.interceptors.response.use(
 // Enhanced API methods with comprehensive logging
 export const authApi = {
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    logDebug('Starting registration process', { email: data.email, displayName: data.displayName });
+    console.log('Sending registration data to server:', data);
 
     try {
-      const connectionInfo = `API URL: ${API_URL}`;
-      logDebug(`Registration endpoint connection info: ${connectionInfo}`);
-
-      const startTime = Date.now();
-      const response = await apiClient.post<AuthResponse>('/users', data);
-      const duration = Date.now() - startTime;
-
-      logDebug(`Registration completed successfully in ${duration}ms`, {
-        userId: response.data.user.id,
-        role: response.data.user.role,
-        tokenReceived: !!response.data.accessToken,
+      // Improved error logging
+      logDebug('Registration attempt with data', {
+        email: data.email,
+        displayName: data.displayName,
+        role: data.role,
       });
 
-      // Store authentication data securely
-      await saveAuthData(response.data.accessToken, response.data.refreshToken, response.data.user);
+      // Send to user API endpoints as that's what the server expects
+      // Try both /users and /auth/register endpoints in case one fails
+      try {
+        // First try /users endpoint
+        const response = await apiClient.post<AuthResponse>('/users', data);
+        logDebug('Server response for registration:', response.data);
+        return response.data;
+      } catch (firstError) {
+        logError('First registration attempt failed, trying alternate endpoint', firstError);
 
-      logDebug('Authentication data stored securely');
-      return response.data;
-    } catch (error: any) {
-      logError('Registration failed', error);
-
-      // Enhance error with user-friendly message based on error type
-      if (
-        error.response?.status === 409 ||
-        (error.response?.data?.error && error.response.data.error.includes('exists'))
-      ) {
-        throw new Error('Un compte avec cet email existe déjà.');
-      } else if (error.response?.status === 400) {
-        throw new Error("Données d'inscription invalides. Veuillez vérifier vos informations.");
-      } else if (error.isNetworkError) {
-        throw new Error(
-          'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
-        );
-      } else {
-        throw new Error("L'inscription a échoué. Veuillez réessayer plus tard.");
+        // Fallback to /auth/register endpoint
+        const response = await apiClient.post<AuthResponse>('/auth/register', data);
+        logDebug('Server response for registration (fallback endpoint):', response.data);
+        return response.data;
       }
+    } catch (error) {
+      logError('Registration failed after all attempts', error);
+      throw error;
     }
   },
 
@@ -321,7 +331,7 @@ export const authApi = {
 
       logDebug('Authentication data stored securely');
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       logError('Login failed', error);
 
       // Provide specific error messages based on the server response
@@ -428,7 +438,7 @@ export const authApi = {
   },
 
   // Add a network diagnostic method to help with troubleshooting
-  testConnection: async (): Promise<{ status: string; details: any }> => {
+  testConnection: async (): Promise<{ status: string; details: Record<string, unknown> }> => {
     logDebug('Running API connection test');
 
     try {
