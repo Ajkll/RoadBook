@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './constants/theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { Provider } from 'react-redux';
+import store from './store/store';
 
 // Composant qui décide quel navigateur afficher en fonction de l'état d'authentification
 function RootNavigator() {
@@ -193,11 +195,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <RootNavigator />
-          </AuthProvider>
-        </ThemeProvider>
+        <Provider store={store}>
+          <ThemeProvider>
+            <AuthProvider>
+              <RootNavigator />
+            </AuthProvider>
+          </ThemeProvider>
+        </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

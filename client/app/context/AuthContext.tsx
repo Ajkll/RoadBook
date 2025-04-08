@@ -1,6 +1,5 @@
 // client/app/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { router } from 'expo-router';
 import { User, LoginRequest, RegisterRequest } from '../types/auth.types';
 import { authApi } from '../services/api/auth.api';
 import {
@@ -101,8 +100,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Mettre à jour l'état d'authentification
       setUser(response.user);
 
-      // Rediriger vers l'application principale
-      router.replace('/(tabs)');
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
 
       return response;
     } catch (err) {
@@ -138,8 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Mettre à jour l'état d'authentification
       setUser(response.user);
 
-      // Rediriger vers l'application principale après inscription réussie
-      router.replace('/(tabs)');
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
 
       return response;
     } catch (err) {
@@ -196,12 +195,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Resetting user state');
       setUser(null);
 
-      // Use setTimeout to avoid navigation issues
-      // The setTimeout helps prevent issues with state updates conflicting with navigation
-      console.log('Redirecting to login screen');
-      setTimeout(() => {
-        router.navigate('/auth/login');
-      }, 100);
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
     } catch (err) {
       console.error('==== LOGOUT ERROR ====', err);
 
@@ -214,10 +209,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(null);
 
-      // Use setTimeout for more reliable navigation
-      setTimeout(() => {
-        router.navigate('/auth/login');
-      }, 100);
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
     } finally {
       setIsLoading(false);
     }
