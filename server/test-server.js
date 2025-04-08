@@ -33,7 +33,14 @@ app.use(cors({
   origin: true, // Autorise toutes les origines
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'X-Client-Platform',
+    'X-Client-Version',
+    'Accept'
+  ]
 }));
 
 // Logging middleware pour voir les requêtes
