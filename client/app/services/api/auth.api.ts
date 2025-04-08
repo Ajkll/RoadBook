@@ -14,7 +14,7 @@ import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureSto
 const getDevelopmentApiUrl = () => {
   // Using direct IP address instead of localhost
   const SERVER_IP = '127.0.0.1';
-  const SERVER_PORT = '4000';
+  const SERVER_PORT = '4001';
   const TUNNEL_URL = `http://${SERVER_IP}:${SERVER_PORT}/api`;
 
   // When running on a physical device with Expo Go, we need to use a tunneled URL
@@ -33,16 +33,16 @@ const getDevelopmentApiUrl = () => {
 
   // For emulators and simulators
   if (Platform.OS === 'android') {
-    console.log('🔄 AUTH API: Using Android emulator URL: http://10.0.2.2:4000/api');
-    return 'http://10.0.2.2:4000/api'; // Special IP for Android emulator
+    console.log('🔄 AUTH API: Using Android emulator URL: http://10.0.2.2:4001/api');
+    return 'http://10.0.2.2:4001/api'; // Special IP for Android emulator
   } else if (Platform.OS === 'ios') {
-    console.log('🔄 AUTH API: Using iOS simulator URL: http://127.0.0.1:4000/api');
-    return 'http://127.0.0.1:4000/api'; // For iOS simulator
+    console.log('🔄 AUTH API: Using iOS simulator URL: http://127.0.0.1:4001/api');
+    return 'http://127.0.0.1:4001/api'; // For iOS simulator
   }
 
   // Web version
-  console.log('🔄 AUTH API: Using web URL: http://127.0.0.1:4000/api');
-  return 'http://127.0.0.1:4000/api';
+  console.log('🔄 AUTH API: Using web URL: http://127.0.0.1:4001/api');
+  return 'http://127.0.0.1:4001/api';
 };
 
 // Configuration API URL

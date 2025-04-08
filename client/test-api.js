@@ -53,7 +53,7 @@ const testAPI = async (apiUrl) => {
 if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   // Default test URL from environment or use localhost
   // eslint-disable-next-line no-undef
-  const API_URL = process.env.API_URL || 'http://localhost:4000/api';
+  const API_URL = process.env.API_URL || 'http://localhost:4001/api';
   testAPI(API_URL);
 }
 

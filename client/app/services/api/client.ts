@@ -6,17 +6,17 @@ import { getItem, STORAGE_KEYS } from '../secureStorage';
 // Configure API URL based on environment
 const getApiUrl = () => {
   // Simplified approach using localhost (works for web)
-  let baseUrl = 'http://localhost:4000/api';
+  let baseUrl = 'http://localhost:4001/api';
 
   // For mobile devices
   if (Platform.OS === 'android') {
     // Special IP for Android emulator to access host
     console.log('Using Android special IP');
-    baseUrl = 'http://10.0.2.2:4000/api';
+    baseUrl = 'http://10.0.2.2:4001/api';
   } else if (Platform.OS === 'ios') {
     // iOS simulator can use localhost
     console.log('Using iOS localhost');
-    baseUrl = 'http://localhost:4000/api';
+    baseUrl = 'http://localhost:4001/api';
   }
 
   console.log(`🔄 CLIENT: Using API URL: ${baseUrl}`);
