@@ -1,16 +1,62 @@
-// app/_layout.tsx (complete)
+// client/app/_layout.tsx
 import React from 'react';
 import { Drawer } from 'expo-router/drawer';
-import { Platform } from 'react-native';
+import { Platform, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Stack } from 'expo-router';
 import CustomDrawerContent from './components/layout/CustomDrawerContent';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './constants/theme';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Provider } from 'react-redux';
+import store from './store/store';
 
-function DrawerNavigator() {
+// Composant qui décide quel navigateur afficher en fonction de l'état d'authentification
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
   const { colors, dark } = useTheme();
 
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Si l'utilisateur n'est pas connecté, montre le navigateur de connexion
+  if (!isAuthenticated) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen
+          name="auth/login"
+          options={{
+            headerShown: true,
+            title: 'Connexion',
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerTintColor: colors.text,
+          }}
+        />
+        <Stack.Screen
+          name="auth/register"
+          options={{
+            headerShown: true,
+            title: 'Inscription',
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerTintColor: colors.text,
+          }}
+        />
+      </Stack>
+    );
+  }
+
+  // Si l'utilisateur est connecté, montre le tiroir de navigation
   return (
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
@@ -149,9 +195,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <DrawerNavigator />
-        </ThemeProvider>
+        <Provider store={store}>
+          <ThemeProvider>
+            <AuthProvider>
+              <RootNavigator />
+            </AuthProvider>
+          </ThemeProvider>
+        </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

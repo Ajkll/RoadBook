@@ -1,117 +1,116 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import dotenv from "dotenv";
+import routes from "./api/routes";
+import { errorHandler, notFoundHandler } from "./middleware/errors.middleware";
 import prisma from "./config/prisma";
 
-const app = express();
-const PORT = Number(process.env.PORT || 4000);
+// Load environment variables
+dotenv.config();
 
-// Middleware
-app.use(cors());
+// Initialize Express app
+const app = express();
+// Use a different port (4000 is already in use)
+const PORT = Number(process.env.PORT || 4002);
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+}));
+
+// Get allowed origins from environment variable or use defaults
+const corsOrigins = process.env.CORS_ORIGINS ? 
+  process.env.CORS_ORIGINS.split(',') : 
+  [
+    "http://localhost:19000", 
+    "http://localhost:19006", 
+    "http://localhost:3000", 
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "exp://localhost:19000",
+  ];
+
+// CORS configuration
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    if (corsOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.log(`Origin ${origin} not allowed by CORS`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'X-Client-Platform',
+    'X-Client-Version',
+    'Accept'
+  ]
+}));
+
+// Basic middleware
+app.use(cookieParser());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the public directory
+app.use(express.static('public'));
+
+// Request logging middleware in development
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+}
+
+// API Routes
+app.use("/api", routes);
 
 // Test route
-app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "RoadBook API is running" });
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "RoadBook API is running",
+    version: "1.0.0",
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Simple user registration route
-app.post("/api/users", async (req: Request, res: Response) => {
+// Error handling middleware
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Database connection check and server startup
+async function startServer() {
   try {
-    const { email, password, displayName } = req.body;
-
-    // Validation
-    if (!email || !password || !displayName) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
-    }
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash: password, // Note: In production, you should hash the password
-        displayName,
-        role: "APPRENTICE",
-      },
-    });
-
-    // Remove passwordHash from response
-    const { passwordHash, ...userWithoutPassword } = user;
-
-    res.status(201).json(userWithoutPassword);
-  } catch (error) {
-    console.error("Error creating user:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Login route - RESTORED FROM WORKING VERSION
-app.post("/api/auth/login", async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    // In a real app, you would hash passwords and compare them securely
-    // This is a simplified version for the prototype
-    if (user.passwordHash !== password) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    // Remove passwordHash from response
-    const { passwordHash, ...userWithoutPassword } = user;
-
-    // Send success response
-    res.status(200).json({
-      message: "Login successful",
-      user: userWithoutPassword,
-    });
-  } catch (error) {
-    console.error("Error during login:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Async startup function to ensure proper initialization sequence
-async function start() {
-  try {
-    // Connect to Prisma before starting the server
+    // Connect to database
     await prisma.$connect();
-    console.log("Successfully connected to database");
+    console.log('Connected to database');
 
-    // Start the server - explicitly bind to all interfaces
-    app
-      .listen(PORT, "0.0.0.0", () => {
-        console.log(`Server running on port ${PORT}`);
-      })
-      .on("error", (err: Error) => {
-        console.error("Error starting server:", err);
-      });
+    // Start server
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`API URL: http://localhost:${PORT}/api`);
+    });
   } catch (error) {
-    console.error("Failed to start the server:", error);
+    console.error('Server startup failed:', error);
     process.exit(1);
   }
 }
 
 // Start the server
-start();
+startServer().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});

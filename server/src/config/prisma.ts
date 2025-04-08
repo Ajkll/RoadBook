@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 // Determine database URL based on environment
 const getDatabaseUrl = () => {
@@ -15,6 +15,9 @@ const prisma = new PrismaClient({
       url: getDatabaseUrl(),
     },
   },
+  log: process.env.NODE_ENV === "development" 
+    ? ['query', 'info', 'warn', 'error']
+    : ['error'],
 });
 
 export default prisma;

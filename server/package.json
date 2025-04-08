@@ -10,24 +10,30 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch --runInBand",
     "migrate:dev": "prisma migrate dev",
-    "migrate:test": "NODE_ENV=test prisma migrate dev",
-    "migrate:all": "ts-node src/config/migration.ts",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:reset": "docker-compose down -v && docker-compose up -d",
+    "migrate:deploy": "prisma migrate deploy",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio",
+    "seed": "ts-node prisma/seeds/seed.ts",
+    "test:api": "npm run build && node test-server.js",
+    "test:simple": "./launch-test-simple.sh"
+  },
+  "prisma": {
     "seed": "ts-node prisma/seeds/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
+    "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "helmet": "^6.1.5",
     "jsonwebtoken": "^9.0.2",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",

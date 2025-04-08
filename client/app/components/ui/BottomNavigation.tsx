@@ -75,6 +75,14 @@ const BottomNavigation = () => {
           Profile
         </Text>
       </TouchableOpacity>
+
+      {/* API Test Tab (hidden in UI but accessible) */}
+      {isActive('/(tabs)/api-test') && (
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
+          <Ionicons name="bug" size={24} color={colors.primary} />
+          <Text style={[styles.navText, { color: colors.primary }]}>API Test</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
