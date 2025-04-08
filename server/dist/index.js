@@ -28,6 +28,7 @@ const corsOrigins = process.env.CORS_ORIGINS ?
         "http://localhost:19006",
         "http://localhost:3000",
         "http://localhost:8081",
+        "http://127.0.0.1:8081",
         "exp://localhost:19000",
     ];
 // CORS configuration
@@ -45,7 +46,16 @@ app.use((0, cors_1.default)({
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'X-Client-Platform',
+        'X-Client-Version',
+        'Accept'
+    ]
 }));
 // Basic middleware
 app.use((0, cookie_parser_1.default)());

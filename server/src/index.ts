@@ -12,7 +12,8 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const PORT = Number(process.env.PORT || 4000);
+// Use a different port (4000 is already in use)
+const PORT = Number(process.env.PORT || 4002);
 
 // Security middleware
 app.use(helmet({
