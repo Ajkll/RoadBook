@@ -1,50 +1,117 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import routes from './api/routes';
-import { errorMiddleware } from './middleware/error.middleware';
-import logger from './utils/logger';
+import express, { Request, Response } from "express";
+import cors from "cors";
+import prisma from "./config/prisma";
 
-// Load environment variables
-dotenv.config();
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
-
-// Express app setup
 const app = express();
-const port = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT || 4000);
 
 // Middleware
 app.use(cors());
-app.use(helmet());
 app.use(express.json());
 
-// API routes
-app.use('/api', routes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+// Test route
+app.get("/", (req: Request, res: Response) => {
+  res.json({ message: "RoadBook API is running" });
 });
 
-// Error handling middleware
-app.use(errorMiddleware);
+// Simple user registration route
+app.post("/api/users", async (req: Request, res: Response) => {
+  try {
+    const { email, password, displayName } = req.body;
 
-// Start server
-const server = app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
+    // Validation
+    if (!email || !password || !displayName) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: password, // Note: In production, you should hash the password
+        displayName,
+        role: "APPRENTICE",
+      },
+    });
+
+    // Remove passwordHash from response
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    res.status(201).json(userWithoutPassword);
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  await prisma.$disconnect();
-  server.close(() => {
-    logger.info('HTTP server closed');
-  });
+// Login route - RESTORED FROM WORKING VERSION
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // In a real app, you would hash passwords and compare them securely
+    // This is a simplified version for the prototype
+    if (user.passwordHash !== password) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Remove passwordHash from response
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    // Send success response
+    res.status(200).json({
+      message: "Login successful",
+      user: userWithoutPassword,
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-export default app;
+// Async startup function to ensure proper initialization sequence
+async function start() {
+  try {
+    // Connect to Prisma before starting the server
+    await prisma.$connect();
+    console.log("Successfully connected to database");
+
+    // Start the server - explicitly bind to all interfaces
+    app
+      .listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on port ${PORT}`);
+      })
+      .on("error", (err: Error) => {
+        console.error("Error starting server:", err);
+      });
+  } catch (error) {
+    console.error("Failed to start the server:", error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+start();

@@ -1,0 +1,27 @@
+/**
+ * /server/api/routes
+ * 
+ * This directory contains all route definitions for your API endpoints.
+ * Routes map HTTP methods and URL paths to controller functions.
+ * 
+ * Best practices:
+ * - Organize routes by resource or domain (e.g., auth.routes.ts, roadbook.routes.ts)
+ * - Keep route files focused on defining routes, not implementing business logic
+ * - Use consistent naming patterns for endpoints
+ * - Include middleware in route definitions when needed
+ * 
+ * Example route file:
+ * ```typescript
+ * import express from 'express';
+ * import { login, register, logout } from '../controllers/auth.controller';
+ * import { validateLoginInput } from '../middleware/validation.middleware';
+ * 
+ * const router = express.Router();
+ * 
+ * router.post('/login', validateLoginInput, login);
+ * router.post('/register', register);
+ * router.post('/logout', logout);
+ * 
+ * export default router;
+ * ```
+ */

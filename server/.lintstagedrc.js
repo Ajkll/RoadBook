@@ -1,5 +1,5 @@
 /* eslint-env node */
-export default {
+module.exports = {
   "client/**/*.{js,jsx,ts,tsx}": (filenames) => {
     const files = filenames.map((f) => f.replace("client/", "")).join(" ");
     return [

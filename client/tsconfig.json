@@ -4,16 +4,16 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["*"],
-      "@/components/*": ["src/components/*"],
-      "@/screens/*": ["src/screens/*"],
-      "@/services/*": ["src/services/*"]
+      "@/components/*": ["app/components/*"],
+      "@/screens/*": ["app/screens/*"],
+      "@/services/*": ["app/services/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "app/(tabs)/index.tsx.backup"],
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["app/*"]
     }
   }
 }

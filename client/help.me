@@ -1,0 +1,25 @@
+/**
+ * Root Level App Files
+ * 
+ * index.tsx: The entry point of your application
+ * 
+ * For Expo Router:
+ * - The root component should be exported as default
+ * - It typically sets up providers (Redux, theme, etc.)
+ * - It may initialize services or load resources
+ * 
+ * Example structure of index.tsx:
+ * ```tsx
+ * import { Provider } from 'react-redux';
+ * import { store } from './store/store';
+ * import AppNavigator from './navigation/AppNavigator';
+ * 
+ * export default function App() {
+ *   return (
+ *     <Provider store={store}>
+ *       <AppNavigator />
+ *     </Provider>
+ *   );
+ * }
+ * ```
+ */

@@ -1,7 +1,7 @@
 {
   "name": "roadbook",
   "version": "1.0.0",
-  "description": "RoadBook 360 - Plateforme numérique pour l'apprentissage de la conduite",
+  "description": "RoadBook - Plateforme numérique pour l'apprentissage de la conduite",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -23,23 +23,19 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^9.22.0",
     "concurrently": "^7.6.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react": "^7.37.4",
+    "globals": "^16.0.0",
     "husky": "^8.0.0",
-    "lint-staged": "^13.3.0"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged --no-stash --verbose --concurrent false"
-    }
+    "lint-staged": "^13.3.0",
+    "typescript-eslint": "^8.26.1"
   },
   "lint-staged": {
-    "client/**/*.{js,jsx,ts,tsx}": [
-      "cd client && npx eslint --fix",
-      "cd client && npx prettier --write"
-    ],
-    "server/**/*.{js,ts}": [
-      "cd server && npx eslint --fix",
-      "cd server && npx prettier --write"
+    "**/*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
     ]
   }
 }

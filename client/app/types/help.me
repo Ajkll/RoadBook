@@ -1,0 +1,33 @@
+/**
+ * /app/types
+ * 
+ * This directory contains TypeScript type definitions used throughout the app.
+ * 
+ * Types should be organized by domain:
+ * - auth.types.ts: Authentication-related types
+ * - roadbook.types.ts: Roadbook-related types
+ * - api.types.ts: API request/response types
+ * 
+ * Best practices:
+ * - Create interfaces for data structures
+ * - Use type aliases for complex types
+ * - Export types as named exports
+ * - Consider creating a default export with all types for compatibility
+ * 
+ * Example of type organization:
+ * ```typescript
+ * export interface User {
+ *   id: string;
+ *   name: string;
+ *   email: string;
+ * }
+ * 
+ * export type AuthState = {
+ *   user: User | null;
+ *   isLoading: boolean;
+ *   error: string | null;
+ * };
+ * 
+ * export default { User, AuthState };
+ * ```
+ */
