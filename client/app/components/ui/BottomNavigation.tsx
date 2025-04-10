@@ -5,7 +5,6 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../constants/theme';
 
-
 const BottomNavigation = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -28,7 +27,12 @@ const BottomNavigation = () => {
           size={24}
           color={isActive('') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('') ? colors.activeItem : colors.inactiveItem }]}>
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('') ? colors.activeItem : colors.inactiveItem },
+          ]}
+        >
           Accueil
         </Text>
       </TouchableOpacity>
@@ -39,13 +43,29 @@ const BottomNavigation = () => {
           size={24}
           color={isActive('explorer') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('explorer') ? colors.activeItem : colors.inactiveItem }]}>
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('explorer') ? colors.activeItem : colors.inactiveItem },
+          ]}
+        >
           Explorer
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.recordButton} onPress={() => router.push('/(tabs)/start-drive')}>
-        <View style={[styles.recordIcon, { backgroundColor: colors.background, borderColor: isActive('start-drive') ? colors.activeItem : colors.inactiveItem }]}>
+      <TouchableOpacity
+        style={styles.recordButton}
+        onPress={() => router.push('/(tabs)/start-drive')}
+      >
+        <View
+          style={[
+            styles.recordIcon,
+            {
+              backgroundColor: colors.background,
+              borderColor: isActive('start-drive') ? colors.activeItem : colors.inactiveItem,
+            },
+          ]}
+        >
           <MaterialIcons
             name={isActive('start-drive') ? 'square' : 'circle'}
             size={isActive('start-drive') ? 30 : 40}
@@ -54,13 +74,21 @@ const BottomNavigation = () => {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => router.push('/(tabs)/my-routes/stats')}
+      >
         <Ionicons
           name={isActive('my-routes') ? 'map' : 'map-outline'}
           size={24}
           color={isActive('my-routes') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('my-routes') ? colors.activeItem : colors.inactiveItem }]}>
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('my-routes') ? colors.activeItem : colors.inactiveItem },
+          ]}
+        >
           Mes trajets
         </Text>
       </TouchableOpacity>
@@ -71,7 +99,12 @@ const BottomNavigation = () => {
           size={24}
           color={isActive('profile') ? colors.activeItem : colors.inactiveItem}
         />
-        <Text style={[styles.navText, { color: isActive('profile') ? colors.activeItem : colors.inactiveItem }]}>
+        <Text
+          style={[
+            styles.navText,
+            { color: isActive('profile') ? colors.activeItem : colors.inactiveItem },
+          ]}
+        >
           Profile
         </Text>
       </TouchableOpacity>
@@ -79,7 +112,7 @@ const BottomNavigation = () => {
   );
 };
 
-const createStyles = (colors: ThemeColors, insets: any) =>
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
