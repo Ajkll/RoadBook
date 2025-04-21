@@ -62,14 +62,15 @@ export default function StartDriveScreen() {
 
   // detecter les bord en fonction de notre position
   const isPositionNearEdge = useCallback(() => {
-    if (!mapRef.current || !latitude || !longitude) {
+    if (!mapRef.current || !latitude || !longitude || userControllingMap) {
       return false;
     }
     const region = regionRef.current;
+    const edgeThreshold = 0.15; // 15% du bord
 
     // Calculer les limites de la carte
-    const latPadding = region.latitudeDelta * 0.2;
-    const lngPadding = region.longitudeDelta * 0.2;
+    const latPadding = region.latitudeDelta * edgeThreshold;
+    const lngPadding = region.longitudeDelta * edgeThreshold;
 
     const northBound = region.latitude + region.latitudeDelta / 2 - latPadding;
     const southBound = region.latitude - region.latitudeDelta / 2 + latPadding;
@@ -82,7 +83,7 @@ export default function StartDriveScreen() {
       longitude > eastBound ||
       longitude < westBound
     );
-  }, [latitude, longitude]);
+  }, [latitude, longitude, userControllingMap]);
 
   // reset du timer si l'user a pas interagit
   const resetAutoFollowTimer = useCallback(() => {
@@ -100,9 +101,9 @@ export default function StartDriveScreen() {
     }, AUTO_FOLLOW_DELAY);
   }, [userControllingMap]);
 
-  const updateRegion = useCallback((lat, long, delta = regionRef.current.latitudeDelta) => {
+  const updateRegion = useCallback((lat, long) => {
     const now = Date.now();
-    if (now - lastUpdateTimeRef.current < UPDATE_INTERVAL_MS) {
+    if (now - lastUpdateTimeRef.current < UPDATE_INTERVAL_MS || userControllingMap) {
       return;
     }
 
@@ -112,25 +113,13 @@ export default function StartDriveScreen() {
     const newRegion = {
       latitude: lat,
       longitude: long,
-      latitudeDelta: delta,
-      longitudeDelta: delta,
+      latitudeDelta: regionRef.current.latitudeDelta, // Garde le delta actuel
+      longitudeDelta: regionRef.current.longitudeDelta,
     };
 
     regionRef.current = newRegion;
-
-    //  Centre la carte si la position est proche du bord et que ça fait plus de 5 secondes sans interaction utilisateur
-    const shouldCenterMap =
-      !userControllingMap ||
-      (isPositionNearEdge() && (Date.now() - lastInteractionTimeRef.current > 5000));
-
-    if (shouldCenterMap) {
-      if (userControllingMap) {
-        console.log("proche du bord recentrage");
-        setUserControllingMap(false);
-      }
-      mapRef.current?.animateToRegion(newRegion, 500);
-    }
-  }, [userControllingMap, isPositionNearEdge]);
+    mapRef.current?.animateToRegion(newRegion, 500);
+  }, [userControllingMap]);
 
   useEffect(() => {
     if (latitude && longitude) {
@@ -176,28 +165,37 @@ export default function StartDriveScreen() {
 
   const handleZoom = useCallback((zoomIn) => {
     if (!mapRef.current) return;
+
     const currentRegion = regionRef.current;
-    const newDelta = zoomIn ? currentRegion.latitudeDelta / 2 : currentRegion.latitudeDelta * 2;
-    const clampedDelta = Math.min(Math.max(newDelta, 0.0005), 0.5);
+    const zoomFactor = zoomIn ? 0.5 : 2;
+
+    // Limites plus strictes pour le zoom
+    const minDelta = 0.0005;
+    const maxDelta = 0.5;
+
+    let newDelta = currentRegion.latitudeDelta * zoomFactor;
+    newDelta = Math.max(minDelta, Math.min(newDelta, maxDelta));
 
     const newRegion = {
       ...currentRegion,
-      latitudeDelta: clampedDelta,
-      longitudeDelta: clampedDelta,
+      latitudeDelta: newDelta,
+      longitudeDelta: newDelta,
     };
+
     regionRef.current = newRegion;
     mapRef.current.animateToRegion(newRegion, 350);
     setUserControllingMap(true);
     resetAutoFollowTimer();
   }, [resetAutoFollowTimer]);
+
+  const changePolylineColor = useCallback((color) => {
+    setPolylineColor(color);
+  }, []);
+
   const formatTime = useCallback((seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
-  }, []);
-
-  const changePolylineColor = useCallback((color) => {
-    setPolylineColor(color);
   }, []);
 
   const changeMapType = useCallback((type) => {
@@ -277,7 +275,14 @@ export default function StartDriveScreen() {
         onPanDrag={handleMapDragStart}
         onTouchStart={handleMapDragStart}
         onRegionChangeComplete={(region) => {
-          regionRef.current = region;
+          const minDelta = 0.0005;
+          const maxDelta = 0.5;
+
+          regionRef.current = {
+            ...region,
+            latitudeDelta: Math.max(minDelta, Math.min(region.latitudeDelta, maxDelta)),
+            longitudeDelta: Math.max(minDelta, Math.min(region.longitudeDelta, maxDelta))
+          };
           resetAutoFollowTimer();
         }}
         zoomEnabled={false}
