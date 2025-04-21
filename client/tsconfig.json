@@ -1,19 +1,18 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["*"],
-      "@/components/*": ["app/components/*"],
-      "@/screens/*": ["app/screens/*"],
-      "@/services/*": ["app/services/*"]
-    }
-  },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "app/(tabs)/index.tsx.backup"],
-  "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@/*": ["app/*"]
+      "@/*": [
+        "app/*"
+      ]
     }
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "app/(tabs)/index.tsx.backup",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }

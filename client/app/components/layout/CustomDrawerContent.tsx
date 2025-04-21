@@ -1,21 +1,28 @@
-// client/app/components/layout/CustomDrawerContent.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../constants/theme';
+import SyncBadge from '../ui/SyncBadge';
+
 
 // Fonction utilitaire pour créer un élément de menu
 const DrawerItem = ({ label, onPress, active = false, colors }) => (
   <TouchableOpacity
     style={[
       styles.drawerItem,
-      active && { backgroundColor: colors.primary + '20' }, // 20% opacity
+      active && { backgroundColor: colors.ui.button.primary + '20' },
     ]}
     onPress={onPress}
   >
-    <Text style={[styles.drawerItemText, { color: active ? colors.primary : colors.text }]}>
+    <Text style={[
+      styles.drawerItemText,
+      {
+        color: active ? colors.ui.button.primary : colors.backgroundText,
+        fontWeight: active ? '600' : 'normal'
+      }
+    ]}>
       {label}
     </Text>
   </TouchableOpacity>
@@ -24,9 +31,8 @@ const DrawerItem = ({ label, onPress, active = false, colors }) => (
 // Composant principal du tiroir personnalisé
 export default function CustomDrawerContent(props) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const { user, logout } = useAuth();
-
   // Obtenir le chemin actuel pour mettre en évidence l'élément actif
   const currentRoute = props.state?.routes[props.state.index]?.name || '';
 
@@ -40,7 +46,11 @@ export default function CustomDrawerContent(props) {
     <DrawerContentScrollView
       {...props}
       contentContainerStyle={{ flex: 1 }}
-      style={{ backgroundColor: colors.background }}
+      style={{
+        backgroundColor: colors.background,
+        zIndex: 1000,
+        elevation: 1000,
+      }}
     >
       {/* En-tête du tiroir avec les infos de l'utilisateur */}
       <View style={[styles.drawerHeader, { backgroundColor: colors.primary }]}>
@@ -50,10 +60,10 @@ export default function CustomDrawerContent(props) {
             style={styles.userAvatar}
           />
           <View>
-            <Text style={[styles.userName, { color: colors.white }]}>
-              {user?.displayName || 'Utilisateur'}
+            <Text style={[styles.userName, { color: colors.primaryText }]}>
+              {user?.displayName || 'Utilisateur : N/A'}
             </Text>
-            <Text style={[styles.userEmail, { color: colors.white + 'CC' }]}>
+            <Text style={[styles.userEmail, { color: colors.primaryTextSoft }]}>
               {user?.email || 'email@example.com'}
             </Text>
           </View>
@@ -87,9 +97,11 @@ export default function CustomDrawerContent(props) {
           colors={colors}
         />
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Communauté</Text>
+        <Text style={[styles.sectionTitle, { color: colors.backgroundTextSoft }]}>
+          Communauté
+        </Text>
         <DrawerItem
           label="Communauté"
           onPress={() => navigateTo('/CommunityScreen')}
@@ -115,15 +127,43 @@ export default function CustomDrawerContent(props) {
           colors={colors}
         />
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Paramètres</Text>
+        <Text style={[styles.sectionTitle, { color: colors.backgroundTextSoft }]}>
+          Paramètres
+        </Text>
         <DrawerItem
           label="Profil"
           onPress={() => navigateTo('/ProfileScreen')}
           active={currentRoute === 'ProfileScreen'}
           colors={colors}
         />
+        <TouchableOpacity
+          style={[
+            styles.drawerItem,
+            currentRoute === 'OfflineSyncScreen' && {
+              backgroundColor: colors.ui.button.primary + '20'
+            },
+          ]}
+          onPress={() => navigateTo('/OfflineSyncScreen')}
+        >
+          <View style={styles.itemWithBadge}>
+            <Text
+              style={[
+                styles.drawerItemText,
+                {
+                  color: currentRoute === 'OfflineSyncScreen'
+                    ? colors.ui.button.primary
+                    : colors.backgroundText,
+                  fontWeight: currentRoute === 'OfflineSyncScreen' ? '600' : 'normal'
+                }
+              ]}
+            >
+              Synchronisation Offline
+            </Text>
+            <SyncBadge />
+          </View>
+        </TouchableOpacity>
         <DrawerItem
           label="Paramètres"
           onPress={() => navigateTo('/SettingsScreen')}
@@ -145,12 +185,24 @@ export default function CustomDrawerContent(props) {
       </ScrollView>
 
       {/* Bouton de déconnexion en bas */}
-      <View style={styles.logoutContainer}>
+      <View style={[
+        styles.logoutContainer,
+        { borderTopColor: colors.border }
+      ]}>
         <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: colors.error + '20' }]}
+          style={[
+            styles.logoutButton,
+            {
+              backgroundColor: colors.ui.button.danger + '20',
+              borderColor: colors.ui.button.danger,
+              borderWidth: 1,
+            }
+          ]}
           onPress={logout}
         >
-          <Text style={[styles.logoutText, { color: colors.error }]}>Déconnexion</Text>
+          <Text style={[styles.logoutText]}>
+            Déconnexion
+          </Text>
         </TouchableOpacity>
       </View>
     </DrawerContentScrollView>
@@ -174,11 +226,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
+    top : - 10,
+
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 16,
   },
   drawerContent: {
     flex: 1,
@@ -195,7 +249,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
     marginVertical: 8,
     marginHorizontal: 16,
   },
@@ -210,7 +263,6 @@ const styles = StyleSheet.create({
   logoutContainer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
   logoutButton: {
     padding: 12,
@@ -220,5 +272,11 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: 'black',
+  },
+  itemWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });
