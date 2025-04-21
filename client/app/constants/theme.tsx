@@ -105,3 +105,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 export function useTheme(): ThemeContextType {
   return useContext(ThemeContext);
 }
+
+// Créer un objet pour l'export
+const theme = {
+  Colors,
+  ThemeContext,
+  ThemeProvider,
+  useTheme
+};
+
+export default theme;

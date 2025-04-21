@@ -1,5 +1,5 @@
 // client/app/_layout.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Drawer } from 'expo-router/drawer';
 import { Platform, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,8 @@ import { ThemeProvider, useTheme } from './constants/theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Provider } from 'react-redux';
 import store from './store/store';
+// Import du proxy API pour la gestion des URLs
+import { apiProxy } from './api-proxy';
 
 // Composant qui décide quel navigateur afficher en fonction de l'état d'authentification
 function RootNavigator() {
@@ -192,6 +194,32 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  // Initialiser la configuration du proxy API
+  useEffect(() => {
+    // Configuration automatique basée sur la plateforme
+    //apiProxy.updateConfig();
+    
+    // Log pour débogage
+    console.log(`📱 Platform: ${Platform.OS}`);
+    console.log(`🌐 API URL: ${apiProxy.getBaseUrl()}`);
+    
+    // Si on est en dev, lancer un test de connexion basique
+    if (__DEV__) {
+      setTimeout(async () => {
+        try {
+          console.log('🔍 Testing API connection...');
+          const result = await fetch(apiProxy.getUrl('/health'), {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+          });
+          console.log(`✅ API connection test: ${result.status}`);
+        } catch (error) {
+          console.error('❌ API connection test failed:', error.message);
+        }
+      }, 2000);
+    }
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
