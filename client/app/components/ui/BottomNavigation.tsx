@@ -1,93 +1,164 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, ThemeColors } from '../../constants/theme';
-
+import { useTheme } from '../../constants/theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { stopTracking, resetLocation } from '../../store/slices/locationSlice';
+import { startChrono, finishChrono, resetChrono, setShouldSave } from '../../store/slices/chronoSlice';
+import SessionEndModal from '../modals/SessionEndModal';
+import Toast from 'react-native-toast-message';
 
 const BottomNavigation = () => {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const dispatch = useDispatch();
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [showModal, setShowModal] = useState(false);
+  const isChronoRunning = useSelector((state: RootState) => state.chrono.isRunning);
 
   const normalizedPathname = pathname.startsWith('/') ? pathname.slice(1) : pathname;
+  const isActive = (path: string) => normalizedPathname === path;
 
-  const isActive = (path: string) => {
-    return normalizedPathname === path;
+  const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
+
+  const handleStartDrivePress = () => {
+    if (isActive('start-drive')) {
+      if (!isChronoRunning) {
+        setTimeout(() => {
+          dispatch(startChrono());
+        }, 300);
+      } else {
+        setShowModal(true);
+      }
+    } else {
+      router.push('/(tabs)/start-drive');
+    }
   };
 
-  const styles = useMemo(() => createStyles(colors, insets), [colors, insets]);
+  const handleLongPressStartDrive = () => {
+    setShowModal(true);
+  };
+
+  const handleConfirmSave = () => {
+    dispatch(finishChrono());
+    dispatch(stopTracking());
+
+    Toast.show({
+      type: 'success',
+      text1: '✅ Session sauvegardée',
+      text2: 'Ton trajet a bien été enregistré.',
+      position: 'center',
+    });
+
+    setShowModal(false);
+  };
+
+  const handleConfirmNoSave = () => {
+    dispatch(setShouldSave(false));
+    setTimeout(() => {
+      dispatch(finishChrono());
+      setShowModal(false);
+    }, 50);
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
+  };
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
-        <Ionicons
-          name={isActive('') ? 'home' : 'home-outline'}
-          size={24}
-          color={isActive('') ? colors.activeItem : colors.inactiveItem}
-        />
-        <Text style={[styles.navText, { color: isActive('') ? colors.activeItem : colors.inactiveItem }]}>
-          Accueil
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
-        <Ionicons
-          name={isActive('explorer') ? 'search' : 'search-outline'}
-          size={24}
-          color={isActive('explorer') ? colors.activeItem : colors.inactiveItem}
-        />
-        <Text style={[styles.navText, { color: isActive('explorer') ? colors.activeItem : colors.inactiveItem }]}>
-          Explorer
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.recordButton} onPress={() => router.push('/(tabs)/start-drive')}>
-        <View style={[styles.recordIcon, { backgroundColor: colors.background, borderColor: isActive('start-drive') ? colors.activeItem : colors.inactiveItem }]}>
-          <MaterialIcons
-            name={isActive('start-drive') ? 'square' : 'circle'}
-            size={isActive('start-drive') ? 30 : 40}
-            color={isActive('start-drive') ? '#e57373' : colors.inactiveItem}
+    <>
+      <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
+          <Ionicons
+            name={isActive('') ? 'home' : 'home-outline'}
+            size={24}
+            color={isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
-        <Ionicons
-          name={isActive('my-routes') ? 'map' : 'map-outline'}
-          size={24}
-          color={isActive('my-routes') ? colors.activeItem : colors.inactiveItem}
-        />
-        <Text style={[styles.navText, { color: isActive('my-routes') ? colors.activeItem : colors.inactiveItem }]}>
-          Mes trajets
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
-        <Ionicons
-          name={isActive('profile') ? 'person' : 'person-outline'}
-          size={24}
-          color={isActive('profile') ? colors.activeItem : colors.inactiveItem}
-        />
-        <Text style={[styles.navText, { color: isActive('profile') ? colors.activeItem : colors.inactiveItem }]}>
-          Profile
-        </Text>
-      </TouchableOpacity>
-
-      {/* API Test Tab (hidden in UI but accessible) */}
-      {isActive('/(tabs)/api-test') && (
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
-          <Ionicons name="bug" size={24} color={colors.primary} />
-          <Text style={[styles.navText, { color: colors.primary }]}>API Test</Text>
+          <Text style={[styles.navText, { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+            Accueil
+          </Text>
         </TouchableOpacity>
-      )}
-    </View>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
+          <Ionicons
+            name={isActive('explorer') ? 'search' : 'search-outline'}
+            size={24}
+            color={isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text style={[styles.navText, { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+            Explorer
+          </Text>
+        </TouchableOpacity>
+
+        <Pressable
+          style={styles.recordButton}
+          onPress={handleStartDrivePress}
+          onLongPress={handleLongPressStartDrive}
+          delayLongPress={1600}
+        >
+          <View
+            style={[
+              styles.recordIcon,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: isActive('start-drive') ? theme.colors.activeItem : theme.colors.inactiveItem,
+              },
+            ]}
+          >
+            <MaterialIcons
+              name={isChronoRunning ? 'square' : 'circle'}
+              size={isChronoRunning ? 30 : 40}
+              color={isChronoRunning ? theme.colors.error : theme.colors.inactiveItem}
+            />
+          </View>
+        </Pressable>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
+          <Ionicons
+            name={isActive('my-routes') ? 'map' : 'map-outline'}
+            size={24}
+            color={isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text style={[styles.navText, { color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+            Mes trajets
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
+          <Ionicons
+            name={isActive('profile') ? 'person' : 'person-outline'}
+            size={24}
+            color={isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text style={[styles.navText, { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+            Profile
+          </Text>
+        </TouchableOpacity>
+
+        {isActive('/(tabs)/api-test') && (
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
+            <Ionicons name="bug" size={24} color={theme.colors.primary} />
+            <Text style={[styles.navText, { color: theme.colors.primary }]}>API Test</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <SessionEndModal
+        visible={showModal}
+        onConfirmSave={handleConfirmSave}
+        onConfirmNoSave={handleConfirmNoSave}
+        onCancel={handleCancel}
+      />
+    </>
   );
 };
 
-const createStyles = (colors: ThemeColors, insets: any) =>
+const createStyles = (theme: any, insets: any) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -101,20 +172,21 @@ const createStyles = (colors: ThemeColors, insets: any) =>
       alignItems: 'center',
       justifyContent: 'space-around',
       zIndex: 1000,
-      backgroundColor: colors.background,
-      borderTopColor: colors.primaryIcon,
+      backgroundColor: theme.colors.background,
+      borderTopColor: theme.colors.border,
+      ...theme.shadow.sm,
     },
     navItem: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 8,
+      paddingVertical: theme.spacing.xs,
     },
     navText: {
-      fontSize: 11,
-      marginTop: 4,
+      fontSize: theme.typography.caption.fontSize,
+      marginTop: theme.spacing.xs,
       textAlign: 'center',
-      fontWeight: '500',
+      fontWeight: theme.typography.caption.fontWeight,
     },
     recordButton: {
       width: 70,
@@ -130,11 +202,7 @@ const createStyles = (colors: ThemeColors, insets: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 4,
+      ...theme.shadow.md,
     },
   });
 

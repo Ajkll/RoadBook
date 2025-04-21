@@ -1,0 +1,529 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { selectPendingItems, selectSyncErrors, clearAllPendingItems, removePendingItem } from './store/slices/syncSlice';
+import { selectIsInternetReachable } from './store/slices/networkSlice';
+import { removePendingDriveSession } from './utils/storageUtils';
+import Toast from 'react-native-toast-message';
+import { useTheme } from './constants/theme';
+import CleanupStorage from './components/ui/ClearAllLocalStorage';
+import { store } from './store/store';
+
+type SyncItemType = {
+  id: string;
+  type: 'trajet' | 'roadbook' | 'profile' | 'other' | 'api';
+  data: any;
+  createdAt: number;
+};
+
+const DetailRow = React.memo(({ label, value, colors }: { label: string; value: string; colors: any }) => (
+  <View style={styles.detailRow}>
+    <Text style={[styles.detailLabel, { color: colors.backgroundTextSoft }]}>{label}:</Text>
+    <Text style={[styles.detailValue, { color: colors.backgroundText }]}>{value}</Text>
+  </View>
+));
+
+const SyncItemComponent = React.memo(({
+  item,
+  colors,
+  isExpanded,
+  hasError,
+  onPress,
+  onDelete,
+  formatDate,
+  formatDuration,
+  formatVehicle,
+  getTypeColor,
+  getTypeLabel,
+  getItemTitle
+}: {
+  item: SyncItemType;
+  colors: any;
+  isExpanded: boolean;
+  hasError: boolean;
+  onPress: () => void;
+  onDelete: () => void;
+  formatDate: (date: Date) => string;
+  formatDuration: (seconds: number) => string;
+  formatVehicle: (vehicle: string | null) => string;
+  getTypeColor: (type: string, colors: any) => string;
+  getTypeLabel: (type: string) => string;
+  getItemTitle: (item: SyncItemType) => string;
+}) => {
+  const itemDate = new Date(item.createdAt);
+
+  return (
+    <View style={[styles.itemContainer, {
+      borderColor: colors.border,
+      backgroundColor: colors.ui.card.background
+    }]}>
+      <TouchableOpacity style={styles.itemHeader} onPress={onPress}>
+        <View style={styles.itemTitleContainer}>
+          <View style={[
+            styles.itemTypeBadge,
+            {
+              backgroundColor: getTypeColor(item.type, colors),
+            }
+          ]}>
+            <Text style={[styles.itemTypeText, { color: colors.primaryText }]}>
+              {getTypeLabel(item.type)}
+            </Text>
+          </View>
+          <Text style={[styles.itemTitle, { color: colors.backgroundText }]}>
+            {getItemTitle(item)}
+          </Text>
+        </View>
+        <View style={styles.itemMeta}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={onDelete}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.ui.button.danger} />
+          </TouchableOpacity>
+          {hasError && (
+            <Ionicons
+              name="alert-circle"
+              size={18}
+              color={colors.ui.status.error}
+              style={styles.errorIcon}
+            />
+          )}
+          <Text style={[styles.itemDate, { color: colors.backgroundTextSoft }]}>
+            {formatDate(itemDate)}
+          </Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.backgroundTextSoft}
+          />
+        </View>
+      </TouchableOpacity>
+
+      {isExpanded && (
+        <View style={[
+          styles.itemDetails,
+          {
+            borderTopColor: colors.border,
+            backgroundColor: colors.ui.card.background
+          }
+        ]}>
+          {hasError && (
+            <View style={[
+              styles.errorBox,
+              {
+                backgroundColor: colors.ui.status.error + '20',
+              }
+            ]}>
+              <Text style={[styles.errorText, { color: colors.ui.status.error }]}>
+                {hasError}
+              </Text>
+            </View>
+          )}
+
+          {item.type === 'trajet' && (
+            <View style={styles.detailsContent}>
+              <DetailRow
+                label="Durée"
+                value={formatDuration(item.data.elapsedTime)}
+                colors={colors}
+              />
+              <DetailRow
+                label="Points GPS"
+                value={item.data.path.length.toString()}
+                colors={colors}
+              />
+              <DetailRow
+                label="Véhicule"
+                value={formatVehicle(item.data.vehicle)}
+                colors={colors}
+              />
+              {item.data.weather && (
+                <DetailRow
+                  label="Météo"
+                  value={`${item.data.weather.temperature}°C, ${item.data.weather.conditions}`}
+                  colors={colors}
+                />
+              )}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+});
+
+const OfflineSyncScreen: React.FC = () => {
+  const { colors, dark, spacing, borderRadius } = useTheme();
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const pendingItems = useSelector(selectPendingItems);
+  const isOnline = useSelector(selectIsInternetReachable);
+  const syncErrors = useSelector(selectSyncErrors);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  useEffect(() => {
+    let lastUpdate = 0;
+    const unsubscribe = store.subscribe(() => {
+      const now = Date.now();
+      if (now - lastUpdate > 500) {
+        lastUpdate = now;
+        setForceUpdate(prev => prev + 1);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleDeleteItem = useCallback((item: SyncItemType) => {
+    if (item.type === 'api') {
+      Toast.show({
+        type: 'info',
+        text1: 'Information',
+        text2: 'Les requêtes API ne peuvent pas être supprimées manuellement',
+        position: 'bottom',
+      });
+      return;
+    }
+
+    Alert.alert(
+      'Confirmation',
+      'Supprimer cet élément en attente de synchronisation ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (item.type === 'trajet') {
+                await removePendingDriveSession(item.id);
+              }
+              dispatch(removePendingItem({id: item.id}));
+              Toast.show({
+                type: 'success',
+                text1: 'Élément supprimé',
+                text2: 'L\'élément ne sera pas synchronisé',
+                position: 'bottom',
+              });
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Erreur',
+                text2: 'Impossible de supprimer l\'élément',
+                position: 'bottom',
+              });
+              console.error('Erreur lors de la suppression:', error);
+            }
+          }
+        }
+      ]
+    );
+  }, [dispatch]);
+
+  const handleClearAll = useCallback(() => {
+    if (pendingItems.length === 0) return;
+
+    Alert.alert(
+      'Confirmation',
+      'Êtes-vous sûr de vouloir supprimer tous les éléments en attente ? Cette action est irréversible.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Confirmer',
+          onPress: () => {
+            dispatch(clearAllPendingItems({}));
+            Toast.show({
+              type: 'success',
+              text1: 'Données effacées',
+              text2: 'Tous les éléments en attente ont été supprimés',
+              position: 'bottom',
+            });
+          }
+        }
+      ]
+    );
+  }, [dispatch, pendingItems.length]);
+
+  const toggleItemExpanded = useCallback((id: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const getTypeColor = useCallback((type: string) => {
+    switch (type) {
+      case 'trajet': return colors.ui.button.primary;
+      case 'roadbook': return colors.ui.status.success;
+      case 'profile': return colors.ui.status.warning;
+      default: return colors.ui.status.info;
+    }
+  }, [colors]);
+
+  const getTypeLabel = useCallback((type: string) => {
+    switch (type) {
+      case 'trajet': return 'Trajet';
+      case 'roadbook': return 'Roadbook';
+      case 'profile': return 'Profil';
+      default: return 'Autre';
+    }
+  }, []);
+
+  const getItemTitle = useCallback((item: SyncItemType) => {
+    if (item.type === 'trajet') {
+      return `Trajet du ${formatDate(new Date(item.createdAt))}`;
+    }
+    return `Élément ${item.id.substring(0, 8)}`;
+  }, []);
+
+  const formatDate = useCallback((date: Date) => {
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
+
+  const formatDuration = useCallback((seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }, []);
+
+  const formatVehicle = useCallback((vehicle: string | null) => {
+    if (!vehicle) return 'Non spécifié';
+    const vehicles: Record<string, string> = {
+      'moto': 'Moto',
+      'voiture': 'Voiture',
+      'camion': 'Camion',
+      'camionnette': 'Camionnette'
+    };
+    return vehicles[vehicle] || vehicle;
+  }, []);
+
+  const renderItem = useCallback(({ item }: { item: SyncItemType }) => (
+    <SyncItemComponent
+      item={item}
+      colors={colors}
+      isExpanded={expandedItems.has(item.id)}
+      hasError={syncErrors[item.id]}
+      onPress={() => toggleItemExpanded(item.id)}
+      onDelete={() => handleDeleteItem(item)}
+      formatDate={formatDate}
+      formatDuration={formatDuration}
+      formatVehicle={formatVehicle}
+      getTypeColor={getTypeColor}
+      getTypeLabel={getTypeLabel}
+      getItemTitle={getItemTitle}
+    />
+  ), [colors, expandedItems, syncErrors, toggleItemExpanded, handleDeleteItem, formatDate, formatDuration, formatVehicle, getTypeColor, getTypeLabel, getItemTitle]);
+
+  return (
+    <View style={[styles.container, {
+      backgroundColor: colors.background,
+      padding: spacing.md
+    }]}>
+      <View style={[styles.statusCard, {
+        backgroundColor: colors.ui.card.background,
+        borderRadius: borderRadius.medium,
+        marginBottom: spacing.md,
+        padding: spacing.sm
+      }]}
+      accessibilityLabel={isOnline ? "Connecté à Internet" : "Hors ligne"}
+      >
+        <View style={[styles.statusIndicator, {
+          backgroundColor: isOnline ? colors.ui.status.success : colors.ui.status.error,
+          borderRadius: borderRadius.large,
+          width: '50%',
+          height: 20,
+          marginTop: spacing.sm,
+        }]} />
+      </View>
+
+      <View style={[styles.cleanupContainer, {
+        backgroundColor: colors.ui.card.background,
+        borderRadius: borderRadius.medium,
+        marginBottom: spacing.md
+      }]}>
+        <CleanupStorage />
+      </View>
+
+      <View style={[styles.listHeaderContainer, { marginBottom: spacing.sm }]}>
+        <Text style={[styles.listTitle, {
+          color: colors.backgroundText,
+          fontSize: 20,
+          fontWeight: '600'
+        }]}>
+          Éléments en attente ({pendingItems.length})
+        </Text>
+      </View>
+
+      {pendingItems.length === 0 ? (
+        <View style={[styles.emptyContainer, { padding: spacing.lg }]}>
+          <Ionicons name="checkmark-circle" size={64} color={colors.ui.status.success} />
+          <Text style={[styles.emptyText, {
+            color: colors.backgroundTextSoft,
+            marginTop: spacing.md,
+            fontSize: 16
+          }]}>
+            Aucun élément en attente de synchronisation
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          key={`pending-list-${forceUpdate}`}
+          data={pendingItems}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.listContent, { paddingBottom: spacing.xl }]}
+          extraData={forceUpdate}
+        />
+      )}
+
+      <View style={[styles.bottomButtonContainer, { marginTop: spacing.md }]}>
+        <TouchableOpacity
+          style={[styles.button, {
+            backgroundColor: colors.ui.button.primary,
+            borderRadius: borderRadius.medium,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md
+          }]}
+          onPress={() => router.push('/(tabs)')}
+        >
+          <Text style={[styles.buttonText, {
+            color: colors.ui.button.primaryText,
+            fontSize: 16,
+            fontWeight: '600'
+          }]}>
+            Retour à l'accueil
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// Options de navigation
+OfflineSyncScreen.options = {
+  title: 'Synchronisation Offline',
+  headerShown: true,
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  statusCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusIndicator: {},
+  listHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  listTitle: {},
+  listContent: {},
+  itemContainer: {
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+  },
+  itemTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  itemTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 8,
+  },
+  itemTypeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  itemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1,
+  },
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    padding: 4,
+    marginRight: 8,
+  },
+  itemDate: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  errorIcon: {
+    marginRight: 8,
+  },
+  itemDetails: {
+    padding: 12,
+    borderTopWidth: 1,
+  },
+  errorBox: {
+    padding: 10,
+    marginBottom: 12,
+  },
+  errorText: {
+    fontSize: 14,
+  },
+  detailsContent: {
+    paddingHorizontal: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 14,
+  },
+  cleanupContainer: {},
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+  },
+  bottomButtonContainer: {
+    marginBottom: 20,
+    padding: 4,
+  },
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {},
+});
+
+export default React.memo(OfflineSyncScreen);
+
+// to do : animation pour quand on passe de offline a online au niveau de la pastise status
