@@ -95,7 +95,7 @@ const ExpandableCard = ({ route, colors }) => {
 
   const toggleExpand = () => {
     Animated.timing(animation, {
-      toValue: expanded ? 100 : 450,
+      toValue: expanded ? 100 : 500,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -106,44 +106,91 @@ const ExpandableCard = ({ route, colors }) => {
     <Animated.View
       style={[expanded ? styles.expandedCard : styles.roadCard, { height: animation }]}
     >
-      <View style={[styles.cardContent, expanded && styles.expandedContent]}>
-        <MaterialIcons name="person" size={40} color="#D9D9D9" />
+      {!expanded && (
+        <View style={styles.cardContent}>
+          <MaterialIcons name="person" size={40} color="#D9D9D9" />
+          <Text style={styles.text}>
+            {route.date.toLocaleDateString('fr-FR', {
+              year: '2-digit',
+              month: 'numeric',
+              day: 'numeric',
+            })}
+          </Text>
+          <Text style={styles.text}>{route.distance} km</Text>
+          <Text style={styles.text}>{route.duration} min</Text>
 
-        {!expanded && (
-          <>
-            <Text style={styles.text}>
-              {route.date.toLocaleDateString('fr-FR', {
-                year: '2-digit',
-                month: 'numeric',
-                day: 'numeric',
-              })}
-            </Text>
-            <Text style={styles.text}>{route.distance} km</Text>
-            <Text style={styles.text}>{route.duration} min</Text>
-          </>
-        )}
+          <TouchableOpacity onPress={toggleExpand}>
+            <Animated.View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
+              <MaterialIcons name="arrow-forward-ios" size={24} color={colors.primaryIcon} />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+      )}
 
-        {expanded && (
-          <View>
-            <Text style={styles.title}>Détails</Text>
-            <Text style={styles.text}>
-              {route.date.toLocaleDateString('fr-FR', {
-                year: '2-digit',
-                month: 'numeric',
-                day: 'numeric',
-              })}
-            </Text>
-            <Text style={styles.detail}>Distance: {route.distance}</Text>
-            <Text style={styles.detail}>Durée: {route.duration}</Text>
+      {expanded && (
+        <View>
+          <View style={styles.cardContent}>
+            <View style={styles.profile}>
+              <MaterialIcons name="circle" size={100} color={colors.primaryIcon} />
+              <View style={styles.profileName}>
+                <Text style={styles.text}>Moniteur*</Text>
+                <MaterialIcons name="person" size={30} color={colors.primaryIcon} />
+              </View>
+            </View>
+
+            <View style={styles.WeatherCard}>
+              <Ionicons
+                name="thermometer"
+                size={24}
+                color={colors.primaryIcon}
+                style={styles.roadDataWarper}
+              />
+              <MaterialIcons
+                name="air"
+                size={24}
+                color={colors.primaryIcon}
+                style={styles.roadDataWarper}
+              />
+              <Ionicons
+                name="cloud"
+                size={24}
+                color={colors.primaryIcon}
+                style={styles.roadDataWarper}
+              />
+              <Ionicons
+                name="eye"
+                size={24}
+                color={colors.primaryIcon}
+                style={styles.roadDataWarper}
+              />
+            </View>
           </View>
-        )}
 
-        <TouchableOpacity onPress={toggleExpand}>
-          <Animated.View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
-            <MaterialIcons name="arrow-forward-ios" size={24} color={colors.primaryIcon} />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.roadData}>
+            <Text style={[styles.text, styles.roadDataWarper]}>Trajet 1*</Text>
+            <Text style={[styles.text, styles.roadDataWarper]}>
+              {route.date.toLocaleDateString('fr-FR', {
+                year: '2-digit',
+                month: 'numeric',
+                day: 'numeric',
+              })}
+            </Text>
+            <Text style={[styles.text, styles.roadDataWarper]}>{route.distance} km</Text>
+            <Text style={[styles.text, styles.roadDataWarper]}>{route.duration} min</Text>
+          </View>
+
+          <View style={styles.commentContainer}>
+            <View style={styles.roadComment}></View>
+            <View style={styles.roadComment}></View>
+          </View>
+
+          <TouchableOpacity onPress={toggleExpand} style={styles.closeIcon}>
+            <Animated.View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
+              <MaterialIcons name="arrow-forward-ios" size={24} color={colors.primaryIcon} />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -217,5 +264,70 @@ const createStyles = (colors: ThemeColors) =>
       position: 'absolute',
       bottom: 100,
       right: 45,
+    },
+
+    profile: {
+      position: 'relative',
+      alignItems: 'center',
+      width: '40%',
+      marginTop: -40,
+    },
+    profileName: {
+      position: 'absolute',
+      bottom: -20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingLeft: 10,
+      paddingRight: 10,
+      height: 40,
+      backgroundColor: colors.primaryDarker,
+      borderRadius: 20,
+    },
+    WeatherCard: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      width: '45%',
+      height: 120,
+      backgroundColor: colors.primaryDarker,
+      borderRadius: 10,
+      marginTop: 20,
+      marginBottom: 20,
+      marginRight: 35,
+      paddingTop: 10,
+    },
+    roadData: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      backgroundColor: colors.primaryDarker,
+      height: 125,
+      borderRadius: 10,
+      paddingTop: 20,
+      paddingBottom: 20,
+    },
+    roadDataWarper: {
+      display: 'flex',
+      width: '50%',
+      height: '50%',
+      justifyContent: 'center',
+      textAlign: 'left',
+      marginVertical: 5,
+      paddingLeft: 25,
+    },
+    closeIcon: {
+      position: 'absolute',
+      right: 0,
+      top: 40,
+    },
+    commentContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    roadComment: {
+      backgroundColor: colors.primaryDarker,
+      width: '47%',
+      borderRadius: 10,
+      height: 170,
+      marginTop: 20,
     },
   });
