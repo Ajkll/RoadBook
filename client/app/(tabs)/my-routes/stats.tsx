@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { useTheme } from '../../constants/theme';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import ProgressBar from '../../components/ui/ProgressBar';
+import { db } from '../../services/firebase/firebaseConfig';
+import { getDocs, collection } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +14,8 @@ export default function MyRoutes() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const currentPath = usePathname();
+  const [roads, setRoads] = useState([]);
+  const [setLoading] = useState(true);
 
   const handleSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
@@ -20,6 +24,28 @@ export default function MyRoutes() {
       router.push('/(tabs)/my-routes/stats');
     }
   };
+
+  useEffect(() => {
+    const fetchRoads = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'roads'));
+        const data = snap.docs.map((doc) => {
+          const rawData = doc.data();
+
+          return {
+            id: doc.id,
+            date: rawData.date.toDate(),
+            distance: rawData.distance,
+            duration: rawData.duration,
+          };
+        });
+        setRoads(data);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRoads();
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -33,7 +59,7 @@ export default function MyRoutes() {
             <View style={styles.roadCard}>
               <Text style={styles.text}>Heures totales</Text>
               <View style={styles.dataCard}>
-                <Text style={styles.text}>54 h</Text>
+                <Text style={styles.text}>{roads[0]?.duration} min</Text>
               </View>
             </View>
 
@@ -50,7 +76,7 @@ export default function MyRoutes() {
   );
 }
 
-const createStyles = (colors) =>
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

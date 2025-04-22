@@ -8,7 +8,7 @@ export default function MyRoutesLayout() {
   const { colors } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(), [colors]);
 
   const isStatsActive = pathname.includes('stats');
   const isMyRoadsActive = pathname.includes('my-roads');
@@ -46,7 +46,7 @@ export default function MyRoutesLayout() {
   );
 }
 
-const createStyles = (colors) =>
+const createStyles = () =>
   StyleSheet.create({
     navigation: {
       position: 'absolute',
@@ -55,7 +55,6 @@ const createStyles = (colors) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: colors.background,
       alignSelf: 'center',
     },
   });
