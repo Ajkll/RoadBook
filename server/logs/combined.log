@@ -1,0 +1,72 @@
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-23 16:24:31"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-23 16:24:31"}
+{"level":"info","message":"User created successfully: 977b6c72-97a9-475f-a956-25e3a648a6e1","timestamp":"2025-04-23 16:24:31"}
+{"level":"info","message":"User registered successfully: 977b6c72-97a9-475f-a956-25e3a648a6e1","timestamp":"2025-04-23 16:24:31"}
+{"level":"info","message":"Password reset token generated for user: 977b6c72-97a9-475f-a956-25e3a648a6e1","timestamp":"2025-04-23 16:25:08"}
+{"level":"warn","message":"Registration validation failed: [{\"validation\":\"regex\",\"code\":\"invalid_string\",\"message\":\"Password must contain at least one uppercase letter\",\"path\":[\"password\"]},{\"validation\":\"regex\",\"code\":\"invalid_string\",\"message\":\"Password must contain at least one special character\",\"path\":[\"password\"]}]","timestamp":"2025-04-23 16:25:48"}
+{"level":"warn","message":"Registration validation failed: [{\"validation\":\"regex\",\"code\":\"invalid_string\",\"message\":\"Password must contain at least one uppercase letter\",\"path\":[\"password\"]},{\"validation\":\"regex\",\"code\":\"invalid_string\",\"message\":\"Password must contain at least one special character\",\"path\":[\"password\"]}]","timestamp":"2025-04-23 16:25:51"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:39"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:39"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:26:39"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:40"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:40"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:26:40"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:40"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:40"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:26:40"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:41"}
+{"level":"warn","message":"Login attempt threshold approaching for: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:41"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:41"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:26:41"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:41"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:41"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:26:41"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:41"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:41"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:41"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:41"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:41"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:41"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:42"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:42"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:42"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:42"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:42"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:42"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:42"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:42"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:42"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:43"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:43"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:43"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:43"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:43"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:43"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:43"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:43"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:43"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:26:44"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:26:44"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-23 16:26:44"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:27:33"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:27:33"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:27:33"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:27:34"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:27:34"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:27:34"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:27:34"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:27:34"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:27:34"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-23 16:27:34"}
+{"level":"warn","message":"Login attempt threshold approaching for: apprentice@roadbook.com","timestamp":"2025-04-23 16:27:34"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:27:34"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-23 16:27:34"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:40:23"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:40:23"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:40:24"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-23 16:40:24"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-23 16:40:24"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-23 16:40:24"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-23 16:40:24"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:41:26"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:41:26"}

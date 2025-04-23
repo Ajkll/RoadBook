@@ -39,32 +39,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Roadbook API Routes
  *
- * These routes handle all roadbook operations including:
- * - Listing, creating, updating, and deleting roadbooks
- * - Managing sessions within roadbooks
- * - Tracking competency progress
- * - Assigning guides to roadbooks
+ * Ces routes gèrent toutes les opérations liées aux roadbooks:
+ * - Listage, création, mise à jour et suppression de roadbooks
+ * - Gestion des sessions de conduite
+ * - Suivi des compétences et des validations
+ * - Attribution de guides aux roadbooks
+ * - Calcul de statistiques et analyses
+ * - Exportation PDF pour les documents officiels
  */
 const express_1 = __importDefault(require("express"));
 const auth_middleware_1 = require("../../middleware/auth.middleware");
 const roadbookController = __importStar(require("../../controllers/roadbook.controller"));
 const router = express_1.default.Router();
-// All routes require authentication
+// Toutes les routes nécessitent une authentification
 router.use(auth_middleware_1.authenticateJWT);
-// Roadbook management routes
+// Routes de gestion des roadbooks
 router.get("/", roadbookController.getUserRoadbooks);
 router.post("/", roadbookController.createRoadbook);
 router.get("/guided", roadbookController.getGuidedRoadbooks);
-// Specific roadbook routes
+// Routes pour roadbooks spécifiques
 router.get("/:id", roadbookController.getRoadbookById);
 router.put("/:id", roadbookController.updateRoadbook);
 router.delete("/:id", roadbookController.deleteRoadbook);
 router.patch("/:id/status", roadbookController.updateRoadbookStatus);
 router.post("/:id/guide", roadbookController.assignGuide);
-// Session routes
+// Routes pour les statistiques et l'exportation
+router.get("/:id/statistics", roadbookController.getRoadbookStatistics);
+router.get("/:id/export", roadbookController.exportRoadbook);
+// Routes de gestion des sessions
 router.get("/:id/sessions", roadbookController.getRoadbookSessions);
 router.post("/:id/sessions", roadbookController.createSession);
-// Competency progress routes
+// Routes de progression des compétences
 router.get("/:id/competencies", roadbookController.getCompetencyProgress);
 router.patch("/:id/competencies/:competencyId", roadbookController.updateCompetencyStatus);
 exports.default = router;

@@ -92,12 +92,35 @@ Pour chaque module, l'architecture suit une structure en couches:
    npm run prisma:generate
    ```
 
-## Lancement
+## Lancement Simplifié
+
+Nous fournissons un script utilitaire pour simplifier les tâches de développement :
+
+```bash
+# Afficher les commandes disponibles
+./roadbook.sh help
+
+# Démarrer le serveur de développement avec Docker
+./roadbook.sh dev
+
+# Exécuter les tests avec testcontainers (pas de DB externe nécessaire)
+./roadbook.sh test:containers
+
+# Démarrer uniquement les conteneurs Docker sans le serveur
+./roadbook.sh docker:up
+
+# Arrêter les conteneurs Docker
+./roadbook.sh docker:down
+```
 
 ### Développement
 
 ```bash
+# Méthode manuelle
 npm run dev
+
+# Script automatisé avec Docker
+./launch-dev.sh
 ```
 
 ### Production
@@ -110,8 +133,11 @@ npm start
 ### Tests
 
 ```bash
-# Exécuter tous les tests
+# Tests standard
 npm test
+
+# Tests avec conteneurs isolés (testcontainers)
+npm run test:containers
 
 # Tester un module spécifique
 npm test -- -t "Auth Service"
@@ -180,9 +206,14 @@ Accédez aux interfaces de test dans votre navigateur:
 
 ## Configuration Docker
 
-Vous pouvez également utiliser Docker pour lancer votre environnement de développement:
+Vous pouvez utiliser Docker pour lancer votre environnement de développement:
 
 ```bash
+# Utiliser le script utilitaire (recommandé)
+./roadbook.sh docker:up   # Pour démarrer les conteneurs
+./roadbook.sh docker:down # Pour arrêter les conteneurs
+
+# Ou utiliser docker-compose directement
 # Lancer PostgreSQL uniquement
 docker-compose up -d postgres
 
@@ -192,6 +223,24 @@ docker-compose up -d
 # Reconstruire et relancer le serveur après modifications
 docker-compose up -d --build server
 ```
+
+## Test avec TestContainers
+
+Pour une exécution isolée des tests, nous utilisons TestContainers qui crée des conteneurs Docker éphémères pour chaque test:
+
+```bash
+# Lancer les tests avec TestContainers
+./roadbook.sh test:containers
+
+# Ou directement avec npm
+npm run test:containers
+```
+
+Cette approche présente plusieurs avantages:
+- Tests complètement isolés et propres à chaque exécution
+- Pas besoin de configurer une base de données externe
+- Exécution possible en CI/CD sans configuration supplémentaire
+- Pas de conflits avec l'environnement de développement
 
 ## Architecture des authentifications et sécurité
 

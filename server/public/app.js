@@ -1,3 +1,8 @@
+/**
+ * RoadBook API Tester
+ * Application JavaScript pour tester les APIs modulaires RoadBook
+ */
+
 // API base URL - adaptable selon l'environnement
 const API_URL = window.location.port === '4001' ? 'http://localhost:4001/api' : '/api';
 
@@ -18,14 +23,29 @@ document.addEventListener('DOMContentLoaded', function() {
         verifyToken(true);
     }
     
-    // Définir la date d'aujourd'hui par défaut pour les champs de date de session
-    if (document.getElementById('session-date')) {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('session-date').value = today;
-    }
+    // Initialiser les écouteurs d'événements pour les éléments dynamiques
+    setupDynamicEventListeners();
 });
 
 // ======== GESTION DES TOKENS ========
+
+// Configuration des écouteurs d'événements pour les éléments dynamiques
+function setupDynamicEventListeners() {
+    // Exemple: mettre en place des écouteurs pour des éléments qui seront générés dynamiquement
+    document.addEventListener('click', function(event) {
+        // Gestion des boutons "Utiliser ID" pour les roadbooks
+        if (event.target.matches('[data-action="use-roadbook-id"]')) {
+            const roadbookId = event.target.getAttribute('data-id');
+            fillRoadbookId(roadbookId);
+        }
+        
+        // Gestion des boutons "Voir détails" pour les roadbooks
+        if (event.target.matches('[data-action="view-roadbook-details"]')) {
+            const roadbookId = event.target.getAttribute('data-id');
+            getRoadbookById(roadbookId);
+        }
+    });
+}
 
 // Mettre à jour l'affichage des status de token
 function updateTokenStatus() {
@@ -36,23 +56,25 @@ function updateTokenStatus() {
         accessTokenStatus.innerText = accessToken ? 'Présent' : 'Non présent';
         refreshTokenStatus.innerText = userRefreshToken ? 'Présent' : 'Non présent';
         
-        accessTokenStatus.className = accessToken ? 'success' : 'error';
-        refreshTokenStatus.className = userRefreshToken ? 'success' : 'error';
+        accessTokenStatus.className = accessToken ? 'text-success' : 'text-danger';
+        refreshTokenStatus.className = userRefreshToken ? 'text-success' : 'text-danger';
     }
 }
 
 // Mettre à jour l'affichage du statut d'authentification
 function updateAuthStatusDisplay() {
-    const authStatus = document.getElementById('auth-status');
-    if (authStatus) {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('auth-status-text');
+    
+    if (statusIndicator && statusText) {
         if (accessToken) {
-            authStatus.innerText = currentUser ? 
+            statusText.innerText = currentUser ? 
                 `Connecté (${currentUser.displayName || currentUser.email})` : 
                 'Connecté';
-            authStatus.className = 'status-badge status-active';
+            statusIndicator.className = 'status-indicator status-connected';
         } else {
-            authStatus.innerText = 'Non connecté';
-            authStatus.className = 'status-badge status-inactive';
+            statusText.innerText = 'Non connecté';
+            statusIndicator.className = 'status-indicator status-disconnected';
         }
     }
 }
@@ -440,6 +462,61 @@ async function getCurrentUser() {
         if (result.status === 'success') {
             currentUser = result.data;
             updateAuthStatusDisplay();
+            
+            // Afficher les détails du profil
+            const profileContainer = document.getElementById('current-user-profile');
+            const profileDetails = document.getElementById('profile-details');
+            
+            if (profileContainer && profileDetails) {
+                profileContainer.style.display = 'block';
+                
+                // Formater les dates
+                const createdAt = new Date(currentUser.createdAt).toLocaleString();
+                const updatedAt = new Date(currentUser.updatedAt).toLocaleString();
+                
+                let profileHTML = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">ID</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Email</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.email}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Nom d'affichage</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.displayName || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Prénom</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.firstName || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Nom</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.lastName || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Rôle</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.role}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Bio</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${currentUser.bio || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Créé le</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${createdAt}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold;">Mis à jour le</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${updatedAt}</td>
+                        </tr>
+                    </table>
+                `;
+                
+                profileDetails.innerHTML = profileHTML;
+            }
         }
     } catch (error) {
         console.error('Get user error:', error);
@@ -537,10 +614,63 @@ async function getAllUsers() {
             return;
         }
         
-        await apiRequest('/users', 'GET');
+        const result = await apiRequest('/users', 'GET');
+        
+        if (result.status === 'success' && result.data) {
+            // Afficher la liste des utilisateurs
+            const usersContainer = document.getElementById('all-users-container');
+            
+            if (usersContainer) {
+                usersContainer.style.display = 'block';
+                
+                if (!result.data.length) {
+                    usersContainer.innerHTML = '<p>Aucun utilisateur trouvé</p>';
+                    return;
+                }
+                
+                let usersHTML = '<div class="list-group">';
+                
+                result.data.forEach(user => {
+                    // Formater la date de création
+                    const createdDate = new Date(user.createdAt).toLocaleDateString();
+                    
+                    // Créer un badge pour le rôle
+                    let roleBadgeClass = 'badge-primary';
+                    if (user.role === 'ADMIN') roleBadgeClass = 'badge-danger';
+                    else if (user.role === 'INSTRUCTOR') roleBadgeClass = 'badge-success';
+                    else if (user.role === 'GUIDE') roleBadgeClass = 'badge-warning';
+                    
+                    usersHTML += `
+                        <div class="list-item">
+                            <div class="list-item-title">
+                                ${user.displayName || user.email}
+                                <span class="badge ${roleBadgeClass}">${user.role}</span>
+                            </div>
+                            <div>
+                                <small>ID: ${user.id}</small> | 
+                                <small>Email: ${user.email}</small> | 
+                                <small>Créé le: ${createdDate}</small>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-sm btn-secondary" onclick="fillUserId('${user.id}')">Utiliser ID</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                usersHTML += '</div>';
+                usersContainer.innerHTML = usersHTML;
+            }
+        }
     } catch (error) {
         console.error('Get all users error:', error);
     }
+}
+
+// Remplir l'ID utilisateur dans le formulaire
+function fillUserId(id) {
+    const field = document.getElementById('user-id');
+    if (field) field.value = id;
 }
 
 // Récupérer un utilisateur par ID
@@ -648,35 +778,39 @@ function renderRoadbookList(roadbooks) {
         return;
     }
     
+    let html = '';
+    
     roadbooks.forEach(roadbook => {
-        const roadbookEl = document.createElement('div');
-        roadbookEl.className = 'card';
-        
         // Formater la date de création
         const createdDate = new Date(roadbook.createdAt).toLocaleDateString();
         
         // Définir la classe de statut
-        const statusClass = roadbook.status === 'ACTIVE' ? 'status-active' : 'status-inactive';
+        let statusBadgeClass = 'badge-primary';
+        if (roadbook.status === 'ACTIVE') statusBadgeClass = 'badge-success';
+        else if (roadbook.status === 'COMPLETED') statusBadgeClass = 'badge-primary';
+        else if (roadbook.status === 'ARCHIVED') statusBadgeClass = 'badge-danger';
         
-        roadbookEl.innerHTML = `
-            <div class="card-title">
-                ${roadbook.title}
-                <span class="status-badge ${statusClass}">${roadbook.status}</span>
-            </div>
-            <p>${roadbook.description || 'Pas de description'}</p>
-            <div>
-                <span class="badge">Heures cibles: ${roadbook.targetHours}h</span>
-                <span class="badge">Créé le: ${createdDate}</span>
-                ${roadbook._count ? `<span class="badge">Sessions: ${roadbook._count.sessions}</span>` : ''}
-            </div>
-            <div style="margin-top: 10px;">
-                <button onclick="fillRoadbookId('${roadbook.id}')">Utiliser ID</button>
-                <button onclick="getRoadbookById('${roadbook.id}')" class="secondary-button">Détails</button>
+        html += `
+            <div class="list-item">
+                <div class="list-item-title">
+                    ${roadbook.title}
+                    <span class="badge ${statusBadgeClass}">${roadbook.status}</span>
+                </div>
+                <p>${roadbook.description || 'Pas de description'}</p>
+                <div style="margin-top: 5px;">
+                    <span class="badge badge-primary">Heures cibles: ${roadbook.targetHours}h</span>
+                    <span class="badge">Créé le: ${createdDate}</span>
+                    ${roadbook._count ? `<span class="badge">Sessions: ${roadbook._count.sessions}</span>` : ''}
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-sm btn-primary" onclick="fillRoadbookId('${roadbook.id}')">Utiliser ID</button>
+                    <button class="btn btn-sm btn-secondary" onclick="getRoadbookById('${roadbook.id}')">Détails</button>
+                </div>
             </div>
         `;
-        
-        container.appendChild(roadbookEl);
     });
+    
+    container.innerHTML = `<div class="list-group">${html}</div>`;
 }
 
 // Utiliser l'ID d'un roadbook dans les champs
@@ -856,10 +990,9 @@ function renderSessionsList(sessions) {
         return;
     }
     
+    let html = '';
+    
     sessions.forEach(session => {
-        const sessionEl = document.createElement('div');
-        sessionEl.className = 'card';
-        
         // Formater la date
         const sessionDate = new Date(session.date).toLocaleDateString();
         
@@ -870,26 +1003,28 @@ function renderSessionsList(sessions) {
         // Formater la durée
         const duration = session.duration ? `${Math.floor(session.duration / 60)}h${(session.duration % 60).toString().padStart(2, '0')}` : 'N/A';
         
-        sessionEl.innerHTML = `
-            <div class="card-title">
-                Session du ${sessionDate}
-                ${session.validatorId ? '<span class="status-badge status-active">Validée</span>' : ''}
+        html += `
+            <div class="list-item">
+                <div class="list-item-title">
+                    Session du ${sessionDate}
+                    ${session.validatorId ? '<span class="badge badge-success">Validée</span>' : ''}
+                </div>
+                <div>
+                    <span class="badge badge-primary">Début: ${startTime}</span>
+                    <span class="badge">${endTime !== 'N/A' ? `Fin: ${endTime}` : ''}</span>
+                    <span class="badge">${duration !== 'N/A' ? `Durée: ${duration}` : ''}</span>
+                    ${session.distance ? `<span class="badge">Distance: ${session.distance}km</span>` : ''}
+                </div>
+                <div style="margin-top: 5px;">
+                    ${session.weather ? `<span class="badge">Météo: ${session.weather}</span>` : ''}
+                    ${session.daylight ? `<span class="badge">Luminosité: ${session.daylight}</span>` : ''}
+                </div>
+                ${session.notes ? `<p style="margin-top: 10px;"><small>Notes:</small> ${session.notes}</p>` : ''}
             </div>
-            <div>
-                <span class="badge">Début: ${startTime}</span>
-                <span class="badge">Fin: ${endTime}</span>
-                <span class="badge">Durée: ${duration}</span>
-                ${session.distance ? `<span class="badge">Distance: ${session.distance}km</span>` : ''}
-            </div>
-            <div style="margin-top: 5px;">
-                <span class="badge">Météo: ${session.weather || 'N/A'}</span>
-                <span class="badge">Luminosité: ${session.daylight || 'N/A'}</span>
-            </div>
-            ${session.notes ? `<p><strong>Notes:</strong> ${session.notes}</p>` : ''}
         `;
-        
-        container.appendChild(sessionEl);
     });
+    
+    container.innerHTML = `<div class="list-group">${html}</div>`;
 }
 
 // Créer une nouvelle session
@@ -992,20 +1127,19 @@ function renderCompetencyList(competencies) {
         return;
     }
     
+    let html = '';
+    
     competencies.forEach(competency => {
-        const competencyEl = document.createElement('div');
-        competencyEl.className = 'card';
-        
         // Déterminer le style en fonction du statut
-        let statusClass = 'badge';
+        let statusBadgeClass = 'badge-primary';
         let statusText = competency.status || 'NOT_STARTED';
         
         if (statusText === 'MASTERED') {
-            statusClass += ' status-active';
+            statusBadgeClass = 'badge-success';
         } else if (statusText === 'IN_PROGRESS') {
-            statusClass += ' badge-warning';
+            statusBadgeClass = 'badge-warning';
         } else {
-            statusClass += ' status-inactive';
+            statusBadgeClass = 'badge-secondary';
         }
         
         // Utiliser le statut localisé
@@ -1015,20 +1149,22 @@ function renderCompetencyList(competencies) {
             'MASTERED': 'Maîtrisé'
         };
         
-        competencyEl.innerHTML = `
-            <div class="card-title">
-                ${competency.competency?.name || 'Compétence'} 
-                <span class="${statusClass}">${statusMap[statusText] || statusText}</span>
-            </div>
-            <p>${competency.competency?.description || ''}</p>
-            ${competency.notes ? `<p><strong>Notes:</strong> ${competency.notes}</p>` : ''}
-            <div style="margin-top: 10px;">
-                <button onclick="fillCompetencyId('${competency.competencyId || competency.id}')" class="secondary-button">Modifier</button>
+        html += `
+            <div class="list-item">
+                <div class="list-item-title">
+                    ${competency.competency?.name || 'Compétence'} 
+                    <span class="badge ${statusBadgeClass}">${statusMap[statusText] || statusText}</span>
+                </div>
+                <p>${competency.competency?.description || ''}</p>
+                ${competency.notes ? `<p style="margin-top: 10px;"><small>Notes:</small> ${competency.notes}</p>` : ''}
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-sm btn-primary" onclick="fillCompetencyId('${competency.competencyId || competency.id}')">Modifier</button>
+                </div>
             </div>
         `;
-        
-        container.appendChild(competencyEl);
     });
+    
+    container.innerHTML = `<div class="list-group">${html}</div>`;
 }
 
 // Remplir l'ID de compétence dans le formulaire

@@ -7,7 +7,6 @@ import bcrypt from "bcrypt";
 
 // Mock modules
 jest.mock('bcrypt');
-jest.mock("../config/prisma", () => import("../tests/mocks/prisma.mock"));
 jest.mock("../services/auth.service");
 
 // Import mocked prisma

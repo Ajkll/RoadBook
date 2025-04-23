@@ -1,619 +1,902 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RoadBook API Tester</title>
     <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+            --danger-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --text-color: #212529;
+            --body-bg: #f9fafb;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1400px;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            max-width: 1500px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        .header {
-            background-color: #3a86ff;
+
+        /* Header Styles */
+        .app-header {
+            background-color: var(--primary-color);
             color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .app-subtitle {
+            font-size: 0.9rem;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        /* Module Navigation */
+        .module-nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .module-button {
             padding: 15px;
-            border-radius: 5px;
+            background-color: var(--light-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .module-button i {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .module-button.active {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .module-button:hover:not(.active) {
+            background-color: #e9ecef;
+        }
+
+        /* Module Containers */
+        .module-container {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .module-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Layout */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
             margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: var(--light-color);
+            padding: 15px 20px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .module-tabs {
-            display: flex;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        .module-tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 14px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .module-tab:hover {
-            background-color: #dee2e6;
-        }
-        .module-tab.active {
-            background-color: #3a86ff;
-            color: white;
-        }
-        .module-content {
-            display: none;
-        }
-        .module-content.active {
-            display: block;
-        }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .panel {
-            flex: 1;
-            min-width: 300px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
+
+        .card-body {
             padding: 20px;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .panel-header {
-            margin: -20px -20px 20px -20px;
-            padding: 15px 20px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            font-weight: bold;
-            border-radius: 5px 5px 0 0;
-        }
-        h2 {
-            margin-top: 0;
-            color: #333;
-            font-size: 1.2rem;
-        }
-        h3 {
-            font-size: 1rem;
-            margin-top: 20px;
-            color: #555;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-        }
-        button {
-            padding: 8px 16px;
-            background-color: #3a86ff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2a75e0;
-        }
-        .secondary-button {
-            background-color: #6c757d;
-        }
-        .secondary-button:hover {
-            background-color: #5a6268;
-        }
-        .success-button {
-            background-color: #28a745;
-        }
-        .success-button:hover {
-            background-color: #218838;
-        }
-        .danger-button {
-            background-color: #dc3545;
-        }
-        .danger-button:hover {
-            background-color: #c82333;
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        textarea {
-            height: 300px;
-            font-family: monospace;
-            resize: vertical;
-        }
+
+        /* Form Styles */
         .form-group {
             margin-bottom: 15px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 14px;
-            color: #555;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
-        .success {
-            color: #28a745;
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
         }
-        .error {
-            color: #dc3545;
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
         }
-        .card {
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background-color: #fff;
+
+        .form-control-textarea {
+            height: 120px;
+            resize: vertical;
         }
-        .card-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #dee2e6;
-            margin-bottom: 15px;
-        }
-        .tab {
-            padding: 8px 15px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            border-bottom: none;
-            margin-bottom: -1px;
-            border-radius: 4px 4px 0 0;
-        }
-        .tab.active {
-            border-color: #dee2e6;
-            background-color: white;
-            border-bottom-color: white;
-        }
-        .status-badge {
+
+        /* Button Styles */
+        .btn {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: 10px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
         }
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
         }
-        .status-inactive {
-            background-color: #f8d7da;
-            color: #721c24;
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
         }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* Badges */
         .badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: bold;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 20px;
             margin-right: 5px;
-            background-color: #e9ecef;
         }
-        .small-text {
-            font-size: 12px;
-            color: #6c757d;
+
+        .badge-primary {
+            background-color: var(--primary-color);
+            color: white;
         }
-        #token-info {
-            margin-top: 20px;
-            padding: 10px;
+
+        .badge-success {
+            background-color: #4cc9f0;
+            color: white;
+        }
+
+        .badge-warning {
+            background-color: #f9c74f;
+            color: #212529;
+        }
+
+        .badge-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* Authentication Status */
+        .auth-status {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background-color: #4cc9f0;
+        }
+
+        .status-disconnected {
+            background-color: #f72585;
+        }
+
+        /* Lists and Items */
+        .list-group {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        .list-item:hover {
             background-color: #f8f9fa;
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Response Area */
+        .response-container {
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #212529;
+            color: #f8f9fa;
+            overflow: auto;
+            font-family: monospace;
+            margin-top: 20px;
+        }
+
+        #response-output {
+            width: 100%;
+            height: 400px;
+            background-color: #343a40;
+            color: #f8f9fa;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        /* User Guide */
+        .user-guide {
+            background-color: #fff3cd;
+            border-left: 4px solid #f9c74f;
+            padding: 15px;
+            margin-bottom: 20px;
             border-radius: 4px;
         }
-        #roadbook-list {
-            max-height: 400px;
+
+        .user-guide h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .user-guide ul {
+            margin-left: 20px;
+        }
+
+        .user-guide li {
+            margin-bottom: 5px;
+        }
+
+        /* Misc */
+        .text-muted {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .scroll-container {
+            max-height: 500px;
             overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background-color: #cff4fc;
+            border: 1px solid #b6effb;
+            color: #055160;
+        }
+
+        .alert-success {
+            background-color: #d1e7dd;
+            border: 1px solid #badbcc;
+            color: #0f5132;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffecb5;
+            color: #664d03;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+            color: #842029;
+        }
+
+        /* Icons (fake with emoji) */
+        .icon {
+            font-style: normal;
+            font-size: 1.2rem;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>RoadBook API Tester</h1>
-        <div id="token-status">
-            <span>Auth: </span>
-            <span id="auth-status" class="status-badge status-inactive">Non connecté</span>
+    <header class="app-header">
+        <div>
+            <h1 class="app-title">RoadBook API Tester</h1>
+            <div class="app-subtitle">Environment de test pour les API des modules</div>
         </div>
+        <div class="auth-status" id="auth-status-container">
+            <div class="status-indicator status-disconnected" id="status-indicator"></div>
+            <span id="auth-status-text">Non connecté</span>
+        </div>
+    </header>
+
+    <div class="module-nav" id="module-nav">
+        <button class="module-button active" data-module="welcome">
+            <span class="icon">🏠</span>
+            Accueil
+        </button>
+        <button class="module-button" data-module="auth">
+            <span class="icon">🔐</span>
+            Authentification
+        </button>
+        <button class="module-button" data-module="users">
+            <span class="icon">👤</span>
+            Utilisateurs
+        </button>
+        <button class="module-button" data-module="roadbooks">
+            <span class="icon">📔</span>
+            RoadBooks
+        </button>
+        <button class="module-button" data-module="sessions">
+            <span class="icon">🚗</span>
+            Sessions
+        </button>
+        <button class="module-button" data-module="debug">
+            <span class="icon">🔍</span>
+            API Debug
+        </button>
     </div>
-    
-    <div class="module-tabs">
-        <button class="module-tab active" onclick="showModule('auth')">Authentification</button>
-        <button class="module-tab" onclick="showModule('users')">Utilisateurs</button>
-        <button class="module-tab" onclick="showModule('roadbooks')">RoadBooks</button>
-        <button class="module-tab" onclick="showModule('sessions')">Sessions</button>
-        <button class="module-tab" onclick="showModule('competencies')">Compétences</button>
-        <button class="module-tab" onclick="showModule('community')">Communauté</button>
-        <button class="module-tab" onclick="showModule('api-debug')">API Debug</button>
-    </div>
-    
-    <!-- Module Authentification -->
-    <div id="auth-module" class="module-content active">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Inscription</div>
-                <div class="form-group">
-                    <label for="register-email">Email</label>
-                    <input type="email" id="register-email" placeholder="Email" value="test@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Mot de passe</label>
-                    <input type="password" id="register-password" placeholder="Password" value="Password123!">
-                </div>
-                <div class="form-group">
-                    <label for="register-display-name">Nom d'affichage</label>
-                    <input type="text" id="register-display-name" placeholder="Nom d'affichage" value="Test User">
-                </div>
-                <div class="form-group">
-                    <label for="register-role">Rôle</label>
-                    <select id="register-role">
-                        <option value="APPRENTICE">Apprentice</option>
-                        <option value="GUIDE">Guide</option>
-                        <option value="INSTRUCTOR">Instructor</option>
-                        <option value="ADMIN">Admin</option>
-                    </select>
-                </div>
-                <button onclick="register()">Inscription</button>
+
+    <!-- Welcome Module -->
+    <section id="welcome-module" class="module-container active">
+        <div class="card">
+            <div class="card-header">
+                Bienvenue dans le testeur d'API RoadBook
             </div>
-            
-            <div class="panel">
-                <div class="panel-header">Connexion</div>
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" placeholder="Email" value="test@example.com">
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p>Cet outil permet de tester les différentes fonctionnalités de l'API RoadBook en mode développement.</p>
                 </div>
-                <div class="form-group">
-                    <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" placeholder="Password" value="Password123!">
+                
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Modules disponibles</h3>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-header">Module Authentification</div>
+                        <div class="card-body">
+                            <p>Tester les fonctionnalités d'inscription, connexion, et gestion des tokens.</p>
+                            <button class="btn btn-primary" onclick="showModule('auth')">Accéder</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">Module Utilisateurs</div>
+                        <div class="card-body">
+                            <p>Gestion des profils utilisateurs, modifications et recherche.</p>
+                            <button class="btn btn-primary" onclick="showModule('users')">Accéder</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">Module RoadBooks</div>
+                        <div class="card-body">
+                            <p>Création et gestion des carnets d'apprentissage de conduite.</p>
+                            <button class="btn btn-primary" onclick="showModule('roadbooks')">Accéder</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">Module Sessions</div>
+                        <div class="card-body">
+                            <p>Enregistrement et suivi des sessions de conduite.</p>
+                            <button class="btn btn-primary" onclick="showModule('sessions')">Accéder</button>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="login()">Connexion</button>
-                <p class="small-text">Comptes de test: apprentice/guide/instructor/admin@roadbook.com (Password123!)</p>
+                
+                <div class="user-guide" style="margin-top: 20px;">
+                    <h3>Guide d'utilisation</h3>
+                    <ul>
+                        <li>Commencez par vous <strong>inscrire</strong> ou vous <strong>connecter</strong> dans le module Authentification</li>
+                        <li>Une fois connecté, testez les différentes fonctionnalités des modules</li>
+                        <li>Utilisez le module Debug pour voir les réponses détaillées de l'API</li>
+                        <li>Les modules Compétences et Communauté seront disponibles prochainement</li>
+                    </ul>
+                </div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">Comptes de test</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; text-align: left;">
+                            <th style="padding: 10px; border: 1px solid #dee2e6;">Email</th>
+                            <th style="padding: 10px; border: 1px solid #dee2e6;">Mot de passe</th>
+                            <th style="padding: 10px; border: 1px solid #dee2e6;">Rôle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">apprentice@roadbook.com</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">Password123!</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">APPRENTICE</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">guide@roadbook.com</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">Password123!</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">GUIDE</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">instructor@roadbook.com</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">Password123!</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">INSTRUCTOR</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">admin@roadbook.com</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">Password123!</td>
+                            <td style="padding: 10px; border: 1px solid #dee2e6;">ADMIN</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            
-            <div class="panel">
-                <div class="panel-header">Gestion des tokens</div>
-                <div id="token-info">
-                    <div>Access Token: <span id="access-token-status">Non présent</span></div>
-                    <div>Refresh Token: <span id="refresh-token-status">Non présent</span></div>
+        </div>
+    </section>
+
+    <!-- Auth Module -->
+    <section id="auth-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Inscription</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" class="form-control" placeholder="Email" value="test@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Mot de passe</label>
+                        <input type="password" id="register-password" class="form-control" placeholder="Mot de passe" value="Password123!">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-display-name">Nom d'affichage</label>
+                        <input type="text" id="register-display-name" class="form-control" placeholder="Nom d'affichage" value="Test User">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-role">Rôle</label>
+                        <select id="register-role" class="form-control">
+                            <option value="APPRENTICE">Apprentice</option>
+                            <option value="GUIDE">Guide</option>
+                            <option value="INSTRUCTOR">Instructor</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="register()">S'inscrire</button>
                 </div>
-                <div style="margin-top: 15px;">
-                    <button onclick="refreshToken()">Rafraîchir Token</button>
-                    <button onclick="verifyToken()">Vérifier Token</button>
-                    <button onclick="logout()" class="danger-button">Déconnexion</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Connexion</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="Email" value="apprentice@roadbook.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Mot de passe</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="Mot de passe" value="Password123!">
+                    </div>
+                    <button class="btn btn-primary" onclick="login()">Se connecter</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Gestion des tokens</div>
+                <div class="card-body">
+                    <div id="token-info" style="margin-bottom: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+                        <div><strong>Access Token:</strong> <span id="access-token-status" class="text-danger">Non présent</span></div>
+                        <div style="margin-top: 8px;"><strong>Refresh Token:</strong> <span id="refresh-token-status" class="text-danger">Non présent</span></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="refreshToken()">Rafraîchir Token</button>
+                    <button class="btn btn-secondary" onclick="verifyToken()">Vérifier Token</button>
+                    <button class="btn btn-danger" onclick="logout()">Déconnexion</button>
                 </div>
             </div>
         </div>
-        
-        <div class="container" style="margin-top: 20px;">
-            <div class="panel">
-                <div class="panel-header">Réinitialisation de mot de passe</div>
+
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Réinitialisation de mot de passe</div>
+            <div class="card-body">
                 <div class="form-group">
                     <label for="forgot-email">Email</label>
-                    <input type="email" id="forgot-email" placeholder="Email pour réinitialisation">
+                    <input type="email" id="forgot-email" class="form-control" placeholder="Email pour réinitialisation">
                 </div>
-                <button onclick="forgotPassword()">Demander réinitialisation</button>
-                
-                <h3>Compléter la réinitialisation</h3>
+                <button class="btn btn-primary" onclick="forgotPassword()">Demander réinitialisation</button>
+
+                <hr style="margin: 20px 0;">
+
+                <h3 style="margin-bottom: 15px;">Compléter la réinitialisation</h3>
                 <div class="form-group">
                     <label for="reset-token">Token de réinitialisation</label>
-                    <input type="text" id="reset-token" placeholder="Token reçu par email">
+                    <input type="text" id="reset-token" class="form-control" placeholder="Token reçu par email">
                 </div>
                 <div class="form-group">
                     <label for="reset-password">Nouveau mot de passe</label>
-                    <input type="password" id="reset-password" placeholder="Nouveau mot de passe">
+                    <input type="password" id="reset-password" class="form-control" placeholder="Nouveau mot de passe">
                 </div>
                 <div class="form-group">
                     <label for="reset-confirm-password">Confirmer mot de passe</label>
-                    <input type="password" id="reset-confirm-password" placeholder="Confirmer mot de passe">
+                    <input type="password" id="reset-confirm-password" class="form-control" placeholder="Confirmer mot de passe">
                 </div>
-                <button onclick="resetPassword()">Réinitialiser mot de passe</button>
+                <button class="btn btn-primary" onclick="resetPassword()">Réinitialiser mot de passe</button>
             </div>
         </div>
-    </div>
-    
-    <!-- Module Utilisateurs -->
-    <div id="users-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Mon profil</div>
-                <button onclick="getCurrentUser()">Récupérer mon profil</button>
-                
-                <h3>Mettre à jour le profil</h3>
-                <div class="form-group">
-                    <label for="update-display-name">Nom d'affichage</label>
-                    <input type="text" id="update-display-name" placeholder="Nouveau nom d'affichage">
+    </section>
+
+    <!-- Users Module -->
+    <section id="users-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Mon profil</div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="getCurrentUser()">Récupérer mon profil</button>
+
+                    <div id="current-user-profile" style="margin-top: 20px; display: none;">
+                        <h3 style="margin-bottom: 15px;">Information du profil</h3>
+                        <div id="profile-details">
+                            <!-- Profile details will be inserted here dynamically -->
+                        </div>
+                    </div>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h3 style="margin-bottom: 15px;">Mettre à jour le profil</h3>
+                    <div class="form-group">
+                        <label for="update-display-name">Nom d'affichage</label>
+                        <input type="text" id="update-display-name" class="form-control" placeholder="Nouveau nom d'affichage">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-first-name">Prénom</label>
+                        <input type="text" id="update-first-name" class="form-control" placeholder="Prénom">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-last-name">Nom</label>
+                        <input type="text" id="update-last-name" class="form-control" placeholder="Nom">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-bio">Bio</label>
+                        <textarea id="update-bio" class="form-control form-control-textarea" placeholder="Votre bio..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateProfile()">Mettre à jour le profil</button>
                 </div>
-                <div class="form-group">
-                    <label for="update-first-name">Prénom</label>
-                    <input type="text" id="update-first-name" placeholder="Prénom">
-                </div>
-                <div class="form-group">
-                    <label for="update-last-name">Nom</label>
-                    <input type="text" id="update-last-name" placeholder="Nom">
-                </div>
-                <div class="form-group">
-                    <label for="update-bio">Bio</label>
-                    <textarea id="update-bio" placeholder="Votre bio..."></textarea>
-                </div>
-                <button onclick="updateProfile()">Mettre à jour le profil</button>
             </div>
-            
-            <div class="panel">
-                <div class="panel-header">Changer le mot de passe</div>
-                <div class="form-group">
-                    <label for="current-password">Mot de passe actuel</label>
-                    <input type="password" id="current-password" placeholder="Mot de passe actuel">
+
+            <div class="card">
+                <div class="card-header">Changer le mot de passe</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="current-password">Mot de passe actuel</label>
+                        <input type="password" id="current-password" class="form-control" placeholder="Mot de passe actuel">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">Nouveau mot de passe</label>
+                        <input type="password" id="new-password" class="form-control" placeholder="Nouveau mot de passe">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirmer nouveau mot de passe</label>
+                        <input type="password" id="confirm-new-password" class="form-control" placeholder="Confirmer nouveau mot de passe">
+                    </div>
+                    <button class="btn btn-primary" onclick="changePassword()">Changer le mot de passe</button>
                 </div>
-                <div class="form-group">
-                    <label for="new-password">Nouveau mot de passe</label>
-                    <input type="password" id="new-password" placeholder="Nouveau mot de passe">
-                </div>
-                <div class="form-group">
-                    <label for="confirm-new-password">Confirmer nouveau mot de passe</label>
-                    <input type="password" id="confirm-new-password" placeholder="Confirmer nouveau mot de passe">
-                </div>
-                <button onclick="changePassword()">Changer le mot de passe</button>
             </div>
-            
-            <div class="panel">
-                <div class="panel-header">Administration (Admin seulement)</div>
-                <button onclick="getAllUsers()">Liste de tous les utilisateurs</button>
-                
-                <h3>Récupérer un utilisateur par ID</h3>
-                <div class="form-group">
-                    <label for="user-id">ID Utilisateur</label>
-                    <input type="text" id="user-id" placeholder="ID utilisateur">
-                </div>
-                <button onclick="getUserById()">Récupérer l'utilisateur</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Module Roadbooks -->
-    <div id="roadbooks-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Création de RoadBook</div>
-                <div class="form-group">
-                    <label for="roadbook-title">Titre</label>
-                    <input type="text" id="roadbook-title" placeholder="Titre" value="Mon RoadBook">
-                </div>
-                <div class="form-group">
-                    <label for="roadbook-description">Description</label>
-                    <textarea id="roadbook-description" placeholder="Description">RoadBook pour mon apprentissage de conduite</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="roadbook-target-hours">Heures cibles</label>
-                    <input type="number" id="roadbook-target-hours" placeholder="Heures cibles" value="30">
-                </div>
-                <button onclick="createRoadbook()">Créer un RoadBook</button>
-            </div>
-            
-            <div class="panel">
-                <div class="panel-header">Mes RoadBooks</div>
-                <button onclick="getMyRoadbooks()">Récupérer mes RoadBooks</button>
-                <button onclick="getGuidedRoadbooks()" class="secondary-button">RoadBooks où je suis guide</button>
-                
-                <div id="roadbook-list" style="margin-top: 20px;">
-                    <p>Aucun RoadBook trouvé</p>
+
+            <div class="card">
+                <div class="card-header">Administration (Admin seulement)</div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="getAllUsers()">Liste de tous les utilisateurs</button>
+
+                    <div id="all-users-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- All users will be inserted here dynamically -->
+                    </div>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h3 style="margin-bottom: 15px;">Récupérer un utilisateur par ID</h3>
+                    <div class="form-group">
+                        <label for="user-id">ID Utilisateur</label>
+                        <input type="text" id="user-id" class="form-control" placeholder="ID utilisateur">
+                    </div>
+                    <button class="btn btn-primary" onclick="getUserById()">Récupérer l'utilisateur</button>
                 </div>
             </div>
         </div>
-        
-        <div class="container" style="margin-top: 20px;">
-            <div class="panel">
-                <div class="panel-header">Détails du RoadBook</div>
-                <div class="form-group">
-                    <label for="roadbook-id">ID du RoadBook</label>
-                    <input type="text" id="roadbook-id" placeholder="ID du RoadBook">
+    </section>
+
+    <!-- Roadbooks Module -->
+    <section id="roadbooks-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Création de RoadBook</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="roadbook-title">Titre</label>
+                        <input type="text" id="roadbook-title" class="form-control" placeholder="Titre" value="Mon RoadBook">
+                    </div>
+                    <div class="form-group">
+                        <label for="roadbook-description">Description</label>
+                        <textarea id="roadbook-description" class="form-control form-control-textarea" placeholder="Description">RoadBook pour mon apprentissage de conduite</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="roadbook-target-hours">Heures cibles</label>
+                        <input type="number" id="roadbook-target-hours" class="form-control" placeholder="Heures cibles" value="30">
+                    </div>
+                    <button class="btn btn-primary" onclick="createRoadbook()">Créer un RoadBook</button>
                 </div>
-                <button onclick="getRoadbookById()">Récupérer détails</button>
-                <button onclick="getRoadbookStatistics()" class="secondary-button">Récupérer statistiques</button>
-                <button onclick="exportRoadbook()" class="secondary-button">Exporter (JSON)</button>
-                
-                <h3>Changer le statut</h3>
-                <div class="form-group">
-                    <label for="roadbook-status">Nouveau statut</label>
-                    <select id="roadbook-status">
-                        <option value="ACTIVE">Actif</option>
-                        <option value="COMPLETED">Complété</option>
-                        <option value="ARCHIVED">Archivé</option>
-                    </select>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Mes RoadBooks</div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="getMyRoadbooks()">Récupérer mes RoadBooks</button>
+                    <button class="btn btn-secondary" onclick="getGuidedRoadbooks()">RoadBooks où je suis guide</button>
+
+                    <div id="roadbook-list" class="scroll-container" style="margin-top: 20px;">
+                        <p>Aucun RoadBook trouvé</p>
+                    </div>
                 </div>
-                <button onclick="updateRoadbookStatus()">Mettre à jour le statut</button>
-                
-                <h3>Assigner un guide</h3>
-                <div class="form-group">
-                    <label for="guide-id">ID du guide</label>
-                    <input type="text" id="guide-id" placeholder="ID utilisateur du guide">
+            </div>
+
+            <div class="card">
+                <div class="card-header">Détails du RoadBook</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="roadbook-id">ID du RoadBook</label>
+                        <input type="text" id="roadbook-id" class="form-control" placeholder="ID du RoadBook">
+                    </div>
+                    <button class="btn btn-primary" onclick="getRoadbookById()">Récupérer détails</button>
+                    <button class="btn btn-secondary" onclick="getRoadbookStatistics()">Récupérer statistiques</button>
+                    <button class="btn btn-secondary" onclick="exportRoadbook()">Exporter (JSON)</button>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h3 style="margin-bottom: 15px;">Changer le statut</h3>
+                    <div class="form-group">
+                        <label for="roadbook-status">Nouveau statut</label>
+                        <select id="roadbook-status" class="form-control">
+                            <option value="ACTIVE">Actif</option>
+                            <option value="COMPLETED">Complété</option>
+                            <option value="ARCHIVED">Archivé</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateRoadbookStatus()">Mettre à jour le statut</button>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h3 style="margin-bottom: 15px;">Assigner un guide</h3>
+                    <div class="form-group">
+                        <label for="guide-id">ID du guide</label>
+                        <input type="text" id="guide-id" class="form-control" placeholder="ID utilisateur du guide">
+                    </div>
+                    <button class="btn btn-primary" onclick="assignGuide()">Assigner guide</button>
                 </div>
-                <button onclick="assignGuide()">Assigner guide</button>
             </div>
         </div>
-    </div>
-    
-    <!-- Module Sessions -->
-    <div id="sessions-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Sessions d'un RoadBook</div>
-                <div class="form-group">
-                    <label for="sessions-roadbook-id">ID du RoadBook</label>
-                    <input type="text" id="sessions-roadbook-id" placeholder="ID du RoadBook">
-                </div>
-                <button onclick="getRoadbookSessions()">Récupérer les sessions</button>
-                
-                <div id="sessions-list" style="margin-top: 20px;">
-                    <p>Aucune session trouvée</p>
+    </section>
+
+    <!-- Sessions Module -->
+    <section id="sessions-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Sessions d'un RoadBook</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="sessions-roadbook-id">ID du RoadBook</label>
+                        <input type="text" id="sessions-roadbook-id" class="form-control" placeholder="ID du RoadBook">
+                    </div>
+                    <button class="btn btn-primary" onclick="getRoadbookSessions()">Récupérer les sessions</button>
+
+                    <div id="sessions-list" class="scroll-container" style="margin-top: 20px;">
+                        <p>Aucune session trouvée</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="panel">
-                <div class="panel-header">Création de session</div>
-                <div class="form-group">
-                    <label for="session-roadbook-id">ID du RoadBook</label>
-                    <input type="text" id="session-roadbook-id" placeholder="ID du RoadBook">
+
+            <div class="card">
+                <div class="card-header">Création de session</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="session-roadbook-id">ID du RoadBook</label>
+                        <input type="text" id="session-roadbook-id" class="form-control" placeholder="ID du RoadBook">
+                    </div>
+                    <div class="form-group">
+                        <label for="session-date">Date</label>
+                        <input type="date" id="session-date" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="session-start-time">Heure de début</label>
+                        <input type="time" id="session-start-time" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="session-end-time">Heure de fin</label>
+                        <input type="time" id="session-end-time" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="session-duration">Durée (minutes)</label>
+                        <input type="number" id="session-duration" class="form-control" placeholder="Durée en minutes">
+                    </div>
+                    <div class="form-group">
+                        <label for="session-weather">Météo</label>
+                        <select id="session-weather" class="form-control">
+                            <option value="CLEAR">Dégagé</option>
+                            <option value="CLOUDY">Nuageux</option>
+                            <option value="RAINY">Pluvieux</option>
+                            <option value="SNOWY">Neigeux</option>
+                            <option value="FOGGY">Brouillard</option>
+                            <option value="WINDY">Venteux</option>
+                            <option value="OTHER">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="session-daylight">Luminosité</label>
+                        <select id="session-daylight" class="form-control">
+                            <option value="DAY">Jour</option>
+                            <option value="NIGHT">Nuit</option>
+                            <option value="DAWN_DUSK">Aube/Crépuscule</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="session-notes">Notes</label>
+                        <textarea id="session-notes" class="form-control form-control-textarea" placeholder="Notes sur la session..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="createSession()">Créer la session</button>
                 </div>
-                <div class="form-group">
-                    <label for="session-date">Date</label>
-                    <input type="date" id="session-date">
-                </div>
-                <div class="form-group">
-                    <label for="session-start-time">Heure de début</label>
-                    <input type="time" id="session-start-time">
-                </div>
-                <div class="form-group">
-                    <label for="session-end-time">Heure de fin</label>
-                    <input type="time" id="session-end-time">
-                </div>
-                <div class="form-group">
-                    <label for="session-duration">Durée (minutes)</label>
-                    <input type="number" id="session-duration" placeholder="Durée en minutes">
-                </div>
-                <div class="form-group">
-                    <label for="session-start-location">Lieu de départ</label>
-                    <input type="text" id="session-start-location" placeholder="Lieu de départ">
-                </div>
-                <div class="form-group">
-                    <label for="session-end-location">Lieu d'arrivée</label>
-                    <input type="text" id="session-end-location" placeholder="Lieu d'arrivée">
-                </div>
-                <div class="form-group">
-                    <label for="session-distance">Distance (km)</label>
-                    <input type="number" id="session-distance" placeholder="Distance en km">
-                </div>
-                <div class="form-group">
-                    <label for="session-weather">Météo</label>
-                    <select id="session-weather">
-                        <option value="CLEAR">Dégagé</option>
-                        <option value="CLOUDY">Nuageux</option>
-                        <option value="RAINY">Pluvieux</option>
-                        <option value="SNOWY">Neigeux</option>
-                        <option value="FOGGY">Brouillard</option>
-                        <option value="WINDY">Venteux</option>
-                        <option value="OTHER">Autre</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="session-daylight">Luminosité</label>
-                    <select id="session-daylight">
-                        <option value="DAY">Jour</option>
-                        <option value="NIGHT">Nuit</option>
-                        <option value="DAWN_DUSK">Aube/Crépuscule</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="session-notes">Notes</label>
-                    <textarea id="session-notes" placeholder="Notes sur la session..."></textarea>
-                </div>
-                <button onclick="createSession()">Créer la session</button>
             </div>
         </div>
-    </div>
-    
-    <!-- Module Compétences -->
-    <div id="competencies-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Progression des compétences</div>
-                <div class="form-group">
-                    <label for="competencies-roadbook-id">ID du RoadBook</label>
-                    <input type="text" id="competencies-roadbook-id" placeholder="ID du RoadBook">
-                </div>
-                <button onclick="getCompetencyProgress()">Récupérer progression</button>
-                
-                <div id="competency-list" style="margin-top: 20px;">
-                    <p>Aucune compétence trouvée</p>
-                </div>
-            </div>
-            
-            <div class="panel">
-                <div class="panel-header">Mise à jour du statut</div>
-                <div class="form-group">
-                    <label for="competency-roadbook-id">ID du RoadBook</label>
-                    <input type="text" id="competency-roadbook-id" placeholder="ID du RoadBook">
-                </div>
-                <div class="form-group">
-                    <label for="competency-id">ID de la compétence</label>
-                    <input type="text" id="competency-id" placeholder="ID de la compétence">
-                </div>
-                <div class="form-group">
-                    <label for="competency-status">Statut</label>
-                    <select id="competency-status">
-                        <option value="NOT_STARTED">Non commencé</option>
-                        <option value="IN_PROGRESS">En cours</option>
-                        <option value="MASTERED">Maîtrisé</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="competency-notes">Notes</label>
-                    <textarea id="competency-notes" placeholder="Notes sur la compétence..."></textarea>
-                </div>
-                <button onclick="updateCompetencyStatus()">Mettre à jour le statut</button>
+    </section>
+
+    <!-- Debug Module -->
+    <section id="debug-module" class="module-container">
+        <div class="card">
+            <div class="card-header">Console API</div>
+            <div class="card-body">
+                <textarea id="response-output" readonly placeholder="Les réponses API apparaîtront ici..."></textarea>
             </div>
         </div>
-    </div>
-    
-    <!-- Module Communauté -->
-    <div id="community-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Module communauté</div>
-                <p>Fonctionnalités à venir...</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Module API Debug -->
-    <div id="api-debug-module" class="module-content">
-        <div class="container">
-            <div class="panel">
-                <div class="panel-header">Réponse API</div>
-                <textarea id="response-output" readonly></textarea>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Charger le fichier JavaScript externe -->
+    </section>
+
+    <!-- Charger app.js -->
     <script src="app.js"></script>
 
     <script>
-        // Code pour gérer les onglets de modules
+        // Fonctions d'interface
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attachement événements
+            document.querySelectorAll('.module-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const moduleId = this.getAttribute('data-module');
+                    showModule(moduleId);
+                });
+            });
+            
+            // Initialisation avec date du jour
+            if (document.getElementById('session-date')) {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('session-date').value = today;
+            }
+            
+            // Initialiser l'heure actuelle et +1h pour les sessions
+            if (document.getElementById('session-start-time') && document.getElementById('session-end-time')) {
+                const now = new Date();
+                const startTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                now.setHours(now.getHours() + 1);
+                const endTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                document.getElementById('session-start-time').value = startTime;
+                document.getElementById('session-end-time').value = endTime;
+            }
+        });
+
+        // Fonction pour changer de module
         function showModule(moduleId) {
-            // Masquer tous les modules
-            document.querySelectorAll('.module-content').forEach(module => {
+            // Désactiver tous les modules et onglets
+            document.querySelectorAll('.module-container').forEach(module => {
                 module.classList.remove('active');
             });
             
-            // Désactiver tous les onglets
-            document.querySelectorAll('.module-tab').forEach(tab => {
-                tab.classList.remove('active');
+            document.querySelectorAll('.module-button').forEach(button => {
+                button.classList.remove('active');
             });
             
-            // Afficher le module sélectionné
+            // Activer le module et l'onglet sélectionnés
             document.getElementById(`${moduleId}-module`).classList.add('active');
-            
-            // Activer l'onglet correspondant
-            event.target.classList.add('active');
-            
-            // Si on active le module API Debug, afficher automatiquement l'onglet "API Debug"
-            if (moduleId === 'api-debug') {
-                document.querySelectorAll('.module-tab').forEach(tab => {
-                    if (tab.innerText === "API Debug") {
-                        tab.classList.add('active');
-                    }
-                });
-            }
+            document.querySelector(`.module-button[data-module="${moduleId}"]`).classList.add('active');
         }
     </script>
 </body>
