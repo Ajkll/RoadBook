@@ -1,9 +1,16 @@
 /**
  * Configuration Prisma Client
+ * ===========================
  * 
  * Ce fichier configure et exporte l'instance Prisma Client utilisée dans toute l'application
- * pour interagir avec la base de données PostgreSQL. La configuration des logs varie selon
- * l'environnement d'exécution.
+ * pour interagir avec la base de données PostgreSQL.
+ * 
+ * Fonctionnalités:
+ * - Chargement automatique des variables d'environnement
+ * - Configuration des logs adaptée selon l'environnement d'exécution
+ * - Fournit un point d'accès unique à la base de données pour toute l'application
+ * 
+ * @module config/prisma
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -12,10 +19,12 @@ import dotenv from 'dotenv';
 // Charger les variables d'environnement depuis .env
 dotenv.config();
 
-// Initialiser le client Prisma avec la configuration appropriée
+/**
+ * Initialisation du client Prisma avec la configuration appropriée.
+ * En développement, tous les types de logs sont affichés pour faciliter le débogage.
+ * En production ou test, seules les erreurs sont affichées pour éviter de surcharger les logs.
+ */
 const prisma = new PrismaClient({
-  // En développement, afficher tous les types de logs
-  // En production/test, afficher uniquement les erreurs
   log: process.env.NODE_ENV === "development" 
     ? ['query', 'info', 'warn', 'error']
     : ['error'],

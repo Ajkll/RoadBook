@@ -1,7 +1,22 @@
 #!/bin/bash
 
-# Script d'aide pour le développement RoadBook server
-# Centralise toutes les commandes courantes pour faciliter le développement
+##############################################################################
+# Script utilitaire RoadBook
+# =========================
+#
+# Utilitaire centralisé pour gérer le développement, les tests, 
+# et les déploiements du projet RoadBook.
+#
+# Ce script offre des commandes pour:
+# - Démarrer l'environnement de développement
+# - Lancer et gérer les conteneurs Docker
+# - Exécuter les tests unitaires et d'intégration
+# - Gérer la base de données et les migrations
+# - Démarrer l'interface de test API
+#
+# Auteur: Équipe RoadBook
+# Date: Avril 2025
+##############################################################################
 
 # Couleurs pour les messages
 RED='\033[0;31m'

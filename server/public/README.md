@@ -1,4 +1,17 @@
 # RoadBook API Test UI
+# ==================
+
+/**
+ * Interface de test pour l'API RoadBook
+ * =====================================
+ * 
+ * Cette application web légère permet de tester interactivement toutes les
+ * fonctionnalités de l'API RoadBook dans un environnement de développement.
+ * 
+ * Auteur: Équipe RoadBook
+ * Version: 1.0.0
+ * Date: Avril 2025
+ */
 
 Cette interface utilisateur permet de tester facilement les différentes fonctionnalités de l'API RoadBook en mode développement.
 

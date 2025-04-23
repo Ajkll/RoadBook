@@ -1,7 +1,20 @@
 #!/bin/bash
 
-# Script de lancement du serveur de développement sur le port 4002
-# Ce script gère le démarrage de l'environnement de développement complet avec Docker
+##############################################################################
+# Script de lancement de l'environnement de développement RoadBook
+# ================================================================
+#
+# Ce script automatise le démarrage complet de l'environnement de développement:
+# - Vérifie la présence de Docker et des fichiers de configuration
+# - Démarre les conteneurs PostgreSQL nécessaires
+# - Génère les clients Prisma
+# - Exécute les migrations nécessaires
+# - Lance le serveur de développement en mode watch
+# - Démarre l'interface de test API
+#
+# Auteur: Équipe RoadBook
+# Date: Avril 2025
+##############################################################################
 
 echo "===== Lancement du serveur de développement RoadBook ====="
 

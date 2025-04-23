@@ -1,10 +1,19 @@
-// src/tests/jest-setup.ts
-import { jest } from '@jest/globals';
-
 /**
- * This file provides global setup for Jest tests
- * It's loaded before all tests run
+ * Configuration globale pour les tests Jest
+ * =========================================
+ * 
+ * Ce fichier est chargé avant l'exécution de tous les tests et fournit
+ * une configuration globale pour l'environnement de test Jest.
+ * 
+ * Fonctionnalités:
+ * - Amélioration des types Jest pour les mocks
+ * - Configuration du mock global de fetch
+ * - Résolution des problèmes courants de typage en tests
+ * 
+ * @module tests/jest-setup
  */
+
+import { jest } from '@jest/globals';
 
 // Add patch for TypeScript to improve mock typing
 // This will make TypeScript accept any value for mockResolvedValue, mockImplementation, etc.

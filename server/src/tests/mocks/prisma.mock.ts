@@ -1,4 +1,16 @@
-// server/src/tests/mocks/prisma.mock.ts
+/**
+ * Mock Prisma Client pour les tests
+ * =================================
+ * 
+ * Ce fichier fournit un mock complet du client Prisma pour les tests unitaires.
+ * Il simule toutes les fonctionnalités de la base de données sans nécessiter une connexion réelle.
+ * 
+ * Chaque modèle de la base de données et ses méthodes (create, findUnique, update, etc.)
+ * sont simulés pour permettre des tests précis et isolés des services et contrôleurs.
+ * 
+ * @module tests/mocks/prisma.mock
+ */
+
 import { PrismaClient } from '@prisma/client';
 import { jest } from '@jest/globals';
 
