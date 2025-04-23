@@ -19,24 +19,22 @@ export interface PendingDriveSession {
   } | null;
   roadInfo?: {
     summary: {
-      totalDistanceKm: number;        // Changé de totalDistance
-      totalDurationMinutes: number;   // Changé de totalDuration
-      trafficDelayMinutes: number;    // Changé de trafficDelay
+      totalDistanceKm: number;
+      totalDurationMinutes: number;
+      trafficDelayMinutes: number;
     };
     roadTypes: Record<string, number>;
-    roadTypesDistribution: Record<string, number>; // Nouveau champ
+    roadTypesDistribution: Record<string, number>;
     traffic: Record<string, number>;
-    trafficDistribution: Record<string, number>;   // Nouveau champ
-    urbanRuralDistribution: {                      // Nouveau champ
+    trafficDistribution: Record<string, number>;
+    urbanRuralDistribution: {
       urban: number;
       rural: number;
       highway: number;
     };
     speed: {
       average: number;
-      // max n'est plus utilisé avec Geoapify
     };
-    // Nouveaux champs spécifiques à Geoapify
     detailedInfo?: {
       matchedPoints?: number;
       matchQuality?: string;
@@ -44,7 +42,7 @@ export interface PendingDriveSession {
     };
   } | null;
   vehicle?: 'moto' | 'voiture' | 'camion' | 'camionnette' | null;
-  createdAt: number; // Timestamp en millisecondes
+  createdAt: number;
   locationTimestamp: number; // Pour récupérer la météo a posteriori
 }
 
@@ -52,7 +50,7 @@ export interface PendingRoadInfoRequest {
   id: string;
   driveSessionId: string;
   path: { latitude: number; longitude: number }[];
-  requestedAt: number; // Date de la demande
+  requestedAt: number;
 }
 
 const KEYS = {
@@ -67,27 +65,24 @@ export interface PendingWeatherRequest {
   driveSessionId: string;
   latitude: number;
   longitude: number;
-  timestamp: number; // Date du trajet
+  timestamp: number;
   requestedAt: number; // Date de la demande
 }
 
 export const savePendingRoadInfoRequest = async (request: PendingRoadInfoRequest): Promise<string> => {
   try {
-    // Modification: Utiliser une combinaison unique avec timestamp ET random
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9);
     const id = `roadinfo_${timestamp}_${random}`;
 
     const existingRequests = await getPendingRoadInfoRequests();
 
-    // IMPORTANT: Vérifier si l'ID existe déjà pour éviter les doublons
     const isDuplicate = existingRequests.some(req => req.id === id ||
       (req.driveSessionId === request.driveSessionId &&
        JSON.stringify(req.path) === JSON.stringify(request.path)));
 
     if (isDuplicate) {
-      console.log('⚠️ Tentative d\'ajout d\'une requête d\'info routière dupliquée, ignorée');
-      // Retourner l'ID de la requête existante ou null
+      console.log(' Tentative d\'ajout d\'une requête d\'info routière dupliquée, ignorée');
       const existingRequest = existingRequests.find(req =>
         req.driveSessionId === request.driveSessionId &&
         JSON.stringify(req.path) === JSON.stringify(request.path));
@@ -99,10 +94,10 @@ export const savePendingRoadInfoRequest = async (request: PendingRoadInfoRequest
 
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRequests));
 
-    console.log('🛣️ Requête d\'info routière en attente sauvegardée:', id);
+    console.log(' Requête d\'info routière en attente sauvegardée:', id);
     return id;
   } catch (error) {
-    console.error('❌ Erreur lors de la sauvegarde de la requête d\'info routière:', error);
+    console.error('Erreur lors de la sauvegarde de la requête d\'info routière:', error);
     throw error;
   }
 };
@@ -112,7 +107,7 @@ export const getPendingRoadInfoRequests = async (): Promise<PendingRoadInfoReque
     const requestsString = await AsyncStorage.getItem(KEYS.PENDING_ROADINFO_REQUESTS);
     return requestsString ? JSON.parse(requestsString) : [];
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des requêtes d\'info routière en attente:', error);
+    console.error('Erreur lors de la récupération des requêtes d\'info routière en attente:', error);
     return [];
   }
 };
@@ -122,45 +117,39 @@ export const removePendingRoadInfoRequest = async (id: string): Promise<void> =>
     const requests = await getPendingRoadInfoRequests();
     const updatedRequests = requests.filter(request => request.id !== id);
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRequests));
-    console.log('🗑️ Requête d\'info routière supprimée du stockage local:', id);
+    console.log(' Requête d\'info routière supprimée du stockage local:', id);
   } catch (error) {
-    console.error('❌ Erreur lors de la suppression de la requête d\'info routière:', error);
+    console.error('Erreur lors de la suppression de la requête d\'info routière:', error);
     throw error;
   }
 };
 
-// Fonctions pour les sessions de conduite
 export const savePendingDriveSession = async (session: Omit<PendingDriveSession, 'id'>): Promise<string> => {
   try {
-    let id = session.id; // Vérifier d'abord si un ID est fourni
+    let id = session.id;
 
-    // Générer un ID seulement si nécessaire
     if (!id) {
       id = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     }
 
-    // Récupérer les sessions existantes
     const existingSessions = await getPendingDriveSessions();
 
-    // Vérifier si une session avec le même ID existe déjà
     const existingIndex = existingSessions.findIndex(s => s.id === id);
 
     if (existingIndex >= 0) {
-      // Mettre à jour la session existante
       existingSessions[existingIndex] = { ...session, id };
       await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(existingSessions));
-      console.log('🔄 Session de conduite mise à jour localement:', id);
+      console.log(' Session de conduite mise à jour localement:', id);
     } else {
-      // Ajouter la nouvelle session
       const newSession = { ...session, id };
       const updatedSessions = [...existingSessions, newSession];
       await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(updatedSessions));
-      console.log('🚙 Session de conduite sauvegardée localement:', id);
+      console.log(' Session de conduite sauvegardée localement:', id);
     }
 
     return id;
   } catch (error) {
-    console.error('❌ Erreur lors de la sauvegarde locale de la session:', error);
+    console.error('Erreur lors de la sauvegarde locale de la session:', error);
     throw error;
   }
 };
@@ -170,19 +159,17 @@ export const getPendingDriveSessions = async (): Promise<PendingDriveSession[]> 
     const sessionsString = await AsyncStorage.getItem(KEYS.PENDING_DRIVE_SESSIONS);
     return sessionsString ? JSON.parse(sessionsString) : [];
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des sessions en attente:', error);
+    console.error(' Erreur lors de la récupération des sessions en attente:', error);
     return [];
   }
 };
 
 export const removePendingDriveSession = async (id: string): Promise<void> => {
   try {
-    // 1. Supprimer la session
     const sessions = await getPendingDriveSessions();
     const updatedSessions = sessions.filter(session => session.id !== id);
     await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(updatedSessions));
 
-    // 2. Supprimer les requêtes roadInfo associées
     const roadRequests = await getPendingRoadInfoRequests();
     const updatedRoadRequests = roadRequests.filter(req => req.driveSessionId !== id);
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRoadRequests));
@@ -192,9 +179,9 @@ export const removePendingDriveSession = async (id: string): Promise<void> => {
     const updatedWeatherRequests = weatherRequests.filter(req => req.driveSessionId !== id);
     await AsyncStorage.setItem(KEYS.PENDING_WEATHER_REQUESTS, JSON.stringify(updatedWeatherRequests));
 
-    console.log('🗑️ Session et requêtes associées supprimées:', id);
+    console.log(' Session et requêtes associées supprimées:', id);
   } catch (error) {
-    console.error('❌ Erreur lors de la suppression de la session:', error);
+    console.error('Erreur lors de la suppression de la session:', error);
     throw error;
   }
 };

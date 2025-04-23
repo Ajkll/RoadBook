@@ -12,6 +12,7 @@ interface LocationState {
   path: Coord[];
   tempBuffer: Coord[];
   lastSavedPoint: Coord | null;
+  mapReady: boolean;
 }
 
 const initialState: LocationState = {
@@ -21,6 +22,7 @@ const initialState: LocationState = {
   path: [],
   tempBuffer: [],
   lastSavedPoint: null,
+  mapReady: false,
 };
 
 // buffer temporaire pour les coord GPS
@@ -33,12 +35,21 @@ export const locationSlice = createSlice({
   name: 'location',
   initialState,
   reducers: {
+
+    setMapReady: (state, action: PayloadAction<boolean>) => {
+      state.mapReady = action.payload;
+    },
     startTracking: (state) => {
+      if (!state.mapReady) {
+        console.error("Le tracking ne peut pas démarrer : la carte n'est pas prête");
+        return;
+      }
       state.tracking = true;
       state.path = [];
       state.tempBuffer = [];
       state.lastSavedPoint = null;
     },
+
     stopTracking: (state) => {
       state.tracking = false;
 
@@ -110,6 +121,7 @@ export const locationSlice = createSlice({
 });
 
 export const {
+  setMapReady,
   startTracking,
   stopTracking,
   updateLocation,

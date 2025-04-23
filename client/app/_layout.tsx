@@ -19,6 +19,8 @@ import SyncInitializer from './components/SyncInitializer';
 import NetworkSyncManager from './components/NetworkSyncManager';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
+import { SoundProvider } from './components/SoundProvider';
+import { NotificationHandler } from './components/NotificationHandler';
 
 
 function RootNavigator() {
@@ -140,15 +142,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Provider store={store}>
+          <SoundProvider>
           <ChronoWatcher />
           <SyncInitializer />
           <NetworkSyncManager />
           <ThemeProvider>
             <AuthProvider>
               <RootNavigator />
-              <Toast />
+              <NotificationHandler />
             </AuthProvider>
           </ThemeProvider>
+          </SoundProvider>
         </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

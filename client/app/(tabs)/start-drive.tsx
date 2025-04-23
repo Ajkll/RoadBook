@@ -14,22 +14,29 @@ import centerIcon from '../assets/icones/routier/recentrer.png';
 import { setVehicleType } from '../store/slices/vehicleSlice';
 import waitingIcone from '../assets/images/waiting-page.png';
 import { useTheme } from '../constants/theme';
+import StartButtonModal from '../components/modals/StartButtonModal';
+import { Modalize } from 'react-native-modalize';
+import * as Location from 'expo-location';
+import { startTracking , setMapReady } from '../store/slices/locationSlice';
+import { startChrono } from '../store/slices/chronoSlice';
+import { playSound } from '../utils/soundPlayer';
 
 const { width, height } = Dimensions.get('window');
-// temp d'inactivité avant le recentrage
-const AUTO_FOLLOW_DELAY = 5000; // pour les tests 5 secondes en vrai 30 secondes serait mieux avant de ce recentrer automatiquement
+const AUTO_FOLLOW_DELAY = 5000; // Timer de suivit du véhicule
+const INACTIVITY_TIMEOUT = 3200; // Timer de suivit d'inactivité
 
 export default function StartDriveScreen() {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-
+  const { latitude, longitude, path, tracking, tempBuffer } = useSelector((state: RootState) => state.location);
   const mapRef = useRef(null);
   const dispatch = useDispatch();
   const elapsedTime = useSelector((state: RootState) => state.chrono.elapsedTime);
   const isRunning = useSelector((state: RootState) => state.chrono.isRunning);
-  const { latitude, longitude, path, tracking } = useSelector((state: RootState) => state.location);
   const [hasReceivedPosition, setHasReceivedPosition] = useState(false);
   const [lastValidPosition, setLastValidPosition] = useState({ latitude: null, longitude: null });
+  const [mapReady, setMapReady] = useState(false);
+  const modalizeRef = useRef<Modalize>(null);
 
   const regionRef = useRef({
     latitude: latitude || 0,
@@ -59,6 +66,53 @@ export default function StartDriveScreen() {
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   }), []);
+  const [isLoading, setIsLoading] = useState(true);
+  const [initialPosition, setInitialPosition] = useState(null);
+
+  useEffect(() => {
+    if (tracking) {
+      modalizeRef.current?.close();
+    }
+  }, [tracking]);
+
+  // Récupération de la position initiale
+  useEffect(() => {
+    const getInitialPosition = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Permission to access location was denied');
+          return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+        setInitialPosition({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        });
+        setHasReceivedPosition(true);
+        setIsLoading(false);
+      } catch (error) {
+        console.log('Error getting location', error);
+        setIsLoading(false);
+      }
+    };
+
+    getInitialPosition();
+  }, []);
+
+  const handleStartTracking = useCallback(() => {
+    setTimeout(() => {
+      dispatch(startTracking());
+      dispatch(startChrono());
+
+      setTimeout(() => {
+        if (modalizeRef.current) {
+          modalizeRef.current.close();
+        }
+      }, 50);
+    }, 100);
+  }, [dispatch]);
 
   // detecter les bord en fonction de notre position
   const isPositionNearEdge = useCallback(() => {
@@ -163,9 +217,11 @@ export default function StartDriveScreen() {
     };
   }, [resetAutoFollowTimer]);
 
+
+
   const handleZoom = useCallback((zoomIn) => {
     if (!mapRef.current) return;
-
+    lastInteractionTimeRef.current = Date.now();
     const currentRegion = regionRef.current;
     const zoomFactor = zoomIn ? 0.5 : 2;
 
@@ -205,6 +261,7 @@ export default function StartDriveScreen() {
   // fonction pour le recentrage manuelle
   const recenterMap = useCallback(() => {
     setUserControllingMap(false);
+    lastInteractionTimeRef.current = Date.now();
     if (latitude && longitude) {
       mapRef.current?.animateToRegion({
         latitude,
@@ -218,21 +275,28 @@ export default function StartDriveScreen() {
   const handleMapDragStart = useCallback(() => {
     // si l'user à manipuler la carte
     setUserControllingMap(true);
+    lastInteractionTimeRef.current = Date.now();
     resetAutoFollowTimer();
   }, [resetAutoFollowTimer]);
 
+  const getDisplayCoordinates = useCallback((coords: Coord[]) => {
+    if (coords.length < 100) return coords;
+    return coords.filter((_, index) => index % 2 === 0);
+  }, []);
+
   const polylineComponent = useMemo(() => {
-    if (path.length > 1 && tracking) {
+    const coordinates = tracking ? [...path, ...getDisplayCoordinates(tempBuffer)] : path;
+    if (coordinates.length > 1) {
       return (
         <Polyline
-          coordinates={path}
+          coordinates={coordinates}
           strokeColor={polylineColor}
           strokeWidth={13}
         />
       );
     }
     return null;
-  }, [path, tracking, polylineColor]);
+  }, [path, tempBuffer, tracking, polylineColor, getDisplayCoordinates]);
 
   const markerComponent = useMemo(() => {
     if (latitude && longitude) {
@@ -251,7 +315,19 @@ export default function StartDriveScreen() {
     return null;
   }, [latitude, longitude, animatedCoord, selectedVehicleIcon]);
 
-  if (!hasReceivedPosition) {
+  useEffect(() => {
+    if (!tracking && !isRunning && !customizationVisible) {
+      const inactivityTimer = setTimeout(() => {
+        if (Date.now() - lastInteractionTimeRef.current >= INACTIVITY_TIMEOUT) {
+          modalizeRef.current?.open('top');
+        }
+      }, INACTIVITY_TIMEOUT);
+
+      return () => clearTimeout(inactivityTimer);
+    }
+  }, [tracking, isRunning, customizationVisible]);
+
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Image source={waitingIcone} style={styles.loadingImage}/>
@@ -267,22 +343,32 @@ export default function StartDriveScreen() {
         provider={PROVIDER_GOOGLE}
         showsUserLocation={false}
         showsMyLocationButton={false}
-        initialRegion={regionRef.current}
+        initialRegion={initialPosition ? {
+          latitude: initialPosition.latitude,
+          longitude: initialPosition.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01
+        } : undefined}
         mapType={mapType}
         moveOnMarkerPress={false}
         rotateEnabled={false}
         pitchEnabled={false}
+        onMapReady={() => {
+          setMapReady(true);
+          dispatch({ type: 'location/setMapReady', payload: true });
+        }}
         onPanDrag={handleMapDragStart}
         onTouchStart={handleMapDragStart}
         onRegionChangeComplete={(region) => {
           const minDelta = 0.0005;
           const maxDelta = 0.5;
-
-          regionRef.current = {
-            ...region,
+          const newRegion = {
+            latitude: region.latitude,
+            longitude: region.longitude,
             latitudeDelta: Math.max(minDelta, Math.min(region.latitudeDelta, maxDelta)),
             longitudeDelta: Math.max(minDelta, Math.min(region.longitudeDelta, maxDelta))
           };
+          regionRef.current = newRegion;
           resetAutoFollowTimer();
         }}
         zoomEnabled={false}
@@ -291,11 +377,22 @@ export default function StartDriveScreen() {
         {polylineComponent}
         {markerComponent}
       </MapView>
+      <StartButtonModal
+        modalizeRef={modalizeRef}
+        onStartPress={handleStartTracking}
+        isMapReady={mapReady}
+      />
       <View style={styles.timerContainer}>
         <Text style={styles.timerText}>{formatTime(elapsedTime)}</Text>
       </View>
 
-      <TouchableOpacity style={styles.visualButton} onPress={() => setCustomizationVisible(true)}>
+      <TouchableOpacity
+        style={styles.visualButton}
+        onPress={() => {
+          lastInteractionTimeRef.current = Date.now();
+          setCustomizationVisible(true);
+        }}
+      >
         <Image source={visualIcon} style={styles.visualIcon} />
       </TouchableOpacity>
 
@@ -392,7 +489,13 @@ export default function StartDriveScreen() {
                 </Pressable>
               </View>
             </ScrollView>
-            <TouchableOpacity onPress={() => setCustomizationVisible(false)} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={() => {
+                lastInteractionTimeRef.current = Date.now(); // Reset du timer
+                setCustomizationVisible(false);
+              }}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>Fermer</Text>
             </TouchableOpacity>
           </View>
@@ -431,6 +534,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.large,
     zIndex: 10,
+    borderWidth: 3,
+    borderColor: theme.colors.primary,
   },
   timerText: {
     color: theme.colors.ui.map.timerText,
@@ -441,7 +546,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     position: 'absolute',
     top: theme.spacing.xxl,
     left: theme.spacing.md,
-    backgroundColor: theme.colors.ui.button.secondary,
+    backgroundColor: theme.colors.ui.modal.background,
     borderRadius: theme.borderRadius.xlarge,
     padding: theme.spacing.sm,
     elevation: 5,
@@ -455,7 +560,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   recenterButton: {
     position: 'absolute',
-    bottom: theme.spacing.xxl,
+    bottom: 200,
     right: theme.spacing.md,
     backgroundColor: theme.colors.ui.map.recenterButton,
     borderRadius: theme.borderRadius.xlarge,
@@ -480,7 +585,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     padding: theme.spacing.sm,
     marginVertical: theme.spacing.xs,
     elevation: 5,
-    ...theme.shadow.sm
+    borderWidth: 1,
+    ...theme.shadow.xl
   },
   icon: {
     fontSize: 22,
@@ -554,8 +660,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontWeight: theme.typography.button.fontWeight
   }
 });
-
-
 
 // to do : optimiser l'aspect visuel en ajoutant une animation polyline
 // mise en cache totale de map en fonction du lieu de vie de l'utilisateur

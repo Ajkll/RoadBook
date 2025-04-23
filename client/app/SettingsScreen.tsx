@@ -1,41 +1,53 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
+import SoundCardParameters from './components/parameters/soundCardParameters';
+import { useTheme } from './constants/theme';
+import GoBackHomeButton from './components/common/GoBackHomeButton';
 
 export default function SettingsScreen() {
+  const theme = useTheme();
   const navigation = useNavigation();
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left']}>
       <Header title="Paramètres" onMenuPress={openDrawer} />
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <Text style={styles.title}>Paramètres</Text>
-        {/* Add your settings content here */}
-      </View>
+
+        {/* Carte des paramètres audio */}
+        <SoundCardParameters />
+        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
+        {/* Ajoutez d'autres sections de paramètres ici si nécessaire */}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333333',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#bdbdbd',
-    marginBottom: 20,
+    fontSize: theme.typography.header.fontSize,
+    fontWeight: theme.typography.header.fontWeight,
+    color: theme.colors.backgroundText,
+    marginBottom: theme.spacing.md,
   },
 });
+
+export default SettingsScreen;

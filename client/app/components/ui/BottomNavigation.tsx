@@ -9,6 +9,9 @@ import { stopTracking, resetLocation } from '../../store/slices/locationSlice';
 import { startChrono, finishChrono, resetChrono, setShouldSave } from '../../store/slices/chronoSlice';
 import SessionEndModal from '../modals/SessionEndModal';
 import Toast from 'react-native-toast-message';
+import { Modalize } from 'react-native-modalize';
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useNotifications } from '../NotificationHandler';
 
 const BottomNavigation = () => {
   const router = useRouter();
@@ -17,20 +20,28 @@ const BottomNavigation = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
-
+  const { showError } = useNotifications();
   const [showModal, setShowModal] = useState(false);
   const isChronoRunning = useSelector((state: RootState) => state.chrono.isRunning);
 
   const normalizedPathname = pathname.startsWith('/') ? pathname.slice(1) : pathname;
   const isActive = (path: string) => normalizedPathname === path;
-
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
+  const mapReady = useSelector((state: RootState) => state.location.mapReady);
 
   const handleStartDrivePress = () => {
     if (isActive('start-drive')) {
       if (!isChronoRunning) {
+        if (!mapReady) {
+          showError(
+            '⛔ Carte non prête',
+            "Veuillez attendre que la carte soit chargée",
+            { position: 'center' }
+          );
+          return;
+        }
         setTimeout(() => {
-          dispatch(startChrono());
+          dispatch(startChrono()); // améliorer la logique ici on devrais start le tracking simpelment plutot que dans chronoWatcher avec une logique compliquer
         }, 300);
       } else {
         setShowModal(true);
@@ -41,20 +52,14 @@ const BottomNavigation = () => {
   };
 
   const handleLongPressStartDrive = () => {
-    setShowModal(true);
+    if (isChronoRunning) {
+      setShowModal(true);
+    }
   };
 
   const handleConfirmSave = () => {
     dispatch(finishChrono());
     dispatch(stopTracking());
-
-    Toast.show({
-      type: 'success',
-      text1: '✅ Session sauvegardée',
-      text2: 'Ton trajet a bien été enregistré.',
-      position: 'center',
-    });
-
     setShowModal(false);
   };
 
@@ -163,7 +168,7 @@ const createStyles = (theme: any, insets: any) =>
     container: {
       flexDirection: 'row',
       height: Platform.OS === 'ios' ? 85 : 65,
-      borderTopWidth: 1,
+      borderTopWidth: 1.6,
       position: 'absolute',
       bottom: 0,
       left: 0,
@@ -193,6 +198,7 @@ const createStyles = (theme: any, insets: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: -20,
+      ...theme.shadow.md
     },
     recordIcon: {
       width: 56,
@@ -202,7 +208,7 @@ const createStyles = (theme: any, insets: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 3,
-      ...theme.shadow.md,
+      ...theme.shadow.xl,
     },
   });
 

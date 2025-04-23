@@ -137,6 +137,7 @@ export default function Explorer() {
               onRefresh={fetchSessions}
               colors={[theme.colors.ui.button.primary]}
               tintColor={theme.colors.ui.button.primary}
+
             />
           }
         >
@@ -179,15 +180,18 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     flex: 1,
     padding: theme.spacing.md,
     backgroundColor: theme.colors.background,
+
   },
   headerContainer: {
     marginBottom: theme.spacing.md,
+
   },
   header: {
     fontSize: theme.typography.header.fontSize,
     fontWeight: theme.typography.header.fontWeight,
     marginBottom: theme.spacing.sm,
     color: theme.colors.backgroundText,
+
   },
   progressBarContainer: {
     height: 6,
@@ -195,6 +199,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     borderRadius: theme.borderRadius.medium,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 0.7,
   },
   progressBarBase: {
     position: 'absolute',
@@ -202,6 +207,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: '20%',
     backgroundColor: theme.colors.ui.progressBar.fill,
     borderRadius: theme.borderRadius.medium,
+
   },
   progressBarFill: {
     position: 'absolute',
@@ -226,6 +232,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     padding: theme.spacing.md,
     backgroundColor: theme.colors.ui.button.primary,
     borderRadius: theme.borderRadius.medium,
+    ...theme.shadow.xl
   },
   refreshText: {
     color: theme.colors.ui.button.primaryText,

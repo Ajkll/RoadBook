@@ -15,13 +15,14 @@ import { getWeather } from '../services/api/weather';
 import Toast from 'react-native-toast-message';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
+import { useNotifications } from './NotificationHandler';
 
-// Create a static instance tracker using module-level variable
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
 
 export default function ChronoWatcher() {
   const dispatch = useDispatch();
+  const { showError, showWarning } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const isOnline = useSelector(selectIsInternetReachable);
 
@@ -207,12 +208,11 @@ export default function ChronoWatcher() {
 
           if (finalElapsedTime === 0 || (!finalPath || finalPath.length < 3)) {
             console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            Toast.show({
-              type: 'error',
-              text1: '⛔ Échec de la sauvegarde',
-              text2: "Ton trajet n'a pas été enregistré.",
-              position: 'center',
-            });
+            showError(
+              '⛔ Échec de la sauvegarde',
+              "Ton trajet n'a pas été enregistré.",
+              { position: 'center' }
+            );
           } else {
             // demande api en ligne
             let roadInfo = null;
@@ -242,12 +242,11 @@ export default function ChronoWatcher() {
               console.log(`[${instanceId}] session sauvegardée `);
             } catch (error) {
               console.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
-              Toast.show({
-                type: 'error',
-                text1: '⚠️ Problème de sauvegarde',
-                text2: "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
-                position: 'center',
-              });
+              showWarning(
+                '⚠️ Problème de sauvegarde',
+                "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
+                { position: 'center' }
+              );
             }
           }
         } else {

@@ -176,7 +176,7 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
         },
         timerBackground: 'rgba(0, 0, 0, 0.7)',
         timerText: '#ffffff',
-        recenterButton: 'rgba(200, 200, 255, 0.7)',
+        recenterButton: '#ffffff',
         recenterIcon: '#007AFF'
       },
       modal: {
@@ -442,9 +442,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       xl: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        elevation: 12,
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 19,
       },
     },
     typography: {

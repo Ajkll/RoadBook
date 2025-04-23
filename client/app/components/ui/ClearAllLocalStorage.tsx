@@ -7,12 +7,14 @@ import { clearAllPendingItems } from '../../store/slices/syncSlice';
 import { useTheme } from '../../constants/theme';
 import ConfirmModal from '../modals/ConfirmModal';
 import { clearAllStorageData } from '../../utils/storageUtils';
+import { useNotifications } from '../NotificationHandler';
 
 const CleanupStorage = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const styles = createStyles(theme);
+  const { showSuccess } = useNotifications();
 
   const handleCleanup = async () => {
     try {
@@ -24,7 +26,6 @@ const CleanupStorage = () => {
         text1: 'Confirmation de la suppression',
         text2: 'Les données ont été correctement supprimées',
         position: 'top',
-        visibilityTime: 3000,
       });
     } catch (error) {
       console.error("Erreur lors du netoyage :", error);

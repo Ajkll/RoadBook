@@ -284,20 +284,21 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
       alignSelf: 'center',
       zIndex: 10,
       backgroundColor: theme.colors.background,
-      width: 40,
-      height: 40,
+      width: 50,
+      height: 50,
       borderRadius: 20,
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: theme.colors.border,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
+      shadowOpacity: 0.6,
       shadowRadius: 3,
-      elevation: 3,
+      elevation: 5,
     },
     refreshArrow: {
-      fontSize: 24,
+      fontSize: 30,
       color: theme.colors.primary,
+
     }
   });
 

@@ -10,6 +10,7 @@ import Toast from 'react-native-toast-message';
 import { useTheme } from './constants/theme';
 import CleanupStorage from './components/ui/ClearAllLocalStorage';
 import { store } from './store/store';
+import GoBackHomeButton from './components/common/GoBackHomeButton';
 
 type SyncItemType = {
   id: string;
@@ -18,16 +19,16 @@ type SyncItemType = {
   createdAt: number;
 };
 
-const DetailRow = React.memo(({ label, value, colors }: { label: string; value: string; colors: any }) => (
-  <View style={styles.detailRow}>
-    <Text style={[styles.detailLabel, { color: colors.backgroundTextSoft }]}>{label}:</Text>
-    <Text style={[styles.detailValue, { color: colors.backgroundText }]}>{value}</Text>
+const DetailRow = React.memo(({ label, value, theme }: { label: string; value: string; theme: Theme }) => (
+  <View style={[styles.detailRow, { marginBottom: theme.spacing.xs }]}>
+    <Text style={[styles.detailLabel, theme.typography.body, { color: theme.colors.backgroundTextSoft }]}>{label}:</Text>
+    <Text style={[styles.detailValue, theme.typography.body, { color: theme.colors.backgroundText }]}>{value}</Text>
   </View>
 ));
 
 const SyncItemComponent = React.memo(({
   item,
-  colors,
+  theme,
   isExpanded,
   hasError,
   onPress,
@@ -40,7 +41,7 @@ const SyncItemComponent = React.memo(({
   getItemTitle
 }: {
   item: SyncItemType;
-  colors: any;
+  theme: Theme;
   isExpanded: boolean;
   hasError: boolean;
   onPress: () => void;
@@ -48,55 +49,82 @@ const SyncItemComponent = React.memo(({
   formatDate: (date: Date) => string;
   formatDuration: (seconds: number) => string;
   formatVehicle: (vehicle: string | null) => string;
-  getTypeColor: (type: string, colors: any) => string;
+  getTypeColor: (type: string) => string;
   getTypeLabel: (type: string) => string;
   getItemTitle: (item: SyncItemType) => string;
 }) => {
   const itemDate = new Date(item.createdAt);
+  const typeColor = getTypeColor(item.type);
 
   return (
     <View style={[styles.itemContainer, {
-      borderColor: colors.border,
-      backgroundColor: colors.ui.card.background
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.ui.card.background,
+      borderRadius: theme.borderRadius.medium,
+      marginBottom: theme.spacing.sm,
     }]}>
-      <TouchableOpacity style={styles.itemHeader} onPress={onPress}>
+      <TouchableOpacity
+        style={[styles.itemHeader, { padding: theme.spacing.sm }]}
+        onPress={onPress}
+      >
         <View style={styles.itemTitleContainer}>
           <View style={[
             styles.itemTypeBadge,
             {
-              backgroundColor: getTypeColor(item.type, colors),
+              backgroundColor: typeColor,
+              borderRadius: theme.borderRadius.small,
+              marginRight: theme.spacing.sm,
             }
           ]}>
-            <Text style={[styles.itemTypeText, { color: colors.primaryText }]}>
+            <Text style={[
+              styles.itemTypeText,
+              theme.typography.caption,
+              { color: theme.colors.primaryText }
+            ]}>
               {getTypeLabel(item.type)}
             </Text>
           </View>
-          <Text style={[styles.itemTitle, { color: colors.backgroundText }]}>
+          <Text style={[
+            styles.itemTitle,
+            theme.typography.subtitle,
+            { color: theme.colors.backgroundText }
+          ]}>
             {getItemTitle(item)}
           </Text>
         </View>
         <View style={styles.itemMeta}>
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.deleteButton, { marginRight: theme.spacing.sm }]}
             onPress={onDelete}
           >
-            <Ionicons name="trash-outline" size={18} color={colors.ui.button.danger} />
+            <Ionicons
+              name="trash-outline"
+              size={theme.typography.body.fontSize}
+              color={theme.colors.ui.button.danger}
+            />
           </TouchableOpacity>
           {hasError && (
             <Ionicons
               name="alert-circle"
-              size={18}
-              color={colors.ui.status.error}
-              style={styles.errorIcon}
+              size={theme.typography.body.fontSize}
+              color={theme.colors.ui.status.error}
+              style={{ marginRight: theme.spacing.sm }}
             />
           )}
-          <Text style={[styles.itemDate, { color: colors.backgroundTextSoft }]}>
+          <Text style={[
+            styles.itemDate,
+            theme.typography.caption,
+            {
+              color: theme.colors.backgroundTextSoft,
+              marginRight: theme.spacing.sm,
+            }
+          ]}>
             {formatDate(itemDate)}
           </Text>
           <Ionicons
             name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.backgroundTextSoft}
+            size={theme.typography.body.fontSize}
+            color={theme.colors.backgroundTextSoft}
           />
         </View>
       </TouchableOpacity>
@@ -105,18 +133,26 @@ const SyncItemComponent = React.memo(({
         <View style={[
           styles.itemDetails,
           {
-            borderTopColor: colors.border,
-            backgroundColor: colors.ui.card.background
+            borderTopColor: theme.colors.border,
+            backgroundColor: theme.colors.ui.card.background,
+            padding: theme.spacing.sm,
           }
         ]}>
           {hasError && (
             <View style={[
               styles.errorBox,
               {
-                backgroundColor: colors.ui.status.error + '20',
+                backgroundColor: theme.colors.ui.status.error + '20',
+                borderRadius: theme.borderRadius.small,
+                padding: theme.spacing.sm,
+                marginBottom: theme.spacing.sm,
               }
             ]}>
-              <Text style={[styles.errorText, { color: colors.ui.status.error }]}>
+              <Text style={[
+                styles.errorText,
+                theme.typography.body,
+                { color: theme.colors.ui.status.error }
+              ]}>
                 {hasError}
               </Text>
             </View>
@@ -127,23 +163,23 @@ const SyncItemComponent = React.memo(({
               <DetailRow
                 label="Durée"
                 value={formatDuration(item.data.elapsedTime)}
-                colors={colors}
+                theme={theme}
               />
               <DetailRow
                 label="Points GPS"
                 value={item.data.path.length.toString()}
-                colors={colors}
+                theme={theme}
               />
               <DetailRow
                 label="Véhicule"
                 value={formatVehicle(item.data.vehicle)}
-                colors={colors}
+                theme={theme}
               />
               {item.data.weather && (
                 <DetailRow
                   label="Météo"
                   value={`${item.data.weather.temperature}°C, ${item.data.weather.conditions}`}
-                  colors={colors}
+                  theme={theme}
                 />
               )}
             </View>
@@ -155,7 +191,7 @@ const SyncItemComponent = React.memo(({
 });
 
 const OfflineSyncScreen: React.FC = () => {
-  const { colors, dark, spacing, borderRadius } = useTheme();
+  const theme = useTheme();
   const dispatch = useDispatch();
   const router = useRouter();
   const pendingItems = useSelector(selectPendingItems);
@@ -260,12 +296,12 @@ const OfflineSyncScreen: React.FC = () => {
 
   const getTypeColor = useCallback((type: string) => {
     switch (type) {
-      case 'trajet': return colors.ui.button.primary;
-      case 'roadbook': return colors.ui.status.success;
-      case 'profile': return colors.ui.status.warning;
-      default: return colors.ui.status.info;
+      case 'trajet': return theme.colors.ui.button.primary;
+      case 'roadbook': return theme.colors.ui.status.success;
+      case 'profile': return theme.colors.ui.status.warning;
+      default: return theme.colors.ui.status.info;
     }
-  }, [colors]);
+  }, [theme]);
 
   const getTypeLabel = useCallback((type: string) => {
     switch (type) {
@@ -312,7 +348,7 @@ const OfflineSyncScreen: React.FC = () => {
   const renderItem = useCallback(({ item }: { item: SyncItemType }) => (
     <SyncItemComponent
       item={item}
-      colors={colors}
+      theme={theme}
       isExpanded={expandedItems.has(item.id)}
       hasError={syncErrors[item.id]}
       onPress={() => toggleItemExpanded(item.id)}
@@ -324,56 +360,78 @@ const OfflineSyncScreen: React.FC = () => {
       getTypeLabel={getTypeLabel}
       getItemTitle={getItemTitle}
     />
-  ), [colors, expandedItems, syncErrors, toggleItemExpanded, handleDeleteItem, formatDate, formatDuration, formatVehicle, getTypeColor, getTypeLabel, getItemTitle]);
+  ), [theme, expandedItems, syncErrors, toggleItemExpanded, handleDeleteItem, formatDate, formatDuration, formatVehicle, getTypeColor, getTypeLabel, getItemTitle]);
 
   return (
     <View style={[styles.container, {
-      backgroundColor: colors.background,
-      padding: spacing.md
+      backgroundColor: theme.colors.background,
+      padding: theme.spacing.md
     }]}>
       <View style={[styles.statusCard, {
-        backgroundColor: colors.ui.card.background,
-        borderRadius: borderRadius.medium,
-        marginBottom: spacing.md,
-        padding: spacing.sm
+        backgroundColor: theme.colors.ui.card.background,
+        borderRadius: theme.borderRadius.medium,
+        marginBottom: theme.spacing.md,
+        padding: theme.spacing.sm,
+        ...theme.shadow.sm,
       }]}
       accessibilityLabel={isOnline ? "Connecté à Internet" : "Hors ligne"}
       >
         <View style={[styles.statusIndicator, {
-          backgroundColor: isOnline ? colors.ui.status.success : colors.ui.status.error,
-          borderRadius: borderRadius.large,
-          width: '50%',
-          height: 20,
-          marginTop: spacing.sm,
+          backgroundColor: isOnline ? theme.colors.ui.status.success : theme.colors.ui.status.error,
+          borderRadius: theme.borderRadius.large,
+          height: 6,
         }]} />
+        <Text style={[
+          theme.typography.caption,
+          {
+            color: theme.colors.backgroundTextSoft,
+            marginTop: theme.spacing.xs,
+            textAlign: 'center',
+          }
+        ]}>
+          {isOnline ? 'Connecté à Internet' : 'Mode hors ligne'}
+        </Text>
       </View>
 
       <View style={[styles.cleanupContainer, {
-        backgroundColor: colors.ui.card.background,
-        borderRadius: borderRadius.medium,
-        marginBottom: spacing.md
+        backgroundColor: theme.colors.ui.card.background,
+        borderRadius: theme.borderRadius.medium,
+        marginBottom: theme.spacing.md,
+        ...theme.shadow.sm,
       }]}>
         <CleanupStorage />
       </View>
 
-      <View style={[styles.listHeaderContainer, { marginBottom: spacing.sm }]}>
-        <Text style={[styles.listTitle, {
-          color: colors.backgroundText,
-          fontSize: 20,
-          fontWeight: '600'
-        }]}>
+      <View style={[styles.listHeaderContainer, {
+        marginBottom: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
+      }]}>
+        <Text style={[
+          theme.typography.title,
+          { color: theme.colors.backgroundText }
+        ]}>
           Éléments en attente ({pendingItems.length})
         </Text>
       </View>
 
       {pendingItems.length === 0 ? (
-        <View style={[styles.emptyContainer, { padding: spacing.lg }]}>
-          <Ionicons name="checkmark-circle" size={64} color={colors.ui.status.success} />
-          <Text style={[styles.emptyText, {
-            color: colors.backgroundTextSoft,
-            marginTop: spacing.md,
-            fontSize: 16
-          }]}>
+        <View style={[styles.emptyContainer, {
+          padding: theme.spacing.lg,
+          marginTop: theme.spacing.xxl,
+        }]}>
+          <Ionicons
+            name="checkmark-circle"
+            size={64}
+            color={theme.colors.ui.status.success}
+          />
+          <Text style={[
+            theme.typography.subtitle,
+            {
+              color: theme.colors.backgroundTextSoft,
+              marginTop: theme.spacing.md,
+              textAlign: 'center',
+            }
+          ]}>
             Aucun élément en attente de synchronisation
           </Text>
         </View>
@@ -383,38 +441,16 @@ const OfflineSyncScreen: React.FC = () => {
           data={pendingItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContent, { paddingBottom: spacing.xl }]}
+          contentContainerStyle={{
+            paddingBottom: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.sm,
+          }}
           extraData={forceUpdate}
         />
       )}
-
-      <View style={[styles.bottomButtonContainer, { marginTop: spacing.md }]}>
-        <TouchableOpacity
-          style={[styles.button, {
-            backgroundColor: colors.ui.button.primary,
-            borderRadius: borderRadius.medium,
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.md
-          }]}
-          onPress={() => router.push('/(tabs)')}
-        >
-          <Text style={[styles.buttonText, {
-            color: colors.ui.button.primaryText,
-            fontSize: 16,
-            fontWeight: '600'
-          }]}>
-            Retour à l'accueil
-          </Text>
-        </TouchableOpacity>
-      </View>
+    <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
     </View>
   );
-};
-
-// Options de navigation
-OfflineSyncScreen.options = {
-  title: 'Synchronisation Offline',
-  headerShown: true,
 };
 
 const styles = StyleSheet.create({
@@ -423,26 +459,23 @@ const styles = StyleSheet.create({
   },
   statusCard: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  statusIndicator: {},
+  statusIndicator: {
+    width: '100%',
+  },
   listHeaderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  listTitle: {},
-  listContent: {},
   itemContainer: {
     borderWidth: 1,
-    marginBottom: 12,
     overflow: 'hidden',
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
   },
   itemTitleContainer: {
     flexDirection: 'row',
@@ -450,17 +483,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   itemTypeText: {
-    fontSize: 12,
     fontWeight: 'bold',
   },
   itemTitle: {
-    fontSize: 16,
-    fontWeight: '500',
     flex: 1,
   },
   itemMeta: {
@@ -468,62 +497,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButton: {
-    padding: 4,
-    marginRight: 8,
+    padding: 2,
   },
-  itemDate: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  errorIcon: {
-    marginRight: 8,
-  },
+  itemDate: {},
   itemDetails: {
-    padding: 12,
     borderTopWidth: 1,
   },
-  errorBox: {
-    padding: 10,
-    marginBottom: 12,
-  },
-  errorText: {
-    fontSize: 14,
-  },
-  detailsContent: {
-    paddingHorizontal: 8,
-  },
+  errorBox: {},
+  errorText: {},
+  detailsContent: {},
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   detailLabel: {
-    fontSize: 14,
     fontWeight: '500',
   },
-  detailValue: {
-    fontSize: 14,
-  },
+  detailValue: {},
   cleanupContainer: {},
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyText: {
-    textAlign: 'center',
-  },
-  bottomButtonContainer: {
-    marginBottom: 20,
-    padding: 4,
-  },
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {},
 });
 
 export default React.memo(OfflineSyncScreen);
-
-// to do : animation pour quand on passe de offline a online au niveau de la pastise status
