@@ -1,205 +1,167 @@
 # RoadBook Authentication System
 
-This document explains the authentication system implemented in the RoadBook application.
+## Vue d'ensemble
 
-## Overview
+Le système d'authentification RoadBook utilise une approche à **double token** pour garantir la sécurité et l'expérience utilisateur:
 
-The authentication system is built on JWT (JSON Web Tokens) with a dual-token approach:
-- **Access Token** (15 minutes expiry): Used for API authorization
-- **Refresh Token** (7 days expiry): Used to obtain new access tokens when they expire
+- **Access Token**: JWT de courte durée (15 min) pour l'autorisation API
+- **Refresh Token**: Token de longue durée (7 jours) stocké en base de données et utilisé pour rafraîchir l'access token
+- **Rotation des tokens**: Un nouveau refresh token est généré à chaque utilisation, l'ancien est révoqué
 
-## Data Models
+## Flux d'authentification
 
-### User
-
-```prisma
-model User {
-  id                String      @id @default(uuid())
-  email             String      @unique
-  passwordHash      String
-  displayName       String
-  firstName         String?
-  lastName          String?
-  nationalRegisterNumber String? @unique  
-  birthDate         DateTime?
-  phoneNumber       String?
-  profilePicture    String?
-  address           String?
-  role              UserRole    @default(APPRENTICE)
-  bio               String?     
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  
-  // Relations
-  refreshTokens    RefreshToken[]
-  // ... other relations
-}
-
-enum UserRole {
-  APPRENTICE  // Learning driver
-  GUIDE       // Parent or friend mentoring the apprentice
-  INSTRUCTOR  // Professional driving instructor
-  ADMIN       // System administrator
-}
+### 1. Inscription et connexion
+```mermaid
+sequenceDiagram
+    Client->>+Server: POST /auth/register ou /auth/login
+    Server->>Server: Validation des données
+    Server->>Database: Validation utilisateur
+    Server->>Server: Génération tokens JWT
+    Server->>Database: Stockage refresh token
+    Server->>-Client: { user, accessToken, refreshToken }
 ```
 
-### RefreshToken
-
-```prisma
-model RefreshToken {
-  id          String    @id @default(uuid())
-  token       String    @unique
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  revoked     Boolean   @default(false)
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
-}
+### 2. Accès aux ressources protégées
+```mermaid
+sequenceDiagram
+    Client->>+Server: GET /api/resource avec Authorization header
+    Server->>Server: Middleware authenticateJWT
+    Server->>Server: Middleware authorizeRoles (optionnel)
+    Server->>-Client: Données protégées
 ```
 
-## User Authentication Flow
+### 3. Rafraîchissement du token
+```mermaid
+sequenceDiagram
+    Client->>+Server: POST /auth/refresh-token
+    Server->>Database: Valider refresh token
+    Server->>Database: Révoquer ancien token (rotation)
+    Server->>Server: Générer nouveaux tokens
+    Server->>Database: Stocker nouveau refresh token
+    Server->>-Client: { accessToken, refreshToken }
+```
 
-### Registration (`POST /api/auth/register`)
-1. User submits registration data (email, password, etc.)
-2. Server validates input data
-3. Server creates user in the database with hashed password
-4. Server generates and returns access token and refresh token
-5. Client stores tokens
+## Implémentation technique
 
-### Login (`POST /api/auth/login`)
-1. User submits email and password
-2. Server verifies credentials
-3. Server generates and returns access token and refresh token
-4. Client stores tokens
+### Middlewares principaux
 
-### Token Refresh (`POST /api/auth/refresh-token`)
-1. When access token expires, client sends refresh token
-2. Server verifies refresh token and issues a new access token
-3. Client updates stored access token
+1. **authenticateJWT**: Vérifie le token d'accès et extrait les informations utilisateur
+2. **authorizeRoles**: Vérifie que l'utilisateur a les rôles requis pour accéder à une ressource
+3. **optionalAuth**: Authentifie si un token est fourni mais n'échoue pas si absent
 
-### Logout (`POST /api/auth/logout`)
-1. Client sends refresh token
-2. Server invalidates refresh token
-3. Client removes stored tokens
+### Sécurité renforcée
 
-## Token Storage
+- **Hachage des mots de passe**: bcrypt avec coût adaptatif (10-12 rounds)
+- **Détection de réutilisation de tokens**: Si un token révoqué est utilisé, tous les tokens utilisateur sont révoqués
+- **Rate limiting**: Limitation des tentatives échouées (5 max), blocage temporaire après échec
+- **Validation stricte**: Zod pour validation des entrées et normalisation
+- **Cookies sécurisés**: HttpOnly, secure, sameSite options pour les refresh tokens
 
-- **Web Application**: Refresh token is stored in HTTP-only cookie for security, access token in memory
-- **Mobile Application**: Both tokens are stored securely in the device's secure storage
+### Validation en entrée (Zod)
 
-## Token Verification
-
-Protected routes use the `authenticateJWT` middleware which:
-1. Extracts token from Authorization header
-2. Verifies token signature and expiry
-3. Attaches user payload to request object
-
-## Role-Based Access Control
-
-The `authorizeRoles` middleware restricts access based on user roles:
-- **APPRENTICE**: Regular learner user
-- **GUIDE**: Mentor user with additional permissions
-- **INSTRUCTOR**: Professional teaching user with advanced permissions
-- **ADMIN**: System administrator with full access
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Create new user account
-- `POST /api/auth/login` - Authenticate and get tokens
-- `POST /api/auth/refresh-token` - Get new access token
-- `POST /api/auth/logout` - Invalidate refresh token
-- `GET /api/auth/verify` - Verify token validity
-
-### User Management
-- `GET /api/users/me` - Get current user profile (requires authentication)
-- `PUT /api/users/me` - Update current user profile (requires authentication)
-- `PUT /api/users/me/password` - Change current user password (requires authentication)
-- `GET /api/users/:id` - Get specific user profile (requires authentication)
-- `PUT /api/users/:id` - Update specific user (requires authentication, own profile or admin)
-
-## Authentication Middleware
-
+Exemple de schéma de validation pour l'enregistrement:
 ```typescript
-// Middleware to verify JWT access token
-export const authenticateJWT = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    // Get the auth header
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        status: "error",
-        message: "Unauthorized - token missing"
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    // Verify the token
-    const jwtSecret = process.env.JWT_SECRET || "your-jwt-secret";
-    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
-    
-    // Add user data to request
-    req.user = decoded;
-    
-    next();
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
-        status: "error",
-        message: "Token expired",
-        code: "TOKEN_EXPIRED"
-      });
-    }
-    
-    return res.status(403).json({
-      status: "error",
-      message: "Forbidden - invalid token"
-    });
-  }
-};
-
-// Middleware to authorize based on user roles
-export const authorizeRoles = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({
-        status: "error",
-        message: "Unauthorized - not authenticated"
-      });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        status: "error",
-        message: "Forbidden - insufficient privileges",
-        requiredRoles: roles,
-        userRole: req.user.role
-      });
-    }
-
-    next();
-  };
-};
+const registerSchema = z.object({
+  email: z.string().email().toLowerCase().trim(),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain uppercase")
+    .regex(/[0-9]/, "Password must contain a number")
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain a special character"),
+  displayName: z.string().min(2).max(50).trim(),
+  // Autres champs avec validation
+});
 ```
 
-## Testing
+## Modèles et relations
 
-Test accounts with password `Password123!`:
-- apprentice@roadbook.com (APPRENTICE role)
-- guide@roadbook.com (GUIDE role)
-- instructor@roadbook.com (INSTRUCTOR role)
-- admin@roadbook.com (ADMIN role)
+```
+User {
+  id, email, passwordHash, displayName, role...
+  --relations--
+  refreshTokens: RefreshToken[]
+  passwordResets: PasswordReset[]
+}
 
-## Security Considerations
+RefreshToken {
+  id, token, userId, revoked, expiresAt, createdAt
+  --relations--
+  user: User
+}
 
-1. Access tokens have short lifespan (15 minutes)
-2. Refresh tokens are stored in the database and can be revoked
-3. Passwords are hashed with bcrypt (10 rounds)
-4. HTTP-only cookies prevent XSS attacks on web
-5. Secure storage on mobile prevents unauthorized access
+PasswordReset {
+  id, token, userId, revoked, expiresAt, createdAt
+  --relations--
+  user: User
+}
+```
+
+## Endpoints d'authentification
+
+| Endpoint | Méthode | Description | Authentification |
+|----------|---------|-------------|------------------|
+| `/api/auth/register` | POST | Inscription | Non |
+| `/api/auth/login` | POST | Connexion | Non |
+| `/api/auth/logout` | POST | Déconnexion | Non* |
+| `/api/auth/refresh-token` | POST | Rafraîchissement | Non* |
+| `/api/auth/verify` | GET | Vérification token | Non* |
+| `/api/auth/forgot-password` | POST | Demande réinitialisation | Non |
+| `/api/auth/reset-password` | POST | Réinitialisation mot de passe | Non |
+
+*Ces endpoints ne nécessitent pas d'authentification formelle mais requièrent des tokens valides
+
+## Rôles et permissions
+
+Le système implémente un contrôle d'accès basé sur les rôles (RBAC) avec 4 rôles principaux:
+
+1. **APPRENTICE**: Utilisateur standard (apprenant)
+   - Accès à ses propres roadbooks et données
+   - Peut créer des roadbooks et sessions
+
+2. **GUIDE**: Mentor/accompagnateur
+   - Tout ce que peut faire un APPRENTICE
+   - Accès aux roadbooks où il est assigné comme guide
+   - Peut valider des sessions et compétences
+
+3. **INSTRUCTOR**: Instructeur professionnel
+   - Tout ce que peut faire un GUIDE
+   - Privilèges supplémentaires pour l'évaluation officielle
+
+4. **ADMIN**: Administrateur système
+   - Accès complet à toutes les ressources
+   - Gestion des utilisateurs et configurations
+
+## Tests d'authentification
+
+Les tests couvrent:
+- Inscription et validation des données
+- Connexion avec identifiants corrects/incorrects
+- Gestion des tokens (génération, rotation, révocation)
+- Protection des routes avec middlewares d'authentification
+- Limitation des tentatives de connexion
+- Réinitialisation de mot de passe
+
+## Comptes de test pré-configurés
+
+| Email | Mot de passe | Rôle |
+|-------|-------------|------|
+| `apprentice@roadbook.com` | `Password123!` | APPRENTICE |
+| `guide@roadbook.com` | `Password123!` | GUIDE |
+| `instructor@roadbook.com` | `Password123!` | INSTRUCTOR |
+| `admin@roadbook.com` | `Password123!` | ADMIN |
+
+## Intégration côté client
+
+Les clients doivent:
+1. Stocker l'access token en mémoire (jamais en localStorage pour les applications web)
+2. Stocker le refresh token sécurisé (cookie HttpOnly ou stockage sécurisé natif)
+3. Implémenter le rafraîchissement automatique lorsque l'access token expire
+4. Ajouter l'access token à chaque requête API (Authorization header)
+
+## Recommandations pour l'évolution
+
+- Implémentation de JWT à signature asymétrique (RS256) pour environnements distribués
+- Ajout de la clé PASETO comme alternative aux JWT pour une sécurité renforcée
+- Support d'authentification multi-facteurs (MFA/2FA)
+- Intégration d'OAuth2 pour authentification tierce (Google, Apple, etc.)
+- Suivi des sessions actives par utilisateur

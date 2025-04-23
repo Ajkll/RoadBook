@@ -1,4 +1,6 @@
 // Purpose: test basic functionality of the test suite.
+import { describe, it, expect } from "@jest/globals";
+
 describe('Basic tests', () => {
   it('should pass a simple test', () => {
     expect(1 + 1).toBe(2);
