@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useTheme } from '../../constants/theme';
-import { calculatePathDistance, formatElapsedTime, calculateAverageSpeed } from '../../utils/firebase/driveSessionUtils';
+import { formatElapsedTime } from '../../utils/firebase/driveSessionUtils';
 import { reverseGeocode } from '../../services/api/geocoding.api';
 import { getWeatherImageSource, getWeatherDescription } from '../../utils/weatherUtils';
 
@@ -105,9 +105,8 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
   if (!trajet) return null;
 
   // Gestion de la météo
-  const weatherConditions = typeof trajet.weather === 'string'
-    ? trajet.weather
-    : trajet.weather?.conditions || 'Inconnu';
+  const weatherConditions =
+    typeof trajet.weather === 'string' ? trajet.weather : trajet.weather?.conditions || 'Inconnu';
 
   const weatherImageSource = getWeatherImageSource(weatherConditions);
   const weatherDesc = getWeatherDescription(weatherConditions);
@@ -121,12 +120,7 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
     : 'Non disponible';
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
         <View style={styles.modalContent}>
           <ImageBackground
@@ -167,13 +161,15 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
               <View style={styles.dataRow}>
                 <Text style={styles.dataLabel}>Départ</Text>
                 <Text style={styles.dataValue}>
-                  {startAddress || `${trajet.path[0]?.latitude.toFixed(5)}, ${trajet.path[0]?.longitude.toFixed(5)}`}
+                  {startAddress ||
+                    `${trajet.path[0]?.latitude.toFixed(5)}, ${trajet.path[0]?.longitude.toFixed(5)}`}
                 </Text>
               </View>
               <View style={styles.dataRow}>
                 <Text style={styles.dataLabel}>Arrivée</Text>
                 <Text style={styles.dataValue}>
-                  {endAddress || `${trajet.path[trajet.path.length - 1]?.latitude.toFixed(5)}, ${trajet.path[trajet.path.length - 1]?.longitude.toFixed(5)}`}
+                  {endAddress ||
+                    `${trajet.path[trajet.path.length - 1]?.latitude.toFixed(5)}, ${trajet.path[trajet.path.length - 1]?.longitude.toFixed(5)}`}
                 </Text>
               </View>
               <View style={styles.dataRow}>
@@ -221,114 +217,115 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
   );
 };
 
-const createStyles = (theme: Theme) => StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.ui.modal.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: theme.colors.ui.modal.background,
-    width: '85%',
-    borderRadius: theme.borderRadius.large,
-    overflow: 'hidden',
-    ...theme.shadow.lg
-  },
-  weatherHeader: {
-    height: 120,
-    width: '100%',
-    justifyContent: 'flex-end',
-  },
-  weatherBackgroundImage: {
-    opacity: 0.85,
-  },
-  weatherHeaderOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    padding: theme.spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: '100%',
-  },
-  modalTitle: {
-    ...theme.typography.header,
-    color: theme.colors.primaryText,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    top : -20,
-  },
-  weatherConditionText: {
-    ...theme.typography.subtitle,
-    color: theme.colors.primaryText,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    position: 'absolute',
-    bottom: theme.spacing.lg,
-    left: theme.spacing.lg,
-    opacity: 0.9,
-  },
-  closeIcon: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    top: theme.spacing.md,
-    right: theme.spacing.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: theme.borderRadius.xlarge,
-  },
-  closeIconText: {
-    fontSize: 24,
-    color: theme.colors.primaryText,
-    fontWeight: 'bold',
-    lineHeight: 24,
-  },
-  scrollContent: {
-    maxHeight: 400,
-  },
-  section: {
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.ui.card.border,
-  },
-  sectionTitle: {
-    ...theme.typography.title,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-  },
-  dataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: theme.spacing.sm,
-  },
-  dataLabel: {
-    ...theme.typography.body,
-    color: theme.colors.backgroundTextSoft,
-    flex: 1,
-  },
-  dataValue: {
-    ...theme.typography.body,
-    fontWeight: '500',
-    color: theme.colors.backgroundText,
-    flex: 2,
-    textAlign: 'right',
-  },
-  closeButton: {
-    backgroundColor: theme.colors.ui.button.primary,
-    padding: theme.spacing.md,
-    margin: theme.spacing.lg,
-    borderRadius: theme.borderRadius.medium,
-    alignItems: 'center',
-    ...theme.shadow.md
-  },
-  closeText: {
-    ...theme.typography.button,
-    color: theme.colors.ui.button.primaryText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.ui.modal.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: theme.colors.ui.modal.background,
+      width: '85%',
+      borderRadius: theme.borderRadius.large,
+      overflow: 'hidden',
+      ...theme.shadow.lg,
+    },
+    weatherHeader: {
+      height: 120,
+      width: '100%',
+      justifyContent: 'flex-end',
+    },
+    weatherBackgroundImage: {
+      opacity: 0.85,
+    },
+    weatherHeaderOverlay: {
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      padding: theme.spacing.lg,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      height: '100%',
+    },
+    modalTitle: {
+      ...theme.typography.header,
+      color: theme.colors.primaryText,
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+      top: -20,
+    },
+    weatherConditionText: {
+      ...theme.typography.subtitle,
+      color: theme.colors.primaryText,
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+      position: 'absolute',
+      bottom: theme.spacing.lg,
+      left: theme.spacing.lg,
+      opacity: 0.9,
+    },
+    closeIcon: {
+      width: 36,
+      height: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+      position: 'absolute',
+      top: theme.spacing.md,
+      right: theme.spacing.md,
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      borderRadius: theme.borderRadius.xlarge,
+    },
+    closeIconText: {
+      fontSize: 24,
+      color: theme.colors.primaryText,
+      fontWeight: 'bold',
+      lineHeight: 24,
+    },
+    scrollContent: {
+      maxHeight: 400,
+    },
+    section: {
+      padding: theme.spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.ui.card.border,
+    },
+    sectionTitle: {
+      ...theme.typography.title,
+      color: theme.colors.primary,
+      marginBottom: theme.spacing.sm,
+    },
+    dataRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: theme.spacing.sm,
+    },
+    dataLabel: {
+      ...theme.typography.body,
+      color: theme.colors.backgroundTextSoft,
+      flex: 1,
+    },
+    dataValue: {
+      ...theme.typography.body,
+      fontWeight: '500',
+      color: theme.colors.backgroundText,
+      flex: 2,
+      textAlign: 'right',
+    },
+    closeButton: {
+      backgroundColor: theme.colors.ui.button.primary,
+      padding: theme.spacing.md,
+      margin: theme.spacing.lg,
+      borderRadius: theme.borderRadius.medium,
+      alignItems: 'center',
+      ...theme.shadow.md,
+    },
+    closeText: {
+      ...theme.typography.button,
+      color: theme.colors.ui.button.primaryText,
+    },
+  });
 
 export default TrajetOptionsModal;

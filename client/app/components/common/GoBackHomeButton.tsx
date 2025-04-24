@@ -10,42 +10,42 @@ type GoBackHomeButtonProps = {
 
 const GoBackHomeButton: React.FC<GoBackHomeButtonProps> = ({
   label = "Retour à l'accueil",
-  containerStyle = {}
+  containerStyle = {},
 }) => {
   const router = useRouter();
   const theme = useTheme();
 
+  // Créez les styles dynamiquement avec le thème
+  const styles = createStyles(theme);
+
   return (
     <View style={[styles.bottomButtonContainer, containerStyle]}>
-      <TouchableOpacity
-        style={[styles.button, {
-          backgroundColor: theme.colors.ui.button.primary,
-          borderRadius: theme.borderRadius.medium,
-          paddingVertical: theme.spacing.sm,
-          ...theme.shadow.sm,
-        }]}
-        onPress={() => router.push('/(tabs)')}
-      >
-        <Text style={[
-          theme.typography.button,
-          { color: theme.colors.ui.button.primaryText }
-        ]}>
-          {label}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)')}>
+        <Text style={styles.buttonText}>{label}</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  bottomButtonContainer: {
-    marginTop: 16,
-    paddingHorizontal: 8,
-  },
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+// Déplacez la création des styles dans une fonction séparée
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    bottomButtonContainer: {
+      marginTop: 16,
+      paddingHorizontal: 8,
+    },
+    button: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.ui.button.primary,
+      borderRadius: theme.borderRadius.medium,
+      paddingVertical: theme.spacing.sm,
+      ...theme.shadow.xl,
+    },
+    buttonText: {
+      ...theme.typography.button,
+      color: theme.colors.ui.button.primaryText,
+    },
+  });
 
 export default GoBackHomeButton;

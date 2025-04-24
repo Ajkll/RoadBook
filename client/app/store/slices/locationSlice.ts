@@ -35,7 +35,6 @@ export const locationSlice = createSlice({
   name: 'location',
   initialState,
   reducers: {
-
     setMapReady: (state, action: PayloadAction<boolean>) => {
       state.mapReady = action.payload;
     },
@@ -55,9 +54,11 @@ export const locationSlice = createSlice({
 
       if (state.tempBuffer.length > 0) {
         const lastPoint = state.tempBuffer[state.tempBuffer.length - 1];
-        if (state.path.length === 0 ||
-            state.path[state.path.length - 1].latitude !== lastPoint.latitude ||
-            state.path[state.path.length - 1].longitude !== lastPoint.longitude) {
+        if (
+          state.path.length === 0 ||
+          state.path[state.path.length - 1].latitude !== lastPoint.latitude ||
+          state.path[state.path.length - 1].longitude !== lastPoint.longitude
+        ) {
           state.path.push(lastPoint);
           console.log('Point final ajouté:', lastPoint.latitude, lastPoint.longitude);
         }
@@ -93,9 +94,11 @@ export const locationSlice = createSlice({
           const lngDiff = Math.abs(lastPoint.longitude - firstPoint.longitude);
 
           if (latDiff > MOVEMENT_THRESHOLD || lngDiff > MOVEMENT_THRESHOLD) {
-            if (state.path.length === 0 ||
-                state.path[state.path.length - 1].latitude !== lastPoint.latitude ||
-                state.path[state.path.length - 1].longitude !== lastPoint.longitude) {
+            if (
+              state.path.length === 0 ||
+              state.path[state.path.length - 1].latitude !== lastPoint.latitude ||
+              state.path[state.path.length - 1].longitude !== lastPoint.longitude
+            ) {
               state.path.push(lastPoint);
               state.lastSavedPoint = lastPoint;
               console.log('Point significatif ajouté:', lastPoint.latitude, lastPoint.longitude);
@@ -120,12 +123,7 @@ export const locationSlice = createSlice({
   },
 });
 
-export const {
-  setMapReady,
-  startTracking,
-  stopTracking,
-  updateLocation,
-  resetLocation,
-} = locationSlice.actions;
+export const { setMapReady, startTracking, stopTracking, updateLocation, resetLocation } =
+  locationSlice.actions;
 
 export default locationSlice.reducer;

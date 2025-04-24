@@ -14,13 +14,13 @@ const WEATHER_CONFIG = {
     timePrecisionHours: 4,
     distancePrecisionMeters: 3000,
     refreshIntervalRatio: 0.45,
-    maxRefreshIntervalMs: 30 * 60 * 1000
+    maxRefreshIntervalMs: 30 * 60 * 1000,
   },
   OFFLINE: {
     timePrecisionHours: 10,
     distancePrecisionMeters: 8000,
-    refreshIntervalRatio: null
-  }
+    refreshIntervalRatio: null,
+  },
 };
 
 export default function HomeScreen() {
@@ -51,20 +51,19 @@ export default function HomeScreen() {
         const config = isOffline ? WEATHER_CONFIG.OFFLINE : WEATHER_CONFIG.ONLINE;
         const timestamp = isOffline ? Date.now() : undefined;
 
-        const weatherData = await getWeather(
-          latitude,
-          longitude,
-          timestamp,
-          {
-            timePrecisionHours: config.timePrecisionHours,
-            distancePrecisionMeters: config.distancePrecisionMeters
-          }
-        );
+        const weatherData = await getWeather(latitude, longitude, timestamp, {
+          timePrecisionHours: config.timePrecisionHours,
+          distancePrecisionMeters: config.distancePrecisionMeters,
+        });
 
         setWeather(weatherData || null);
-        setLocationError(weatherData ? null : (isOffline
-          ? 'Aucune donnée récente en cache'
-          : 'Erreur de récupération'));
+        setLocationError(
+          weatherData
+            ? null
+            : isOffline
+              ? 'Aucune donnée récente en cache'
+              : 'Erreur de récupération'
+        );
 
         if (!isOffline && config.refreshIntervalRatio) {
           const refreshMs = Math.min(
@@ -117,9 +116,7 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Compétences à travailler</Text>
           <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderText}>
-              rien pour le moment.
-            </Text>
+            <Text style={styles.placeholderText}>rien pour le moment.</Text>
           </View>
         </View>
 
@@ -184,5 +181,4 @@ const createStyles = (theme: Theme) =>
     bottomSpacer: {
       height: theme.spacing.xxl,
     },
-});
-
+  });

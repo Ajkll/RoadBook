@@ -48,17 +48,17 @@ async function updateCache(key: string, address: string) {
   if (address === 'Adresse inconnue') return;
 
   // 1. Récup la liste des clés
-  const cacheKeys = JSON.parse(await AsyncStorage.getItem(CACHE_KEYS_KEY) || '[]');
+  const cacheKeys = JSON.parse((await AsyncStorage.getItem(CACHE_KEYS_KEY)) || '[]');
 
   // 2. Ajouter la nouvelle entrée
   const newEntry = {
     address,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
   await AsyncStorage.setItem(key, JSON.stringify(newEntry));
 
   // 3. Mettre à jour la liste
-  const updatedKeys = [...cacheKeys.filter(k => k !== key), key];
+  const updatedKeys = [...cacheKeys.filter((k) => k !== key), key];
 
   // 4. Nettoyer si nécessaire
   if (updatedKeys.length > MAX_CACHE_ITEMS) {

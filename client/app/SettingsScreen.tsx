@@ -33,21 +33,22 @@ export default function SettingsScreen() {
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: theme.spacing.md,
-  },
-  title: {
-    fontSize: theme.typography.header.fontSize,
-    fontWeight: theme.typography.header.fontWeight,
-    color: theme.colors.backgroundText,
-    marginBottom: theme.spacing.md,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      flex: 1,
+      padding: theme.spacing.md,
+    },
+    title: {
+      fontSize: theme.typography.header.fontSize,
+      fontWeight: theme.typography.header.fontWeight,
+      color: theme.colors.backgroundText,
+      marginBottom: theme.spacing.md,
+    },
+  });
 
 export default SettingsScreen;

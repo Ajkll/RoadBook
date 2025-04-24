@@ -8,9 +8,7 @@ import { playSound } from '../utils/soundPlayer';
 
 export const useSound = () => {
   const dispatch = useDispatch();
-  const { globalVolume, globalMute, sounds } = useSelector(
-    (state: RootState) => state.sound
-  );
+  const { globalVolume, globalMute, sounds } = useSelector((state: RootState) => state.sound);
 
   const setVolume = (volume: number) => {
     dispatch(setGlobalVolume(volume));
@@ -63,7 +61,7 @@ export const useSound = () => {
               console.log(`Preloading sound ${key}...`);
               const { sound } = await Audio.Sound.createAsync(SOUNDS[key].asset);
               SOUNDS[key].soundObject = sound;
-              await new Promise(resolve => setTimeout(resolve, 100)); // Petit délai entre chaque chargement
+              await new Promise((resolve) => setTimeout(resolve, 100)); // Petit délai entre chaque chargement
             }
           } catch (error) {
             console.error(`Failed to preload sound ${key}:`, error);

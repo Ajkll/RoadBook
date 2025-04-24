@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { calculateAverageSpeed } from '../../utils/firebase/driveSessionUtils';
 
-const GEOAPIFY_API_KEY = 'ccdaca2c37ee4ca4a1ccc512e8ee4283'; // À remplacer par votre clé API Geoapify
+const GEOAPIFY_API_KEY = 'ccdaca2c37ee4ca4a1ccc512e8ee4283';
 
 /**
  * Récupère les informations de route détaillées en utilisant l'API Geoapify Map Matching
@@ -18,32 +18,35 @@ export async function getGeoapifyRouteInfo(
 
   try {
     // L'API accepte jusqu'à 1000 points, donc pas besoin d'échantillonnage pour la plupart des cas
-    const waypoints = path.map(point => ({
+    const waypoints = path.map((point) => ({
       location: [point.longitude, point.latitude],
-      timestamp: point.timestamp || new Date().toISOString() // Utilise le timestamp s'il existe
+      timestamp: point.timestamp || new Date().toISOString(), // Utilise le timestamp s'il existe
     }));
 
     // la requete pour geoapify
     const url = 'https://api.geoapify.com/v1/mapmatching';
 
     const requestBody = {
-      mode: "drive", // Modes possible: "drive", "walk", "bicycle"
-      waypoints: waypoints
+      mode: 'drive', // Modes possible: "drive", "walk", "bicycle"
+      waypoints: waypoints,
     };
 
     // Faire la requête à l'API Geoapify
     const response = await axios.post(url, requestBody, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       params: {
-        apiKey: GEOAPIFY_API_KEY
-      }
+        apiKey: GEOAPIFY_API_KEY,
+      },
     });
-    console.log('la réponse:',
-      JSON.stringify(Object.keys(response.data), null, 2));
+    console.log('la réponse:', JSON.stringify(Object.keys(response.data), null, 2));
 
-    if (response.data.type !== "FeatureCollection" || !response.data.features || !response.data.features.length) {
+    if (
+      response.data.type !== 'FeatureCollection' ||
+      !response.data.features ||
+      !response.data.features.length
+    ) {
       console.error('Format de réponse inattendu (geoapify)');
       return null;
     }
@@ -58,7 +61,9 @@ export async function getGeoapifyRouteInfo(
     // Calcul de la vitesse moyenne
     const averageSpeed = calculateAverageSpeed(path, elapsedTimeSeconds);
 
-    console.log(` Distance=${distanceKm.toFixed(2)}km, Durer réelle=${durationMinutes.toFixed(2)}min, Vitesse average=${averageSpeed.toFixed(2)}km/h`);
+    console.log(
+      ` Distance=${distanceKm.toFixed(2)}km, Durer réelle=${durationMinutes.toFixed(2)}min, Vitesse average=${averageSpeed.toFixed(2)}km/h`
+    );
 
     // Analyser les étapes pour extraire les types de routes et les conditions de trafic
     const roadTypes: Record<string, number> = {};
@@ -95,7 +100,7 @@ export async function getGeoapifyRouteInfo(
       summary: {
         totalDistanceKm: parseFloat(distanceKm.toFixed(2)),
         totalDurationMinutes: parseFloat(durationMinutes.toFixed(2)),
-        trafficDelayMinutes: parseFloat(((props.time / 60) - durationMinutes).toFixed(2)),
+        trafficDelayMinutes: parseFloat((props.time / 60 - durationMinutes).toFixed(2)),
       },
       roadTypes: normalizeDistances(roadTypes),
       traffic: normalizeDistances(traffic),
@@ -108,8 +113,8 @@ export async function getGeoapifyRouteInfo(
       detailedInfo: {
         matchedPoints: props.waypoints.length,
         matchQuality: calculateMatchQuality(props.waypoints),
-        surfaceTypes: extractSurfaceTypes(props.legs)
-      }
+        surfaceTypes: extractSurfaceTypes(props.legs),
+      },
     };
 
     console.log(' objet json final :', JSON.stringify(resultObject, null, 2));
@@ -130,7 +135,7 @@ export async function getGeoapifyRouteInfo(
 function calculateMatchQuality(waypoints: any[]): string {
   if (!waypoints || !waypoints.length) return 'unknown';
 
-  const matchedCount = waypoints.filter(wp => wp.match_type === 'matched').length;
+  const matchedCount = waypoints.filter((wp) => wp.match_type === 'matched').length;
   const matchPercent = (matchedCount / waypoints.length) * 100;
 
   if (matchPercent > 90) return 'excellent';
@@ -143,7 +148,7 @@ function calculateMatchQuality(waypoints: any[]): string {
 function extractSurfaceTypes(legs: any[]): Record<string, number> {
   const surfaces: Record<string, number> = {};
 
-  legs.forEach(leg => {
+  legs.forEach((leg) => {
     leg.steps.forEach((step: any) => {
       const surface = step.surface || 'unknown';
       if (!surfaces[surface]) {
@@ -188,9 +193,17 @@ function extractUrbanRuralDistribution(roadTypes: Record<string, number>): {
     const lowerType = type.toLowerCase();
     if (lowerType.includes('motorway') || lowerType.includes('trunk')) {
       highway += distance;
-    } else if (lowerType.includes('residential') || lowerType.includes('unclassified') || lowerType.includes('service')) {
+    } else if (
+      lowerType.includes('residential') ||
+      lowerType.includes('unclassified') ||
+      lowerType.includes('service')
+    ) {
       urban += distance;
-    } else if (lowerType.includes('primary') || lowerType.includes('secondary') || lowerType.includes('tertiary')) {
+    } else if (
+      lowerType.includes('primary') ||
+      lowerType.includes('secondary') ||
+      lowerType.includes('tertiary')
+    ) {
       // hypothese baser sur la classe de route
       rural += distance;
     } else {
@@ -205,9 +218,8 @@ function extractUrbanRuralDistribution(roadTypes: Record<string, number>): {
   return {
     urban: parseFloat(((urban / totalDistance) * 100).toFixed(1)),
     rural: parseFloat(((rural / totalDistance) * 100).toFixed(1)),
-    highway: parseFloat(((highway / totalDistance) * 100).toFixed(1))
+    highway: parseFloat(((highway / totalDistance) * 100).toFixed(1)),
   };
 }
-
 
 //to do certain fallback serait pertinent ! comme par exemple calculer la distance nous meme si l'api ne nous la donne pas

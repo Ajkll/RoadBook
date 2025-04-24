@@ -6,11 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../constants/theme';
 import { useDispatch, useSelector } from 'react-redux';
 import { stopTracking, resetLocation } from '../../store/slices/locationSlice';
-import { startChrono, finishChrono, resetChrono, setShouldSave } from '../../store/slices/chronoSlice';
+import {
+  startChrono,
+  finishChrono,
+  resetChrono,
+  setShouldSave,
+} from '../../store/slices/chronoSlice';
 import SessionEndModal from '../modals/SessionEndModal';
 import Toast from 'react-native-toast-message';
 import { Modalize } from 'react-native-modalize';
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNotifications } from '../NotificationHandler';
 
 const BottomNavigation = () => {
@@ -33,16 +38,12 @@ const BottomNavigation = () => {
     if (isActive('start-drive')) {
       if (!isChronoRunning) {
         if (!mapReady) {
-          showError(
-            '⛔ Carte non prête',
-            "Veuillez attendre que la carte soit chargée",
-            { position: 'center' }
-          );
+          showError('⛔ Carte non prête', 'Veuillez attendre que la carte soit chargée', {
+            position: 'center',
+          });
           return;
         }
-        setTimeout(() => {
-          dispatch(startChrono()); // améliorer la logique ici on devrais start le tracking simpelment plutot que dans chronoWatcher avec une logique compliquer
-        }, 300);
+        dispatch(startChrono());
       } else {
         setShowModal(true);
       }
@@ -84,7 +85,12 @@ const BottomNavigation = () => {
             size={24}
             color={isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text style={[styles.navText, { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
             Accueil
           </Text>
         </TouchableOpacity>
@@ -95,7 +101,12 @@ const BottomNavigation = () => {
             size={24}
             color={isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text style={[styles.navText, { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
             Explorer
           </Text>
         </TouchableOpacity>
@@ -111,7 +122,9 @@ const BottomNavigation = () => {
               styles.recordIcon,
               {
                 backgroundColor: theme.colors.background,
-                borderColor: isActive('start-drive') ? theme.colors.activeItem : theme.colors.inactiveItem,
+                borderColor: isActive('start-drive')
+                  ? theme.colors.activeItem
+                  : theme.colors.inactiveItem,
               },
             ]}
           >
@@ -129,7 +142,14 @@ const BottomNavigation = () => {
             size={24}
             color={isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text style={[styles.navText, { color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+          <Text
+            style={[
+              styles.navText,
+              {
+                color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem,
+              },
+            ]}
+          >
             Mes trajets
           </Text>
         </TouchableOpacity>
@@ -140,7 +160,12 @@ const BottomNavigation = () => {
             size={24}
             color={isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text style={[styles.navText, { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem }]}>
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
             Profile
           </Text>
         </TouchableOpacity>
@@ -198,7 +223,7 @@ const createStyles = (theme: any, insets: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: -20,
-      ...theme.shadow.md
+      ...theme.shadow.md,
     },
     recordIcon: {
       width: 56,

@@ -25,7 +25,7 @@ const OfflineToast = () => {
         props: {
           backgroundColor: theme.colors.error,
           textColor: theme.colors.primaryText,
-        }
+        },
       });
     } else if (prevConnectedRef.current === false && isOffline === false) {
       Toast.show({
@@ -37,7 +37,7 @@ const OfflineToast = () => {
         props: {
           backgroundColor: theme.colors.success,
           textColor: theme.colors.primaryText,
-        }
+        },
       });
     }
 
@@ -47,9 +47,7 @@ const OfflineToast = () => {
   if (isOffline) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>
-          Pas de connexion Internet
-        </Text>
+        <Text style={styles.text}>Pas de connexion Internet</Text>
       </View>
     );
   }
@@ -57,30 +55,31 @@ const OfflineToast = () => {
   return null;
 };
 
-const createStyles = (theme: any) => StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: theme.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.background ,
-    borderRadius: theme.borderRadius.xl,
-    zIndex: 100,
-    ...theme.shadow.md,
-  },
-  text: {
-    fontWeight: theme.typography.button.fontWeight,
-    fontSize: theme.typography.body.fontSize,
-    color: theme.colors.error,
-    backgroundColor: theme.colors.background + 'CC',
-    borderRadius: theme.borderRadius.xlarge,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.xl,
-    ...theme.shadow.sm,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      padding: theme.spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.background,
+      borderRadius: theme.borderRadius.xl,
+      zIndex: 100,
+      ...theme.shadow.md,
+    },
+    text: {
+      fontWeight: theme.typography.button.fontWeight,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.error,
+      backgroundColor: theme.colors.background + 'CC',
+      borderRadius: theme.borderRadius.xlarge,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xl,
+      ...theme.shadow.sm,
+    },
+  });
 
 export default OfflineToast;

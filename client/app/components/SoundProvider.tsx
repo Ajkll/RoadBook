@@ -11,11 +11,13 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playsInSilentModeIOS: true,
     staysActiveInBackground: true,
     shouldDuckAndroid: true,
-  }).then(() => {
-    console.log('Audio mode set successfully');
-  }).catch(error => {
-    console.error('Failed to set audio mode:', error);
-  });
+  })
+    .then(() => {
+      console.log('Audio mode set successfully');
+    })
+    .catch((error) => {
+      console.error('Failed to set audio mode:', error);
+    });
 
   useEffect(() => {
     const initAudio = async () => {

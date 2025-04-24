@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, Dimensions, Animated, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Dimensions,
+  Animated,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
 import { collection, getDocs, orderBy, limit, query } from 'firebase/firestore';
 import { db } from '../services/firebase/firebaseConfig';
 import TrajetsCarousel from '../components/roadbook/TrajetsCarousel';
@@ -35,27 +44,25 @@ export default function Explorer() {
   const fetchSessions = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      const q = query(
-        collection(db, 'driveSessions'),
-        orderBy('createdAt', 'desc'),
-        limit(5)
-      );
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      const q = query(collection(db, 'driveSessions'), orderBy('createdAt', 'desc'), limit(5));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
       const snapshot = await getDocs(q);
       const result: DriveSession[] = [];
 
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         if (data.path && data.path.length > 0) {
           result.push({
             id: doc.id,
-            nom: data.nom ?? `Trajet du ${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}`,
+            nom:
+              data.nom ??
+              `Trajet du ${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}`,
             path: data.path,
             createdAt: data.createdAt,
             vehicle: data.vehicle,
             weather: data.weather,
             elapsedTime: data.elapsedTime,
-            roadInfo: data.roadInfo
+            roadInfo: data.roadInfo,
           });
         }
       });
@@ -101,12 +108,7 @@ export default function Explorer() {
 
   const renderContent = () => {
     if (sessions.length > 0) {
-      return (
-        <TrajetsCarousel
-          trajets={sessions}
-          onScrollIndexChange={handleScrollIndexChange}
-        />
-      );
+      return <TrajetsCarousel trajets={sessions} onScrollIndexChange={handleScrollIndexChange} />;
     }
 
     if (!isConnected) {
@@ -137,15 +139,11 @@ export default function Explorer() {
               onRefresh={fetchSessions}
               colors={[theme.colors.ui.button.primary]}
               tintColor={theme.colors.ui.button.primary}
-
             />
           }
         >
           <Text style={styles.emptyMessage}>Aucun trajet disponible</Text>
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={fetchSessions}
-          >
+          <TouchableOpacity style={styles.refreshButton} onPress={fetchSessions}>
             <Text style={styles.refreshText}>Actualiser</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -161,12 +159,7 @@ export default function Explorer() {
         <Text style={styles.header}>Trajets Récents</Text>
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBase} />
-          <Animated.View
-            style={[
-              styles.progressBarFill,
-              { width: progressWidth }
-            ]}
-          />
+          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
         </View>
       </View>
 
@@ -175,80 +168,75 @@ export default function Explorer() {
   );
 }
 
-const makeStyles = (theme: Theme) => StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-
-  },
-  headerContainer: {
-    marginBottom: theme.spacing.md,
-
-  },
-  header: {
-    fontSize: theme.typography.header.fontSize,
-    fontWeight: theme.typography.header.fontWeight,
-    marginBottom: theme.spacing.sm,
-    color: theme.colors.backgroundText,
-
-  },
-  progressBarContainer: {
-    height: 6,
-    backgroundColor: theme.colors.ui.progressBar.background,
-    borderRadius: theme.borderRadius.medium,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 0.7,
-  },
-  progressBarBase: {
-    position: 'absolute',
-    height: '100%',
-    width: '20%',
-    backgroundColor: theme.colors.ui.progressBar.fill,
-    borderRadius: theme.borderRadius.medium,
-
-  },
-  progressBarFill: {
-    position: 'absolute',
-    height: '100%',
-    backgroundColor: theme.colors.ui.progressBar.fill,
-    borderRadius: theme.borderRadius.medium,
-  },
-  emptyMessage: {
-    textAlign: 'center',
-    marginTop: theme.spacing.lg,
-    fontSize: theme.typography.body.fontSize,
-    color: theme.colors.backgroundTextSoft,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
-  refreshButton: {
-    marginTop: theme.spacing.lg,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.ui.button.primary,
-    borderRadius: theme.borderRadius.medium,
-    ...theme.shadow.xl
-  },
-  refreshText: {
-    color: theme.colors.ui.button.primaryText,
-    fontWeight: theme.typography.button.fontWeight,
-    fontSize: theme.typography.button.fontSize,
-    textTransform: theme.typography.button.textTransform,
-  },
-  offlineHint: {
-    marginTop: theme.spacing.sm,
-    color: theme.colors.backgroundTextSoft,
-    fontStyle: 'italic',
-    fontSize: theme.typography.caption.fontSize,
-  }
-});
-
-
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.background,
+    },
+    headerContainer: {
+      marginBottom: theme.spacing.md,
+    },
+    header: {
+      fontSize: theme.typography.header.fontSize,
+      fontWeight: theme.typography.header.fontWeight,
+      marginBottom: theme.spacing.sm,
+      color: theme.colors.backgroundText,
+    },
+    progressBarContainer: {
+      height: 6,
+      backgroundColor: theme.colors.ui.progressBar.background,
+      borderRadius: theme.borderRadius.medium,
+      overflow: 'hidden',
+      position: 'relative',
+      borderWidth: 0.7,
+    },
+    progressBarBase: {
+      position: 'absolute',
+      height: '100%',
+      width: '20%',
+      backgroundColor: theme.colors.ui.progressBar.fill,
+      borderRadius: theme.borderRadius.medium,
+    },
+    progressBarFill: {
+      position: 'absolute',
+      height: '100%',
+      backgroundColor: theme.colors.ui.progressBar.fill,
+      borderRadius: theme.borderRadius.medium,
+    },
+    emptyMessage: {
+      textAlign: 'center',
+      marginTop: theme.spacing.lg,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.backgroundTextSoft,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: theme.spacing.lg,
+    },
+    refreshButton: {
+      marginTop: theme.spacing.lg,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.ui.button.primary,
+      borderRadius: theme.borderRadius.medium,
+      ...theme.shadow.xl,
+    },
+    refreshText: {
+      color: theme.colors.ui.button.primaryText,
+      fontWeight: theme.typography.button.fontWeight,
+      fontSize: theme.typography.button.fontSize,
+      textTransform: theme.typography.button.textTransform,
+    },
+    offlineHint: {
+      marginTop: theme.spacing.sm,
+      color: theme.colors.backgroundTextSoft,
+      fontStyle: 'italic',
+      fontSize: theme.typography.caption.fontSize,
+    },
+  });
 
 // to do : voir TrajetsCarousel.tsx
 // to do : ajouter la possibilite d se balader sur la map un click prolonger devrais mettre celle ci en pleine ecrant ! et l'option itineraire diriger vers notre systeme de navigation !

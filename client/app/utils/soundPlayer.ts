@@ -61,7 +61,7 @@ export const playSound = async (
     await sound.setVolumeAsync(volume);
     await sound.replayAsync(); // Utilisation de replayAsync au lieu de playAsync
 
-    currentlyPlaying = currentlyPlaying.filter(k => k !== key);
+    currentlyPlaying = currentlyPlaying.filter((k) => k !== key);
     currentlyPlaying.push(key);
   } catch (error) {
     console.error(`Error playing sound ${key}:`, error);

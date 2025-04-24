@@ -5,11 +5,14 @@ import { SOUNDS } from '../../constants/sound';
 const initialState = {
   globalVolume: 1.0,
   globalMute: false,
-  sounds: Object.keys(SOUNDS).reduce((acc, key) => {
-    const soundKey = key as SoundKey;
-    acc[soundKey] = SOUNDS[soundKey].defaultConfig;
-    return acc;
-  }, {} as Record<SoundKey, SoundConfig>),
+  sounds: Object.keys(SOUNDS).reduce(
+    (acc, key) => {
+      const soundKey = key as SoundKey;
+      acc[soundKey] = SOUNDS[soundKey].defaultConfig;
+      return acc;
+    },
+    {} as Record<SoundKey, SoundConfig>
+  ),
 };
 
 export const soundSlice = createSlice({

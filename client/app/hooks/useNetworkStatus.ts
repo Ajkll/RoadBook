@@ -11,20 +11,25 @@ export const useNetworkStatus = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(state.isConnected || false);
       setIsInternetReachable(state.isInternetReachable || false);
       setConnectionType(state.type);
       setDetails(state);
 
-      dispatch(setNetworkStatus({
-        isConnected: state.isConnected || false,
-        isInternetReachable: state.isInternetReachable || false,
-        connectionType: state.type || null,
-        details: state || null
-      }));
+      dispatch(
+        setNetworkStatus({
+          isConnected: state.isConnected || false,
+          isInternetReachable: state.isInternetReachable || false,
+          connectionType: state.type || null,
+          details: state || null,
+        })
+      );
 
-      console.log('Etat de connexion mis à jour dans le store:', state.isInternetReachable ? 'En ligne' : 'Hors ligne');
+      console.log(
+        'Etat de connexion mis à jour dans le store:',
+        state.isInternetReachable ? 'En ligne' : 'Hors ligne'
+      );
     });
 
     return () => unsubscribe();

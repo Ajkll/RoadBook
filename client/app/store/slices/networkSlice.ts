@@ -11,7 +11,7 @@ const initialState: NetworkState = {
   isConnected: true,
   isInternetReachable: true,
   connectionType: null,
-  details: null
+  details: null,
 };
 
 const networkSlice = createSlice({
@@ -23,17 +23,17 @@ const networkSlice = createSlice({
       state.isInternetReachable = action.payload.isInternetReachable;
       state.connectionType = action.payload.connectionType;
       state.details = action.payload.details;
-    }
-  }
+    },
+  },
 });
 
 export const { setNetworkStatus } = networkSlice.actions;
 export default networkSlice.reducer;
 
-
 export const selectIsConnected = (state: { network: NetworkState }) => state.network.isConnected;
-export const selectIsInternetReachable = (state: { network: NetworkState }) => state.network.isInternetReachable;
+export const selectIsInternetReachable = (state: { network: NetworkState }) =>
+  state.network.isInternetReachable;
 export const selectNetworkDetails = (state: { network: NetworkState }) => ({
   connectionType: state.network.connectionType,
-  details: state.network.details
+  details: state.network.details,
 });

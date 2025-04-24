@@ -8,47 +8,60 @@ import { WeatherInfo } from '../types/weather.types';
 export const weatherConditionToImage = (condition: string | null | undefined): string => {
   if (!condition) return 'nuageux.png'; // Default
   const normalizedCondition = condition.toLowerCase();
-  if (normalizedCondition.includes('rain') ||
-      normalizedCondition.includes('drizzle') ||
-      normalizedCondition.includes('shower') ||
-      normalizedCondition.includes('precipitation')) {
+  if (
+    normalizedCondition.includes('rain') ||
+    normalizedCondition.includes('drizzle') ||
+    normalizedCondition.includes('shower') ||
+    normalizedCondition.includes('precipitation')
+  ) {
     return 'pluvieux.png';
   }
 
   // thunderstorms
-  if (normalizedCondition.includes('thunder') ||
-      normalizedCondition.includes('storm') ||
-      normalizedCondition.includes('lightning')) {
+  if (
+    normalizedCondition.includes('thunder') ||
+    normalizedCondition.includes('storm') ||
+    normalizedCondition.includes('lightning')
+  ) {
     return 'orage.png';
   }
 
   // partly cloudy
-  if (normalizedCondition.includes('partly cloudy') ||
-      normalizedCondition.includes('partly-cloudy') ||
-      normalizedCondition.includes('partially cloudy') ||
-      (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))) {
+  if (
+    normalizedCondition.includes('partly cloudy') ||
+    normalizedCondition.includes('partly-cloudy') ||
+    normalizedCondition.includes('partially cloudy') ||
+    (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))
+  ) {
     return 'mi-soleil-mi-nuageux.png';
   }
 
   // fully clear
-  if ((normalizedCondition === 'clear' || normalizedCondition === 'sunny' ||
-       normalizedCondition === 'fair') &&
-      !normalizedCondition.includes('cloud') &&
-      !normalizedCondition.includes('partly')) {
+  if (
+    (normalizedCondition === 'clear' ||
+      normalizedCondition === 'sunny' ||
+      normalizedCondition === 'fair') &&
+    !normalizedCondition.includes('cloud') &&
+    !normalizedCondition.includes('partly')
+  ) {
     return 'soleil.png';
   }
 
   // overcast
-  if (normalizedCondition.includes('cloud') ||
-      normalizedCondition.includes('overcast') ||
-      normalizedCondition.includes('variablecloud')) {
+  if (
+    normalizedCondition.includes('cloud') ||
+    normalizedCondition.includes('overcast') ||
+    normalizedCondition.includes('variablecloud')
+  ) {
     return 'nuageux.png';
   }
 
   // fog/mist
-  if (normalizedCondition.includes('fog') ||
-      normalizedCondition.includes('haze') ||
-      normalizedCondition.includes('mist')) {
+  if (
+    normalizedCondition.includes('fog') ||
+    normalizedCondition.includes('haze') ||
+    normalizedCondition.includes('mist')
+  ) {
     return 'brouillard.png';
   }
 
@@ -56,51 +69,66 @@ export const weatherConditionToImage = (condition: string | null | undefined): s
   return 'nuageux.png';
 };
 
-export const getWeatherImageSource = (condition: string | null | undefined): ImageSourcePropType => {
+export const getWeatherImageSource = (
+  condition: string | null | undefined
+): ImageSourcePropType => {
   const normalizedCondition = condition?.toLowerCase() || '';
 
   // rain first
-  if (normalizedCondition.includes('rain') ||
-      normalizedCondition.includes('drizzle') ||
-      normalizedCondition.includes('shower') ||
-      normalizedCondition.includes('precipitation')) {
+  if (
+    normalizedCondition.includes('rain') ||
+    normalizedCondition.includes('drizzle') ||
+    normalizedCondition.includes('shower') ||
+    normalizedCondition.includes('precipitation')
+  ) {
     return require('../assets/icones/meteo/pluvieux.png');
   }
 
   // thunder first
-  if (normalizedCondition.includes('thunder') ||
-      normalizedCondition.includes('storm') ||
-      normalizedCondition.includes('lightning')) {
+  if (
+    normalizedCondition.includes('thunder') ||
+    normalizedCondition.includes('storm') ||
+    normalizedCondition.includes('lightning')
+  ) {
     return require('../assets/icones/meteo/orage.png');
   }
 
   // partly cloudy first
-  if (normalizedCondition.includes('partly cloudy') ||
-      normalizedCondition.includes('partly-cloudy') ||
-      normalizedCondition.includes('partially cloudy') ||
-      (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))) {
+  if (
+    normalizedCondition.includes('partly cloudy') ||
+    normalizedCondition.includes('partly-cloudy') ||
+    normalizedCondition.includes('partially cloudy') ||
+    (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))
+  ) {
     return require('../assets/icones/meteo/mi-soleil-mi-nuageux.png');
   }
 
   // fully clear first
-  if ((normalizedCondition === 'clear' || normalizedCondition === 'sunny' ||
-       normalizedCondition === 'fair') &&
-      !normalizedCondition.includes('cloud') &&
-      !normalizedCondition.includes('partly')) {
+  if (
+    (normalizedCondition === 'clear' ||
+      normalizedCondition === 'sunny' ||
+      normalizedCondition === 'fair') &&
+    !normalizedCondition.includes('cloud') &&
+    !normalizedCondition.includes('partly')
+  ) {
     return require('../assets/icones/meteo/soleil.png');
   }
 
   // overcast or cloudy first
-  if (normalizedCondition.includes('cloud') ||
-      normalizedCondition.includes('overcast') ||
-      normalizedCondition.includes('variablecloud')) {
+  if (
+    normalizedCondition.includes('cloud') ||
+    normalizedCondition.includes('overcast') ||
+    normalizedCondition.includes('variablecloud')
+  ) {
     return require('../assets/icones/meteo/nuageux.png');
   }
 
   // fog/mist first
-  if (normalizedCondition.includes('fog') ||
-      normalizedCondition.includes('haze') ||
-      normalizedCondition.includes('mist')) {
+  if (
+    normalizedCondition.includes('fog') ||
+    normalizedCondition.includes('haze') ||
+    normalizedCondition.includes('mist')
+  ) {
     return require('../assets/icones/meteo/brouillard.png');
   }
 
@@ -119,8 +147,10 @@ export const getWeatherDescription = (condition: string | null | undefined): str
     return 'Orage';
   }
 
-  if ((normalizedCondition.includes('partly') || normalizedCondition.includes('partially')) &&
-      normalizedCondition.includes('cloud')) {
+  if (
+    (normalizedCondition.includes('partly') || normalizedCondition.includes('partially')) &&
+    normalizedCondition.includes('cloud')
+  ) {
     return 'Partiellement nuageux';
   }
 
@@ -159,14 +189,19 @@ export const weatherToDrivingDifficulty = (condition: string | null | undefined)
   if (!condition) return 3; // Difficulté moyenne par défaut
 
   const normalizedCondition = condition.toLowerCase();
-  if ((normalizedCondition === 'clear' || normalizedCondition === 'sunny' ||
-       normalizedCondition === 'fair') &&
-      !normalizedCondition.includes('cloud')) {
+  if (
+    (normalizedCondition === 'clear' ||
+      normalizedCondition === 'sunny' ||
+      normalizedCondition === 'fair') &&
+    !normalizedCondition.includes('cloud')
+  ) {
     return 1;
   }
 
-  if (normalizedCondition.includes('partly cloudy') ||
-      (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))) {
+  if (
+    normalizedCondition.includes('partly cloudy') ||
+    (normalizedCondition.includes('partly') && normalizedCondition.includes('cloud'))
+  ) {
     return 2;
   }
 
@@ -178,8 +213,12 @@ export const weatherToDrivingDifficulty = (condition: string | null | undefined)
     return 4;
   }
 
-  if (normalizedCondition.includes('fog') || normalizedCondition.includes('mist') ||
-      normalizedCondition.includes('thunder') || normalizedCondition.includes('storm')) {
+  if (
+    normalizedCondition.includes('fog') ||
+    normalizedCondition.includes('mist') ||
+    normalizedCondition.includes('thunder') ||
+    normalizedCondition.includes('storm')
+  ) {
     return 5;
   }
 

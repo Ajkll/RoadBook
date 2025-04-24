@@ -16,9 +16,11 @@ const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress
   const theme = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
-  const handleMenuPress = onMenuPress ?? (() => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  });
+  const handleMenuPress =
+    onMenuPress ??
+    (() => {
+      navigation.dispatch(DrawerActions.openDrawer());
+    });
 
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 

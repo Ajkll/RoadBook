@@ -1,91 +1,100 @@
-import React, {useMemo, useCallback, useState} from 'react';
-import { Modalize } from 'react-native-modalize';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  Pressable
+} from 'react-native';
 import { useTheme } from '../../constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import ActionSheet from 'react-native-actions-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+interface StartButtonModalProps {
+  actionSheetRef: React.RefObject<ActionSheet>;
+  onStartPress: () => void;
+  isMapReady: boolean;
+}
 
-const StartButtonModal = ({ modalizeRef, onStartPress, isMapReady }: StartButtonModalProps) => {
+const StartButtonModal = ({
+  actionSheetRef,
+  onStartPress,
+  isMapReady
+}: StartButtonModalProps) => {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const insets = useSafeAreaInsets();
 
-   const handlePositionChange = useCallback((position: 'initial' | 'top' | number) => {
-    if (position === 340 || position === 'top') {
-      setIsExpanded(true);
-    } else if (position === 140 || position === 'initial') {
-      setIsExpanded(false);
-    }
-  }, []);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [overlayVisible, setOverlayVisible] = useState(true);
 
-
-  const handleArrowPress = useCallback(() => {
-    if (modalizeRef.current) {
-      if (isExpanded) {
-        modalizeRef.current.open(140);
-      } else {
-        modalizeRef.current.open('top');
-      }
-    }
-  }, [isExpanded, modalizeRef]);
+  // Snap points en dp
+  const SNAP_POINTS = [160, 230];
 
   return (
-    <Modalize
-      ref={modalizeRef}
-      snapPoint={340}
-      modalHeight={400}
-      handlePosition="inside"
-      handleStyle={{
-        backgroundColor: theme.colors.primary,
-        width: 80,
-        height: 8,
-        ...theme.shadow.md,
-        marginTop: Platform.OS === 'android' ? 10 : 0,
-      }}
-      modalStyle={{
-        backgroundColor: theme.colors.ui.modal.background,
-        borderColor: 'grey',
-        borderWidth: 2,
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        paddingBottom: Platform.OS === 'android' ? 30 : 0,
-        zIndex: 100,
-        elevation: 100,
-      }}
-      withOverlay={isExpanded} // <-- Ici on contrôle dynamiquement l'overlay
-      overlayStyle={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
-      alwaysOpen={140}
-      disableScrollIfPossible={false}
-      openAnimationConfig={{
-        spring: {
-          speed: 14,
-          bounciness: 8
-        },
-        timing: {
-          duration: 300,
-          easing: 'easeOut'
-        }
-      }}
-      closeOnOverlayTap={false}
-      onPositionChange={handlePositionChange}
-    >
-      <GestureHandlerRootView style={{flex:1}}>
+    <>
+      {overlayVisible && (
+        <Pressable
+          style={styles.overlay}
+          onPress={() => {
+            actionSheetRef.current?.snapToIndex(0);
+            setIsExpanded(false);
+            setOverlayVisible(false);
+          }}
+        />
+      )}
+
+      <ActionSheet
+        ref={actionSheetRef}
+        // Rendu en View sous la nav bar
+        isModal={false}
+        backgroundInteractionEnabled={true}
+        zIndex={0}
+        safeAreaInsets={insets}
+        useBottomSafeAreaPadding
+        drawUnderStatusBar={false}
+
+        gestureEnabled
+        snapPoints={SNAP_POINTS}
+        initialSnapIndex={0}
+        springOffset={SNAP_POINTS[0]}                // Empêche de passer sous 100 dp :contentReference[oaicite:6]{index=6}
+        overdrawEnabled
+        overdrawFactor={10}
+        overdrawSize={50}
+        enableContentPanningGesture={true}
+        closable={false}                             // Empêche la fermeture automatique :contentReference[oaicite:7]{index=7}
+        closeOnTouchBackdrop={false}                 // Même comportement au tap dehors :contentReference[oaicite:8]{index=8}
+
+        onSnapIndexChange={(index) => {              // Callback qui alerte véritablement sur le snap atteint :contentReference[oaicite:9]{index=9}
+          const expanded = index === 1;
+          setIsExpanded(expanded);
+          setOverlayVisible(expanded);
+        }}
+
+        statusBarTranslucent
+        containerStyle={styles.actionSheetContainer}
+        indicatorStyle={styles.indicator}
+      >
         <View style={styles.container}>
           <TouchableOpacity
-            onPress={handleArrowPress}
+            onPress={() => {
+              const next = isExpanded ? 0 : 1;
+              actionSheetRef.current?.snapToIndex(next);
+              setIsExpanded(next === 1);
+              setOverlayVisible(next === 1);
+            }}
             style={styles.arrowButton}
             activeOpacity={0.7}
             hitSlop={{ top: 20, bottom: 20, left: 50, right: 50 }}
           >
             <MaterialIcons
-              name={isExpanded ? "keyboard-arrow-down" : "keyboard-arrow-up"}
-              size={45}
+              name={isExpanded ? 'keyboard-arrow-down' : 'keyboard-arrow-up'}
+              size={40}
               color={theme.colors.primary}
             />
           </TouchableOpacity>
-
-          <Text style={styles.title}>Prêt à démarrer ?</Text>
 
           <TouchableOpacity
             style={[
@@ -99,56 +108,74 @@ const StartButtonModal = ({ modalizeRef, onStartPress, isMapReady }: StartButton
           </TouchableOpacity>
 
           {!isMapReady && (
-            <Text style={styles.loadingText}>Chargement de la carte en cours...</Text>
+            <Text style={styles.loadingText}>
+              Chargement de la carte en cours…
+            </Text>
           )}
         </View>
-      </GestureHandlerRootView>
-    </Modalize>
+      </ActionSheet>
+    </>
   );
 };
 
-
-// Styles inchangés (voir précédent)
-const createStyles = (theme: any) => StyleSheet.create({
-  container: {
-    padding: 20,
-    alignItems: 'center',
-    paddingBottom: Platform.OS === 'android' ? 30 : 20,
-  },
-  arrowButton: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 10,
-    zIndex: 10,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 20,
-  },
-  startButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: theme.borderRadius.xlarge,
-    width: '100%',
-    alignItems: 'center',
-    ...theme.shadow.md
-  },
-  disabledButton: {
-    backgroundColor: theme.colors.disabled,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-    color: theme.colors.textSecondary,
-    fontSize: 19,
-  },
-});
+const createStyles = (theme: any) =>
+  StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 9,
+    },
+    actionSheetContainer: {
+      backgroundColor: theme.colors.ui.modal.background,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      borderColor: '#8E8E8E',
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      zIndex: 10,
+      minHeight: 140,
+    },
+    indicator: {
+      backgroundColor: theme.colors.primary,
+      width: 120,
+      height: 12,
+      ...theme.shadow.md,
+      marginTop: Platform.OS === 'android' ? 10 : 0,
+    },
+    container: {
+      paddingTop: 20,
+    },
+    arrowButton: {
+      width: '100%',
+      alignItems: 'center',
+      zIndex: 10,
+      padding: 0,
+      marginTop: -10,
+    },
+    startButton: {
+      backgroundColor: theme.colors.primary,
+      alignSelf: 'center',
+      width: '80%',
+      borderRadius: theme.borderRadius.xlarge,
+      padding: 15,
+      ...theme.shadow.md,
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.disabled,
+    },
+    buttonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 20,
+      textAlign: 'center',
+    },
+    loadingText: {
+      marginTop: 10,
+      color: theme.colors.textSecondary,
+      fontSize: 19,
+      textAlign: 'center',
+    },
+  });
 
 export default StartButtonModal;

@@ -63,14 +63,13 @@ export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
 function toRad(value: number): number {
-  return value * Math.PI / 180;
+  return (value * Math.PI) / 180;
 }
 
 // Distance totale
@@ -78,8 +77,10 @@ export function calculatePathDistance(path: { latitude: number; longitude: numbe
   let totalDistance = 0;
   for (let i = 0; i < path.length - 1; i++) {
     totalDistance += haversineDistance(
-      path[i].latitude, path[i].longitude,
-      path[i + 1].latitude, path[i + 1].longitude
+      path[i].latitude,
+      path[i].longitude,
+      path[i + 1].latitude,
+      path[i + 1].longitude
     );
   }
   return totalDistance;
@@ -144,7 +145,9 @@ export async function getWeatherInfo(count: number): Promise<WeatherInfo[]> {
   return results;
 }
 
-export async function getGpsPoints(count: number): Promise<{ sessionIndex: number; path: DriveSession['path'] }[]> {
+export async function getGpsPoints(
+  count: number
+): Promise<{ sessionIndex: number; path: DriveSession['path'] }[]> {
   const sessions = await getLastDriveSessions(count);
 
   return sessions.map((session, index) => ({

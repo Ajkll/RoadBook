@@ -3,7 +3,6 @@ import { store } from '../store/store';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getWeather } from '../services/api/weather';
 
-// Types
 export interface PendingDriveSession {
   id: string;
   elapsedTime: number;
@@ -69,7 +68,9 @@ export interface PendingWeatherRequest {
   requestedAt: number; // Date de la demande
 }
 
-export const savePendingRoadInfoRequest = async (request: PendingRoadInfoRequest): Promise<string> => {
+export const savePendingRoadInfoRequest = async (
+  request: PendingRoadInfoRequest
+): Promise<string> => {
   try {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9);
@@ -77,15 +78,20 @@ export const savePendingRoadInfoRequest = async (request: PendingRoadInfoRequest
 
     const existingRequests = await getPendingRoadInfoRequests();
 
-    const isDuplicate = existingRequests.some(req => req.id === id ||
-      (req.driveSessionId === request.driveSessionId &&
-       JSON.stringify(req.path) === JSON.stringify(request.path)));
+    const isDuplicate = existingRequests.some(
+      (req) =>
+        req.id === id ||
+        (req.driveSessionId === request.driveSessionId &&
+          JSON.stringify(req.path) === JSON.stringify(request.path))
+    );
 
     if (isDuplicate) {
-      console.log(' Tentative d\'ajout d\'une requête d\'info routière dupliquée, ignorée');
-      const existingRequest = existingRequests.find(req =>
-        req.driveSessionId === request.driveSessionId &&
-        JSON.stringify(req.path) === JSON.stringify(request.path));
+      console.log('info routière dupliquée donc ignorée');
+      const existingRequest = existingRequests.find(
+        (req) =>
+          req.driveSessionId === request.driveSessionId &&
+          JSON.stringify(req.path) === JSON.stringify(request.path)
+      );
       return existingRequest ? existingRequest.id : null;
     }
 
@@ -94,10 +100,10 @@ export const savePendingRoadInfoRequest = async (request: PendingRoadInfoRequest
 
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRequests));
 
-    console.log(' Requête d\'info routière en attente sauvegardée:', id);
+    console.log(' info routière en attente sauvegardée:', id);
     return id;
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde de la requête d\'info routière:', error);
+    console.error('Erreur lors de la sauvegarde routière:', error);
     throw error;
   }
 };
@@ -107,7 +113,7 @@ export const getPendingRoadInfoRequests = async (): Promise<PendingRoadInfoReque
     const requestsString = await AsyncStorage.getItem(KEYS.PENDING_ROADINFO_REQUESTS);
     return requestsString ? JSON.parse(requestsString) : [];
   } catch (error) {
-    console.error('Erreur lors de la récupération des requêtes d\'info routière en attente:', error);
+    console.error('Erreur lors de la récupération routière en attente:', error);
     return [];
   }
 };
@@ -115,16 +121,18 @@ export const getPendingRoadInfoRequests = async (): Promise<PendingRoadInfoReque
 export const removePendingRoadInfoRequest = async (id: string): Promise<void> => {
   try {
     const requests = await getPendingRoadInfoRequests();
-    const updatedRequests = requests.filter(request => request.id !== id);
+    const updatedRequests = requests.filter((request) => request.id !== id);
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRequests));
-    console.log(' Requête d\'info routière supprimée du stockage local:', id);
+    console.log(' info routière supprimée du stockage local:', id);
   } catch (error) {
-    console.error('Erreur lors de la suppression de la requête d\'info routière:', error);
+    console.error('Erreur lors de la suppression info routière:', error);
     throw error;
   }
 };
 
-export const savePendingDriveSession = async (session: Omit<PendingDriveSession, 'id'>): Promise<string> => {
+export const savePendingDriveSession = async (
+  session: Omit<PendingDriveSession, 'id'>
+): Promise<string> => {
   try {
     let id = session.id;
 
@@ -134,7 +142,7 @@ export const savePendingDriveSession = async (session: Omit<PendingDriveSession,
 
     const existingSessions = await getPendingDriveSessions();
 
-    const existingIndex = existingSessions.findIndex(s => s.id === id);
+    const existingIndex = existingSessions.findIndex((s) => s.id === id);
 
     if (existingIndex >= 0) {
       existingSessions[existingIndex] = { ...session, id };
@@ -167,27 +175,31 @@ export const getPendingDriveSessions = async (): Promise<PendingDriveSession[]> 
 export const removePendingDriveSession = async (id: string): Promise<void> => {
   try {
     const sessions = await getPendingDriveSessions();
-    const updatedSessions = sessions.filter(session => session.id !== id);
+    const updatedSessions = sessions.filter((session) => session.id !== id);
     await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(updatedSessions));
 
     const roadRequests = await getPendingRoadInfoRequests();
-    const updatedRoadRequests = roadRequests.filter(req => req.driveSessionId !== id);
+    const updatedRoadRequests = roadRequests.filter((req) => req.driveSessionId !== id);
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRoadRequests));
 
-    // 3. Supprimer les requêtes weather associées
+    // 3. delete weather api associées a une session
     const weatherRequests = await getPendingWeatherRequests();
-    const updatedWeatherRequests = weatherRequests.filter(req => req.driveSessionId !== id);
-    await AsyncStorage.setItem(KEYS.PENDING_WEATHER_REQUESTS, JSON.stringify(updatedWeatherRequests));
+    const updatedWeatherRequests = weatherRequests.filter((req) => req.driveSessionId !== id);
+    await AsyncStorage.setItem(
+      KEYS.PENDING_WEATHER_REQUESTS,
+      JSON.stringify(updatedWeatherRequests)
+    );
 
-    console.log(' Session et requêtes associées supprimées:', id);
+    console.log(' Session et requetes associées supprimées:', id);
   } catch (error) {
     console.error('Erreur lors de la suppression de la session:', error);
     throw error;
   }
 };
 
-// Fonctions pour les requêtes météo en attente
-export const savePendingWeatherRequest = async (request: Omit<PendingWeatherRequest, 'id'>): Promise<string> => {
+export const savePendingWeatherRequest = async (
+  request: Omit<PendingWeatherRequest, 'id'>
+): Promise<string> => {
   try {
     const id = `weather_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
@@ -197,10 +209,10 @@ export const savePendingWeatherRequest = async (request: Omit<PendingWeatherRequ
 
     await AsyncStorage.setItem(KEYS.PENDING_WEATHER_REQUESTS, JSON.stringify(updatedRequests));
 
-    console.log('☁️ Requête météo en attente sauvegardée:', id);
+    console.log('Requete météo en attente sauvegardée:', id);
     return id;
   } catch (error) {
-    console.error('❌ Erreur lors de la sauvegarde de la requête météo:', error);
+    console.error('erreur lors de la sauvegarde météo:', error);
     throw error;
   }
 };
@@ -213,65 +225,53 @@ export async function syncPendingWeatherRequests(): Promise<{
   const isOnline = selectIsInternetReachable(state);
 
   if (!isOnline) {
-    console.log('📴 Synchronisation des données météo impossible: appareil hors ligne');
+    console.log('sync des données météo impossible: hors ligne');
     return { success: 0, failed: 0 };
   }
-
-  console.log('🔄 Début de la synchronisation des requêtes météo en attente...');
 
   let successCount = 0;
   let failedCount = 0;
 
   try {
-    // Récupérer toutes les requêtes météo en attente
     const pendingRequests = await getPendingWeatherRequests();
-    console.log(`📋 ${pendingRequests.length} requêtes météo à synchroniser`);
+    console.log(`${pendingRequests.length} api météo à sync`);
 
     if (pendingRequests.length === 0) {
       return { success: 0, failed: 0 };
     }
 
-    // Récupérer toutes les sessions en attente
     const pendingSessions = await getPendingDriveSessions();
 
     for (const request of pendingRequests) {
       try {
-        console.log(`🔄 Traitement de la requête météo ${request.id}...`);
-
-        // Récupérer les données météo
         const weather = await getWeather(request.latitude, request.longitude);
 
         if (!weather) {
-          console.error(`❌ Impossible d'obtenir les données météo pour la requête ${request.id}`);
+          console.error(` resultat defférer api : météo pour la requete ${request.id}`);
           failedCount++;
           continue;
         }
-
-        // Trouver la session associée
-        const sessionIndex = pendingSessions.findIndex(s => s.id === request.driveSessionId);
+        const sessionIndex = pendingSessions.findIndex((s) => s.id === request.driveSessionId);
 
         if (sessionIndex >= 0) {
-          // Mettre à jour la session avec les données météo
           pendingSessions[sessionIndex].weather = weather;
 
-          // Sauvegarder les sessions mises à jour
           await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(pendingSessions));
-          console.log(`✅ Session ${request.driveSessionId} mise à jour avec les données météo`);
+          console.log(`Session ${request.driveSessionId} mise à jour avec les données météo`);
         } else {
-          console.log(`⚠️ Session ${request.driveSessionId} non trouvée localement`);
+          console.log(`Session ${request.driveSessionId} non trouvée localement`);
         }
 
-        // Supprimer la requête traitée
         await removePendingWeatherRequest(request.id);
         successCount++;
-        console.log(`✅ Requête météo ${request.id} traitée avec succès`);
+        console.log(`api météo ${request.id} traitée avec succès`);
       } catch (error) {
-        console.error(`❌ Échec de traitement pour la requête météo ${request.id}:`, error);
+        console.error(`traitement météo échec ${request.id}:`, error);
         failedCount++;
       }
     }
   } catch (error) {
-    console.error('❌ Erreur générale lors de la synchronisation des données météo:', error);
+    console.error('sync des données météo failed:', error);
   }
 
   return { success: successCount, failed: failedCount };
@@ -282,7 +282,7 @@ export const getPendingWeatherRequests = async (): Promise<PendingWeatherRequest
     const requestsString = await AsyncStorage.getItem(KEYS.PENDING_WEATHER_REQUESTS);
     return requestsString ? JSON.parse(requestsString) : [];
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des requêtes météo en attente:', error);
+    console.error('récup api météo en attente failed:', error);
     return [];
   }
 };
@@ -290,11 +290,11 @@ export const getPendingWeatherRequests = async (): Promise<PendingWeatherRequest
 export const removePendingWeatherRequest = async (id: string): Promise<void> => {
   try {
     const requests = await getPendingWeatherRequests();
-    const updatedRequests = requests.filter(request => request.id !== id);
+    const updatedRequests = requests.filter((request) => request.id !== id);
     await AsyncStorage.setItem(KEYS.PENDING_WEATHER_REQUESTS, JSON.stringify(updatedRequests));
-    console.log('🗑️ Requête météo supprimée du stockage local:', id);
+    console.log('api meteo supprimée du stockage local:', id);
   } catch (error) {
-    console.error('❌ Erreur lors de la suppression de la requête météo:', error);
+    console.error('suppression api météo failed:', error);
     throw error;
   }
 };
@@ -304,7 +304,7 @@ export const saveLastSyncDate = async (): Promise<void> => {
   try {
     await AsyncStorage.setItem(KEYS.LAST_SYNC_DATE, Date.now().toString());
   } catch (error) {
-    console.error('❌ Erreur lors de la sauvegarde de la date de synchronisation:', error);
+    console.error('stockage de la date de sync failed:', error);
   }
 };
 
@@ -313,7 +313,7 @@ export const getLastSyncDate = async (): Promise<number | null> => {
     const dateString = await AsyncStorage.getItem(KEYS.LAST_SYNC_DATE);
     return dateString ? parseInt(dateString, 10) : null;
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération de la date de synchronisation:', error);
+    console.error('récup de la date de sync failed:', error);
     return null;
   }
 };
@@ -324,12 +324,10 @@ export const clearAllStorageData = async (): Promise<void> => {
       KEYS.PENDING_DRIVE_SESSIONS,
       KEYS.PENDING_WEATHER_REQUESTS,
       KEYS.PENDING_ROADINFO_REQUESTS,
-      KEYS.LAST_SYNC_DATE
+      KEYS.LAST_SYNC_DATE,
     ]);
-    console.log('🧹 Toutes les données de stockage ont été effacées');
+    console.log(' données local effacées');
   } catch (error) {
-    console.error('❌ Erreur lors de l\'effacement des données de stockage:', error);
+    console.error('echec de la suppression des données du stockage par clearAll:', error);
   }
 };
-
-

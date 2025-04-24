@@ -107,7 +107,7 @@ export default function ChronoWatcher() {
   useEffect(() => {
     let setupTimerRef: NodeJS.Timeout | null = null;
 
-    console.log(`[${instanceId}] isrunning :`, isRunning, "isInitialLoad:", isInitialLoad);
+    console.log(`[${instanceId}] isrunning :`, isRunning, 'isInitialLoad:', isInitialLoad);
 
     const startTrackingFn = async () => {
       if (isProcessing.current || isTrackingActive.current) {
@@ -206,13 +206,11 @@ export default function ChronoWatcher() {
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
 
-          if (finalElapsedTime === 0 || (!finalPath || finalPath.length < 3)) {
+          if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
             console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            showError(
-              '⛔ Échec de la sauvegarde',
-              "Ton trajet n'a pas été enregistré.",
-              { position: 'center' }
-            );
+            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré.", {
+              position: 'center',
+            });
           } else {
             // demande api en ligne
             let roadInfo = null;
@@ -224,7 +222,9 @@ export default function ChronoWatcher() {
                 console.error(`[${instanceId}] récupération des infos routières echoué:`, error);
               }
             } else {
-              console.log(`[${instanceId}] Pas de connexion internet, informations routières ignorées`);
+              console.log(
+                `[${instanceId}] Pas de connexion internet, informations routières ignorées`
+              );
             }
 
             // sauvegarde vers firebase
@@ -253,7 +253,6 @@ export default function ChronoWatcher() {
           console.log(`[${instanceId}] sauvegarde désactivée la session est ignorée.`);
         }
       } finally {
-
         console.log(`[${instanceId}] reset des states chrono et location`);
         dispatch(resetChrono());
         dispatch(resetLocation());
@@ -273,8 +272,7 @@ export default function ChronoWatcher() {
         setupTimerRef = setTimeout(() => {
           startTrackingFn();
         }, 300);
-      }
-      else if (!isRunning && isTrackingActive.current) {
+      } else if (!isRunning && isTrackingActive.current) {
         setupTimerRef = setTimeout(() => {
           stopTrackingAndSave();
         }, 300);
