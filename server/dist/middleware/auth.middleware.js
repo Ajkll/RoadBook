@@ -14,13 +14,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.optionalAuth = exports.requireAdmin = exports.authorizeRoles = exports.authenticateJWT = void 0;
+exports.optionalAuth = exports.authorizeAdmin = exports.authorizeRoles = exports.authenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 /**
  * Middleware to verify JWT access token
  * This adds the decoded user to the request object
  */
-const authenticateJWT = (req, res, next) => {
+const authenticate = (req, res, next) => {
     try {
         // Get the auth header
         const authHeader = req.headers.authorization;
@@ -35,7 +35,10 @@ const authenticateJWT = (req, res, next) => {
         const jwtSecret = process.env.JWT_SECRET || "your-jwt-secret";
         const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
         // Add user data to request
-        req.user = decoded;
+        req.user = {
+            ...decoded,
+            id: decoded.userId // Ensure id is available for compatibility
+        };
         next();
     }
     catch (error) {
@@ -52,7 +55,7 @@ const authenticateJWT = (req, res, next) => {
         });
     }
 };
-exports.authenticateJWT = authenticateJWT;
+exports.authenticate = authenticate;
 /**
  * Middleware to authorize based on user roles
  */
@@ -79,7 +82,7 @@ exports.authorizeRoles = authorizeRoles;
 /**
  * Middleware to require admin role
  */
-const requireAdmin = (req, res, next) => {
+const authorizeAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({
             status: "error",
@@ -94,7 +97,7 @@ const requireAdmin = (req, res, next) => {
     }
     next();
 };
-exports.requireAdmin = requireAdmin;
+exports.authorizeAdmin = authorizeAdmin;
 /**
  * Optional authentication middleware
  * Will add user to request if token is valid, but continue even if no token
@@ -106,7 +109,10 @@ const optionalAuth = (req, res, next) => {
             const token = authHeader.split(" ")[1];
             const jwtSecret = process.env.JWT_SECRET || "your-jwt-secret";
             const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
-            req.user = decoded;
+            req.user = {
+                ...decoded,
+                id: decoded.userId // Ensure id is available for compatibility
+            };
         }
         // Always continue to next middleware
         next();

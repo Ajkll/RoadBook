@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadBook - Module Testing</title>
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --danger-color: #e74c3c;
+      --warning-color: #f39c12;
+      --background-color: #f5f7fa;
+      --card-background: #ffffff;
+      --border-color: #dce0e6;
+      --text-color: #333333;
+      --muted-text: #7f8c8d;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--background-color);
+      padding: 0;
+      margin: 0;
+    }
+
+    header {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .module-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+      background: white;
+      position: sticky;
+      top: 60px;
+      z-index: 90;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .tab.active {
+      border-bottom-color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    .module-content {
+      display: none;
+    }
+
+    .module-content.active {
+      display: block;
+    }
+
+    .card {
+      background-color: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-body {
+      padding: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    button.secondary {
+      background-color: var(--secondary-color);
+    }
+
+    button.secondary:hover {
+      background-color: #27ae60;
+    }
+
+    button.danger {
+      background-color: var(--danger-color);
+    }
+
+    button.danger:hover {
+      background-color: #c0392b;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .result-container {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      border: 1px solid var(--border-color);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .result-container pre {
+      margin: 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .badge-item {
+      background-color: var(--card-background);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .badge-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge-image {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1rem;
+      background-color: #f0f0f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .badge-image img {
+      max-width: 100%;
+    }
+
+    .badge-info h3 {
+      margin: 0.5rem 0;
+      font-size: 1rem;
+    }
+
+    .badge-info p {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+      color: var(--muted-text);
+    }
+
+    .notification-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      transition: background-color 0.3s;
+    }
+
+    .notification-item:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .notification-item.unread {
+      background-color: rgba(52, 152, 219, 0.1);
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      margin: 0 0 0.25rem;
+      font-weight: 500;
+    }
+
+    .notification-message {
+      margin: 0;
+      color: var(--muted-text);
+      font-size: 0.9rem;
+    }
+
+    .notification-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted-text);
+    }
+
+    .notification-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .notification-actions button {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .post-card {
+      background-color: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .post-author-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .post-content {
+      padding: 1rem;
+    }
+
+    .post-title {
+      margin: 0 0 0.5rem;
+    }
+
+    .post-text {
+      margin: 0 0 1rem;
+    }
+
+    .post-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      color: var(--muted-text);
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .comment-form {
+      margin: 1rem 0;
+    }
+
+    .comment-item {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .comment-author {
+      font-weight: 500;
+    }
+
+    .comment-date {
+      color: var(--muted-text);
+    }
+
+    .comment-text {
+      margin: 0;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .pagination button {
+      padding: 0.25rem 0.5rem;
+    }
+
+    .pagination .page-info {
+      color: var(--muted-text);
+      font-size: 0.9rem;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .status-read {
+      background-color: #ecf0f1;
+      color: #7f8c8d;
+    }
+
+    .status-unread {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .auth-warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RoadBook API - Module Testing</h1>
+  </header>
+
+  <div class="container">
+    <div class="module-tabs">
+      <div class="tab active" data-module="auth">Authentification</div>
+      <div class="tab" data-module="badges">Badges</div>
+      <div class="tab" data-module="community">Communauté</div>
+      <div class="tab" data-module="notifications">Notifications</div>
+    </div>
+
+    <!-- Auth Module -->
+    <div class="module-content active" id="auth-module">
+      <div class="card">
+        <div class="card-header">
+          Authentification
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="auth-email">Email</label>
+            <input type="text" id="auth-email" value="user@example.com">
+          </div>
+          <div class="form-group">
+            <label for="auth-password">Mot de passe</label>
+            <input type="password" id="auth-password" value="Password123!">
+          </div>
+          <div class="button-group">
+            <button id="login-button">Connexion</button>
+            <button id="register-button" class="secondary">Inscription</button>
+            <button id="logout-button" class="danger">Déconnexion</button>
+          </div>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label>État de l'authentification:</label>
+            <div id="auth-status">Non connecté</div>
+          </div>
+          <div class="result-container">
+            <pre id="auth-result"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges Module -->
+    <div class="module-content" id="badges-module">
+      <div class="card">
+        <div class="card-header">
+          Obtenir les badges
+        </div>
+        <div class="card-body">
+          <div class="button-group">
+            <button id="get-all-badges">Tous les badges</button>
+            <button id="get-my-badges">Mes badges</button>
+            <button id="check-badges">Vérifier nouveaux badges</button>
+          </div>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="badge-category">Filtrer par catégorie</label>
+            <select id="badge-category">
+              <option value="">Toutes les catégories</option>
+              <option value="BEGINNER">Débutant</option>
+              <option value="MANEUVERING">Manœuvres</option>
+              <option value="ADVANCED">Avancé</option>
+              <option value="SPECIAL">Spécial</option>
+              <option value="SOCIAL">Social</option>
+            </select>
+            <button id="filter-badges" style="margin-top: 0.5rem;">Filtrer</button>
+          </div>
+          <div class="result-container">
+            <pre id="badges-result"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="badge-display-container" style="display: none;">
+        <div class="card-header">
+          Affichage des badges
+        </div>
+        <div class="card-body">
+          <div id="badges-grid" class="badge-grid">
+            <!-- Badges will be displayed here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          Classement des badges
+        </div>
+        <div class="card-body">
+          <button id="get-leaderboard">Afficher le classement</button>
+          <div id="leaderboard-container" style="margin-top: 1rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Community Module -->
+    <div class="module-content" id="community-module">
+      <div class="card">
+        <div class="card-header">
+          Publications
+        </div>
+        <div class="card-body">
+          <div class="button-group">
+            <button id="get-posts">Obtenir les publications</button>
+            <button id="create-post-form" class="secondary">Nouvelle publication</button>
+          </div>
+
+          <div id="post-form-container" style="display: none; margin-top: 1rem;">
+            <h3>Créer une publication</h3>
+            <div class="form-group">
+              <label for="post-title">Titre</label>
+              <input type="text" id="post-title" placeholder="Titre de votre publication">
+            </div>
+            <div class="form-group">
+              <label for="post-content">Contenu</label>
+              <textarea id="post-content" rows="4" placeholder="Partagez votre expérience..."></textarea>
+            </div>
+            <div class="button-group">
+              <button id="submit-post">Publier</button>
+              <button id="cancel-post" class="danger">Annuler</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="posts-search">Rechercher</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="posts-search" placeholder="Mots-clés...">
+              <button id="search-posts">Rechercher</button>
+            </div>
+          </div>
+          
+          <div id="posts-container" style="margin-top: 1rem;">
+            <!-- Posts will be displayed here -->
+          </div>
+          
+          <div class="pagination" id="posts-pagination" style="display: none;">
+            <button id="prev-page">Précédent</button>
+            <span class="page-info">Page <span id="current-page">1</span> sur <span id="total-pages">1</span></span>
+            <button id="next-page">Suivant</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="post-detail-container" style="display: none;">
+        <div class="card-header">
+          Détails de la publication
+          <button id="back-to-posts" class="secondary">Retour</button>
+        </div>
+        <div class="card-body">
+          <div id="post-detail">
+            <!-- Post detail will be displayed here -->
+          </div>
+          <div id="comments-container">
+            <h3>Commentaires</h3>
+            <div class="comment-form">
+              <textarea id="comment-input" rows="2" placeholder="Ajouter un commentaire..."></textarea>
+              <button id="submit-comment" style="margin-top: 0.5rem;">Commenter</button>
+            </div>
+            <div id="comments-list">
+              <!-- Comments will be displayed here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Module -->
+    <div class="module-content" id="notifications-module">
+      <div class="card">
+        <div class="card-header">
+          Mes notifications
+        </div>
+        <div class="card-body">
+          <div class="button-group">
+            <button id="get-notifications">Obtenir mes notifications</button>
+            <button id="mark-all-read" class="secondary">Tout marquer comme lu</button>
+            <button id="delete-all-notifications" class="danger">Supprimer toutes les notifications</button>
+          </div>
+          
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="notification-filter">Afficher</label>
+            <select id="notification-filter">
+              <option value="all">Toutes les notifications</option>
+              <option value="unread">Uniquement non lues</option>
+            </select>
+            <button id="filter-notifications" style="margin-top: 0.5rem;">Appliquer</button>
+          </div>
+          
+          <div id="notifications-list" style="margin-top: 1rem;">
+            <!-- Notifications will be displayed here -->
+          </div>
+          
+          <div class="pagination" id="notifications-pagination" style="display: none;">
+            <button id="prev-notif-page">Précédent</button>
+            <span class="page-info">Page <span id="current-notif-page">1</span> sur <span id="total-notif-pages">1</span></span>
+            <button id="next-notif-page">Suivant</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          Créer une notification (test administrateur)
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="notification-type">Type de notification</label>
+            <select id="notification-type">
+              <option value="SESSION_REMINDER">Rappel de session</option>
+              <option value="BADGE_EARNED">Badge obtenu</option>
+              <option value="COMPETENCY_MASTERED">Compétence maîtrisée</option>
+              <option value="COMMENT_RECEIVED">Commentaire reçu</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="notification-title">Titre</label>
+            <input type="text" id="notification-title" placeholder="Titre de la notification">
+          </div>
+          <div class="form-group">
+            <label for="notification-message">Message</label>
+            <textarea id="notification-message" rows="2" placeholder="Message de la notification"></textarea>
+          </div>
+          <button id="create-test-notification">Créer une notification de test</button>
+          <div class="result-container">
+            <pre id="notifications-result"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auth State
+    let currentUser = null;
+    let authToken = localStorage.getItem('authToken');
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentPostId = null;
+    let notificationPage = 1;
+    let notificationTotalPages = 1;
+
+    // API Base URL
+    const API_URL = '/api';
+
+    // Helper Functions
+    function showResult(id, data) {
+      const resultElement = document.getElementById(id);
+      resultElement.textContent = typeof data === 'string' 
+        ? data 
+        : JSON.stringify(data, null, 2);
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function formatTimeAgo(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffSeconds < 60) {
+        return 'à l\'instant';
+      }
+      
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      if (diffMinutes < 60) {
+        return `il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+      }
+      
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) {
+        return `il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+      }
+      
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 7) {
+        return `il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+      }
+      
+      return date.toLocaleDateString('fr-FR');
+    }
+
+    // Auth Module
+    async function login() {
+      try {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+        
+        // Store token
+        localStorage.setItem('authToken', data.access_token);
+        authToken = data.access_token;
+        
+        // Get user info
+        currentUser = await getCurrentUser();
+        
+        // Update UI
+        updateAuthStatus();
+        
+        // Show result
+        showResult('auth-result', { success: true, user: currentUser });
+      } catch (error) {
+        showResult('auth-result', { error: error.message });
+      }
+    }
+
+    async function register() {
+      try {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        
+        const response = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            email, 
+            password,
+            displayName: email.split('@')[0]
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Registration failed');
+        }
+        
+        // Show result
+        showResult('auth-result', { success: true, message: 'Registration successful', data });
+      } catch (error) {
+        showResult('auth-result', { error: error.message });
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      authToken = null;
+      currentUser = null;
+      updateAuthStatus();
+      showResult('auth-result', { success: true, message: 'Logged out' });
+    }
+
+    async function getCurrentUser() {
+      if (!authToken) {
+        return null;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to get user info');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error getting user info:', error);
+        return null;
+      }
+    }
+
+    function updateAuthStatus() {
+      const statusElement = document.getElementById('auth-status');
+      
+      if (currentUser) {
+        statusElement.innerHTML = `
+          <strong>Connecté</strong><br>
+          Utilisateur: ${currentUser.displayName} (${currentUser.email})<br>
+          Rôle: ${currentUser.role}
+        `;
+        statusElement.style.color = '#2ecc71';
+      } else {
+        statusElement.textContent = 'Non connecté';
+        statusElement.style.color = '#e74c3c';
+      }
+    }
+
+    // Badges Module
+    async function getAllBadges() {
+      try {
+        const response = await fetch(`${API_URL}/badges`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch badges');
+        }
+        
+        const badges = await response.json();
+        showResult('badges-result', badges);
+        displayBadges(badges);
+        
+        return badges;
+      } catch (error) {
+        showResult('badges-result', { error: error.message });
+        return [];
+      }
+    }
+
+    async function getMyBadges() {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/badges/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch user badges');
+        }
+        
+        const userBadges = await response.json();
+        showResult('badges-result', userBadges);
+        displayUserBadges(userBadges);
+        
+        return userBadges;
+      } catch (error) {
+        showResult('badges-result', { error: error.message });
+        return [];
+      }
+    }
+
+    async function getBadgesByCategory(category) {
+      try {
+        const response = await fetch(`${API_URL}/badges/categories/${category}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch badges for category ${category}`);
+        }
+        
+        const badges = await response.json();
+        showResult('badges-result', badges);
+        displayBadges(badges);
+        
+        return badges;
+      } catch (error) {
+        showResult('badges-result', { error: error.message });
+        return [];
+      }
+    }
+
+    async function checkForNewBadges() {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/badges/check`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check for new badges');
+        }
+        
+        const result = await response.json();
+        showResult('badges-result', result);
+        
+        // If badges were awarded, refresh my badges
+        if (result.badges && result.badges.length > 0) {
+          await getMyBadges();
+        }
+        
+        return result;
+      } catch (error) {
+        showResult('badges-result', { error: error.message });
+        return { badges: [] };
+      }
+    }
+
+    async function getBadgeLeaderboard() {
+      try {
+        const response = await fetch(`${API_URL}/badges/leaderboard`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch badge leaderboard');
+        }
+        
+        const leaderboard = await response.json();
+        displayLeaderboard(leaderboard);
+        
+        return leaderboard;
+      } catch (error) {
+        document.getElementById('leaderboard-container').innerHTML = `
+          <div class="auth-warning">Erreur: ${error.message}</div>
+        `;
+        return [];
+      }
+    }
+
+    function displayBadges(badges) {
+      const container = document.getElementById('badge-display-container');
+      const grid = document.getElementById('badges-grid');
+      
+      if (!badges || badges.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      
+      container.style.display = 'block';
+      grid.innerHTML = '';
+      
+      badges.forEach(badge => {
+        const badgeElement = document.createElement('div');
+        badgeElement.className = 'badge-item';
+        
+        badgeElement.innerHTML = `
+          <div class="badge-image">
+            <img src="${badge.imageUrl || 'https://via.placeholder.com/80'}" alt="${badge.name}">
+          </div>
+          <div class="badge-info">
+            <h3>${badge.name}</h3>
+            <p>${badge.description}</p>
+            <p><small>${badge.category}</small></p>
+            ${badge._count ? `<p><small>${badge._count.userBadges} utilisateurs</small></p>` : ''}
+          </div>
+        `;
+        
+        grid.appendChild(badgeElement);
+      });
+    }
+
+    function displayUserBadges(userBadges) {
+      const container = document.getElementById('badge-display-container');
+      const grid = document.getElementById('badges-grid');
+      
+      if (!userBadges || userBadges.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      
+      container.style.display = 'block';
+      grid.innerHTML = '';
+      
+      userBadges.forEach(userBadge => {
+        const badge = userBadge.badge;
+        const badgeElement = document.createElement('div');
+        badgeElement.className = 'badge-item';
+        
+        badgeElement.innerHTML = `
+          <div class="badge-image">
+            <img src="${badge.imageUrl || 'https://via.placeholder.com/80'}" alt="${badge.name}">
+          </div>
+          <div class="badge-info">
+            <h3>${badge.name}</h3>
+            <p>${badge.description}</p>
+            <p><small>${badge.category}</small></p>
+            <p><small>Obtenu le ${formatDate(userBadge.awardedAt)}</small></p>
+          </div>
+        `;
+        
+        grid.appendChild(badgeElement);
+      });
+    }
+
+    function displayLeaderboard(leaderboard) {
+      const container = document.getElementById('leaderboard-container');
+      
+      if (!leaderboard || leaderboard.length === 0) {
+        container.innerHTML = '<div class="auth-warning">Aucune donnée de classement disponible</div>';
+        return;
+      }
+      
+      let html = '<table style="width: 100%; border-collapse: collapse;">';
+      
+      // Header
+      html += `
+        <thead>
+          <tr style="background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <th style="padding: 0.75rem; text-align: center;">#</th>
+            <th style="padding: 0.75rem; text-align: left;">Utilisateur</th>
+            <th style="padding: 0.75rem; text-align: center;">Badges</th>
+            <th style="padding: 0.75rem;">Badges récents</th>
+          </tr>
+        </thead>
+      `;
+      
+      // Body
+      html += '<tbody>';
+      
+      leaderboard.forEach((user, index) => {
+        const recentBadges = user.receivedBadges.map(userBadge => 
+          `<img src="${userBadge.badge.imageUrl || 'https://via.placeholder.com/30'}" 
+                title="${userBadge.badge.name}" 
+                style="width: 30px; height: 30px; border-radius: 50%; margin-right: 5px;" />`
+        ).join('');
+        
+        html += `
+          <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 0.75rem; text-align: center;">${index + 1}</td>
+            <td style="padding: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                ${user.profilePicture 
+                  ? `<img src="${user.profilePicture}" style="width: 30px; height: 30px; border-radius: 50%;" />` 
+                  : '<div style="width: 30px; height: 30px; border-radius: 50%; background-color: #f0f0f0;"></div>'}
+                <span>${user.displayName}</span>
+              </div>
+            </td>
+            <td style="padding: 0.75rem; text-align: center;">${user._count.receivedBadges}</td>
+            <td style="padding: 0.75rem;">${recentBadges}</td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      
+      container.innerHTML = html;
+    }
+
+    // Community Module
+    async function getPosts(page = 1) {
+      try {
+        currentPage = page;
+        
+        const response = await fetch(`${API_URL}/community?page=${page}&limit=5`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        
+        const data = await response.json();
+        displayPosts(data.posts);
+        
+        // Update pagination
+        totalPages = data.pages;
+        updatePostsPagination();
+        
+        return data;
+      } catch (error) {
+        document.getElementById('posts-container').innerHTML = `
+          <div class="auth-warning">Erreur: ${error.message}</div>
+        `;
+        return { posts: [], total: 0, pages: 1 };
+      }
+    }
+
+    async function getPostById(postId) {
+      try {
+        const response = await fetch(`${API_URL}/community/${postId}`, {
+          headers: authToken ? {
+            'Authorization': `Bearer ${authToken}`
+          } : {}
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch post');
+        }
+        
+        const post = await response.json();
+        displayPostDetail(post);
+        
+        return post;
+      } catch (error) {
+        document.getElementById('post-detail').innerHTML = `
+          <div class="auth-warning">Erreur: ${error.message}</div>
+        `;
+        return null;
+      }
+    }
+
+    async function createPost(postData) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/community`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(postData)
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to create post');
+        }
+        
+        const post = await response.json();
+        await getPosts(1); // Refresh posts list
+        return post;
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        return null;
+      }
+    }
+
+    async function addComment(postId, content) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/community/${postId}/comments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ content })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to add comment');
+        }
+        
+        const comment = await response.json();
+        await getPostById(postId); // Refresh post detail
+        return comment;
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        return null;
+      }
+    }
+
+    async function likePost(postId) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/community/${postId}/likes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to like post');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        return null;
+      }
+    }
+
+    async function unlikePost(postId) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/community/${postId}/likes`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to unlike post');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        return null;
+      }
+    }
+
+    async function checkLikeStatus(postId) {
+      try {
+        if (!authToken) {
+          return false;
+        }
+        
+        const response = await fetch(`${API_URL}/community/${postId}/likes/check`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          return false;
+        }
+        
+        const data = await response.json();
+        return data.hasLiked;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function searchPosts(query) {
+      try {
+        if (!query || query.trim().length < 2) {
+          throw new Error('Le terme de recherche doit contenir au moins 2 caractères');
+        }
+        
+        const response = await fetch(`${API_URL}/community/search?q=${encodeURIComponent(query)}&limit=5`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to search posts');
+        }
+        
+        const data = await response.json();
+        displayPosts(data.posts);
+        
+        // Update pagination
+        totalPages = data.pages;
+        updatePostsPagination();
+        
+        return data;
+      } catch (error) {
+        document.getElementById('posts-container').innerHTML = `
+          <div class="auth-warning">Erreur: ${error.message}</div>
+        `;
+        return { posts: [], total: 0, pages: 1 };
+      }
+    }
+
+    function displayPosts(posts) {
+      const container = document.getElementById('posts-container');
+      
+      if (!posts || posts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem;">Aucune publication trouvée</div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      posts.forEach(post => {
+        const postElement = document.createElement('div');
+        postElement.className = 'post-card fade-in';
+        postElement.dataset.postId = post.id;
+        
+        // Truncate content if too long
+        const truncatedContent = post.content.length > 150 
+          ? post.content.substring(0, 150) + '...' 
+          : post.content;
+        
+        postElement.innerHTML = `
+          <div class="post-header">
+            <div class="post-author">
+              <div class="post-author-avatar">${post.author.displayName.charAt(0)}</div>
+              <div>
+                <div>${post.author.displayName}</div>
+                <div style="font-size: 0.8rem; color: #7f8c8d;">${post.author.role}</div>
+              </div>
+            </div>
+            <div style="font-size: 0.8rem; color: #7f8c8d;">${formatDate(post.createdAt)}</div>
+          </div>
+          <div class="post-content">
+            <h3 class="post-title">${post.title}</h3>
+            <p class="post-text">${truncatedContent}</p>
+          </div>
+          <div class="post-footer">
+            <div class="post-stats">
+              <span>${post._count?.likes || 0} likes</span>
+              <span>${post._count?.comments || 0} commentaires</span>
+            </div>
+            <button class="view-post" data-post-id="${post.id}">Voir plus</button>
+          </div>
+        `;
+        
+        container.appendChild(postElement);
+        
+        // Add event listener
+        postElement.querySelector('.view-post').addEventListener('click', () => {
+          viewPost(post.id);
+        });
+      });
+    }
+
+    function displayPostDetail(post) {
+      const container = document.getElementById('post-detail');
+      
+      if (!post) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem;">Publication non trouvée</div>';
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="post-header">
+          <div class="post-author">
+            <div class="post-author-avatar">${post.author.displayName.charAt(0)}</div>
+            <div>
+              <div>${post.author.displayName}</div>
+              <div style="font-size: 0.8rem; color: #7f8c8d;">${post.author.role}</div>
+            </div>
+          </div>
+          <div style="font-size: 0.8rem; color: #7f8c8d;">${formatDate(post.createdAt)}</div>
+        </div>
+        <div class="post-content">
+          <h2 class="post-title">${post.title}</h2>
+          <p class="post-text">${post.content}</p>
+          ${post.mediaUrls && post.mediaUrls.length > 0 ? 
+            `<div style="margin-top: 1rem;">
+              ${post.mediaUrls.map(url => `
+                <img src="${url}" alt="Media" style="max-width: 100%; margin-bottom: 0.5rem;" />
+              `).join('')}
+            </div>` : ''}
+        </div>
+        <div class="post-footer">
+          <div class="post-stats">
+            <span id="likes-count">${post._count?.likes || 0} likes</span>
+            <span>${post.comments?.length || 0} commentaires</span>
+          </div>
+          <div class="post-actions">
+            <button id="like-button" class="like-button">J'aime</button>
+            ${currentUser && (currentUser.id === post.author.id || currentUser.role === 'ADMIN') ? 
+              `<button id="delete-post" class="danger">Supprimer</button>` : ''}
+          </div>
+        </div>
+      `;
+      
+      // Display comments
+      displayComments(post.comments || []);
+      
+      // Add event listeners
+      const likeButton = document.getElementById('like-button');
+      
+      // Check if user has liked this post
+      checkLikeStatus(post.id).then(hasLiked => {
+        likeButton.textContent = hasLiked ? 'Je n\'aime plus' : 'J\'aime';
+        likeButton.dataset.liked = hasLiked ? 'true' : 'false';
+        
+        likeButton.addEventListener('click', async () => {
+          if (!authToken) {
+            alert('Vous devez être connecté pour aimer une publication');
+            return;
+          }
+          
+          if (likeButton.dataset.liked === 'true') {
+            await unlikePost(post.id);
+            likeButton.textContent = 'J\'aime';
+            likeButton.dataset.liked = 'false';
+            document.getElementById('likes-count').textContent = `${parseInt(document.getElementById('likes-count').textContent) - 1} likes`;
+          } else {
+            await likePost(post.id);
+            likeButton.textContent = 'Je n\'aime plus';
+            likeButton.dataset.liked = 'true';
+            document.getElementById('likes-count').textContent = `${parseInt(document.getElementById('likes-count').textContent) + 1} likes`;
+          }
+        });
+      });
+      
+      // Comment form
+      document.getElementById('submit-comment').addEventListener('click', async () => {
+        const commentInput = document.getElementById('comment-input');
+        const content = commentInput.value.trim();
+        
+        if (!content) {
+          alert('Le commentaire ne peut pas être vide');
+          return;
+        }
+        
+        if (!authToken) {
+          alert('Vous devez être connecté pour commenter');
+          return;
+        }
+        
+        await addComment(post.id, content);
+        commentInput.value = '';
+      });
+    }
+
+    function displayComments(comments) {
+      const container = document.getElementById('comments-list');
+      
+      if (!comments || comments.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 1rem;">Aucun commentaire</div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      comments.forEach(comment => {
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment-item fade-in';
+        
+        commentElement.innerHTML = `
+          <div class="comment-header">
+            <span class="comment-author">${comment.author.displayName}</span>
+            <span class="comment-date">${formatTimeAgo(comment.createdAt)}</span>
+          </div>
+          <p class="comment-text">${comment.content}</p>
+        `;
+        
+        container.appendChild(commentElement);
+      });
+    }
+
+    function updatePostsPagination() {
+      const pagination = document.getElementById('posts-pagination');
+      const currentPageElement = document.getElementById('current-page');
+      const totalPagesElement = document.getElementById('total-pages');
+      const prevButton = document.getElementById('prev-page');
+      const nextButton = document.getElementById('next-page');
+      
+      if (totalPages <= 1) {
+        pagination.style.display = 'none';
+        return;
+      }
+      
+      pagination.style.display = 'flex';
+      currentPageElement.textContent = currentPage;
+      totalPagesElement.textContent = totalPages;
+      
+      prevButton.disabled = currentPage <= 1;
+      nextButton.disabled = currentPage >= totalPages;
+    }
+
+    function viewPost(postId) {
+      // Hide posts list, show post detail
+      document.getElementById('post-detail-container').style.display = 'block';
+      document.getElementById('community-module').querySelector('.card').style.display = 'none';
+      
+      // Store current post ID
+      currentPostId = postId;
+      
+      // Load post
+      getPostById(postId);
+    }
+
+    function backToPosts() {
+      // Hide post detail, show posts list
+      document.getElementById('post-detail-container').style.display = 'none';
+      document.getElementById('community-module').querySelector('.card').style.display = 'block';
+      
+      // Clear current post ID
+      currentPostId = null;
+    }
+
+    // Notifications Module
+    async function getNotifications(page = 1, includeRead = true) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        notificationPage = page;
+        
+        const response = await fetch(
+          `${API_URL}/notifications?page=${page}&limit=10&includeRead=${includeRead}`, 
+          {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notifications');
+        }
+        
+        const data = await response.json();
+        displayNotifications(data.notifications);
+        
+        // Update pagination
+        notificationTotalPages = Math.ceil(data.total / 10);
+        updateNotificationsPagination();
+        
+        return data;
+      } catch (error) {
+        document.getElementById('notifications-list').innerHTML = `
+          <div class="auth-warning">Erreur: ${error.message}</div>
+        `;
+        document.getElementById('notifications-pagination').style.display = 'none';
+        showResult('notifications-result', { error: error.message });
+        return { notifications: [], total: 0, unreadCount: 0 };
+      }
+    }
+
+    async function markNotificationAsRead(notificationId) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to mark notification as read');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+        return null;
+      }
+    }
+
+    async function markAllNotificationsAsRead() {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/notifications/read-all`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to mark all notifications as read');
+        }
+        
+        const result = await response.json();
+        showResult('notifications-result', result);
+        
+        // Refresh notifications
+        const includeRead = document.getElementById('notification-filter').value === 'all';
+        await getNotifications(1, includeRead);
+        
+        return result;
+      } catch (error) {
+        showResult('notifications-result', { error: error.message });
+        return null;
+      }
+    }
+
+    async function deleteNotification(notificationId) {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/notifications/${notificationId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete notification');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error deleting notification:', error);
+        return null;
+      }
+    }
+
+    async function deleteAllNotifications() {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        const response = await fetch(`${API_URL}/notifications`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete all notifications');
+        }
+        
+        const result = await response.json();
+        showResult('notifications-result', result);
+        
+        // Refresh notifications
+        await getNotifications(1, true);
+        
+        return result;
+      } catch (error) {
+        showResult('notifications-result', { error: error.message });
+        return null;
+      }
+    }
+
+    async function createTestNotification() {
+      try {
+        if (!authToken) {
+          throw new Error('Authentication required');
+        }
+        
+        if (!currentUser) {
+          throw new Error('User info not available');
+        }
+        
+        const type = document.getElementById('notification-type').value;
+        const title = document.getElementById('notification-title').value || 'Test Notification';
+        const message = document.getElementById('notification-message').value || 'This is a test notification';
+        
+        // This is for testing only - in a real app, we would use the specific notification endpoints
+        const response = await fetch(`${API_URL}/auth/admin-test`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            action: 'createNotification',
+            data: {
+              userId: currentUser.id,
+              type,
+              title,
+              message,
+              linkUrl: '/test',
+            }
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create test notification');
+        }
+        
+        const result = await response.json();
+        showResult('notifications-result', result);
+        
+        // Refresh notifications
+        await getNotifications(1, true);
+        
+        return result;
+      } catch (error) {
+        showResult('notifications-result', { error: error.message });
+        return null;
+      }
+    }
+
+    function displayNotifications(notifications) {
+      const container = document.getElementById('notifications-list');
+      
+      if (!notifications || notifications.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 1rem;">Aucune notification</div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      notifications.forEach(notification => {
+        const notificationElement = document.createElement('div');
+        notificationElement.className = `notification-item ${notification.isRead ? 'read' : 'unread'} fade-in`;
+        notificationElement.dataset.id = notification.id;
+        
+        notificationElement.innerHTML = `
+          <div class="notification-content">
+            <h4 class="notification-title">${notification.title}</h4>
+            <p class="notification-message">${notification.message}</p>
+            <div class="notification-meta">
+              <span>${formatTimeAgo(notification.createdAt)}</span>
+              <span class="status-pill ${notification.isRead ? 'status-read' : 'status-unread'}">
+                ${notification.isRead ? 'Lu' : 'Non lu'}
+              </span>
+            </div>
+          </div>
+          <div class="notification-actions">
+            ${!notification.isRead ? 
+              `<button class="mark-read" data-id="${notification.id}">Marquer comme lu</button>` : ''}
+            <button class="delete-notification danger" data-id="${notification.id}">Supprimer</button>
+          </div>
+        `;
+        
+        container.appendChild(notificationElement);
+        
+        // Add event listeners
+        if (!notification.isRead) {
+          const markReadButton = notificationElement.querySelector('.mark-read');
+          markReadButton.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = e.target.dataset.id;
+            await markNotificationAsRead(id);
+            notificationElement.classList.remove('unread');
+            notificationElement.classList.add('read');
+            notificationElement.querySelector('.status-pill').textContent = 'Lu';
+            notificationElement.querySelector('.status-pill').classList.remove('status-unread');
+            notificationElement.querySelector('.status-pill').classList.add('status-read');
+            markReadButton.remove();
+          });
+        }
+        
+        const deleteButton = notificationElement.querySelector('.delete-notification');
+        deleteButton.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = e.target.dataset.id;
+          await deleteNotification(id);
+          notificationElement.remove();
+        });
+        
+        // Make entire notification clickable to mark as read and follow link
+        notificationElement.addEventListener('click', async () => {
+          if (!notification.isRead) {
+            await markNotificationAsRead(notification.id);
+          }
+          
+          if (notification.linkUrl) {
+            window.location.href = notification.linkUrl;
+          }
+        });
+      });
+    }
+
+    function updateNotificationsPagination() {
+      const pagination = document.getElementById('notifications-pagination');
+      const currentPageElement = document.getElementById('current-notif-page');
+      const totalPagesElement = document.getElementById('total-notif-pages');
+      const prevButton = document.getElementById('prev-notif-page');
+      const nextButton = document.getElementById('next-notif-page');
+      
+      if (notificationTotalPages <= 1) {
+        pagination.style.display = 'none';
+        return;
+      }
+      
+      pagination.style.display = 'flex';
+      currentPageElement.textContent = notificationPage;
+      totalPagesElement.textContent = notificationTotalPages;
+      
+      prevButton.disabled = notificationPage <= 1;
+      nextButton.disabled = notificationPage >= notificationTotalPages;
+    }
+
+    // Tab Navigation
+    function initializeTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      const moduleContents = document.querySelectorAll('.module-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          
+          // Add active class to clicked tab
+          tab.classList.add('active');
+          
+          // Hide all module contents
+          moduleContents.forEach(content => content.classList.remove('active'));
+          
+          // Show corresponding module content
+          const moduleId = tab.dataset.module + '-module';
+          document.getElementById(moduleId).classList.add('active');
+        });
+      });
+    }
+
+    // Initialize
+    async function initialize() {
+      // Set up tabs
+      initializeTabs();
+      
+      // Check if user is logged in
+      if (authToken) {
+        currentUser = await getCurrentUser();
+        updateAuthStatus();
+      }
+      
+      // Auth Module Event Listeners
+      document.getElementById('login-button').addEventListener('click', login);
+      document.getElementById('register-button').addEventListener('click', register);
+      document.getElementById('logout-button').addEventListener('click', logout);
+      
+      // Badges Module Event Listeners
+      document.getElementById('get-all-badges').addEventListener('click', getAllBadges);
+      document.getElementById('get-my-badges').addEventListener('click', getMyBadges);
+      document.getElementById('check-badges').addEventListener('click', checkForNewBadges);
+      document.getElementById('filter-badges').addEventListener('click', () => {
+        const category = document.getElementById('badge-category').value;
+        if (category) {
+          getBadgesByCategory(category);
+        } else {
+          getAllBadges();
+        }
+      });
+      document.getElementById('get-leaderboard').addEventListener('click', getBadgeLeaderboard);
+      
+      // Community Module Event Listeners
+      document.getElementById('get-posts').addEventListener('click', () => getPosts(1));
+      document.getElementById('create-post-form').addEventListener('click', () => {
+        if (!authToken) {
+          alert('Vous devez être connecté pour créer une publication');
+          return;
+        }
+        document.getElementById('post-form-container').style.display = 'block';
+      });
+      document.getElementById('cancel-post').addEventListener('click', () => {
+        document.getElementById('post-form-container').style.display = 'none';
+      });
+      document.getElementById('submit-post').addEventListener('click', async () => {
+        const title = document.getElementById('post-title').value.trim();
+        const content = document.getElementById('post-content').value.trim();
+        
+        if (!title || !content) {
+          alert('Le titre et le contenu sont requis');
+          return;
+        }
+        
+        await createPost({ title, content });
+        document.getElementById('post-form-container').style.display = 'none';
+        document.getElementById('post-title').value = '';
+        document.getElementById('post-content').value = '';
+      });
+      document.getElementById('search-posts').addEventListener('click', () => {
+        const query = document.getElementById('posts-search').value.trim();
+        searchPosts(query);
+      });
+      document.getElementById('prev-page').addEventListener('click', () => {
+        if (currentPage > 1) {
+          getPosts(currentPage - 1);
+        }
+      });
+      document.getElementById('next-page').addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          getPosts(currentPage + 1);
+        }
+      });
+      document.getElementById('back-to-posts').addEventListener('click', backToPosts);
+      
+      // Notifications Module Event Listeners
+      document.getElementById('get-notifications').addEventListener('click', () => {
+        getNotifications(1, document.getElementById('notification-filter').value === 'all');
+      });
+      document.getElementById('mark-all-read').addEventListener('click', markAllNotificationsAsRead);
+      document.getElementById('delete-all-notifications').addEventListener('click', () => {
+        if (confirm('Êtes-vous sûr de vouloir supprimer toutes vos notifications?')) {
+          deleteAllNotifications();
+        }
+      });
+      document.getElementById('filter-notifications').addEventListener('click', () => {
+        const includeRead = document.getElementById('notification-filter').value === 'all';
+        getNotifications(1, includeRead);
+      });
+      document.getElementById('prev-notif-page').addEventListener('click', () => {
+        if (notificationPage > 1) {
+          const includeRead = document.getElementById('notification-filter').value === 'all';
+          getNotifications(notificationPage - 1, includeRead);
+        }
+      });
+      document.getElementById('next-notif-page').addEventListener('click', () => {
+        if (notificationPage < notificationTotalPages) {
+          const includeRead = document.getElementById('notification-filter').value === 'all';
+          getNotifications(notificationPage + 1, includeRead);
+        }
+      });
+      document.getElementById('create-test-notification').addEventListener('click', createTestNotification);
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', initialize);
+  </script>
+</body>
+</html>
