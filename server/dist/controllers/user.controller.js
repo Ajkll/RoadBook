@@ -9,6 +9,7 @@
  * - Changement de mot de passe (changePassword)
  * - Liste des utilisateurs (getAllUsers - admin uniquement)
  * - Suppression d'un utilisateur (deleteUser - admin ou soi-même)
+ * - Gestion des photos de profil (uploadProfilePicture, deleteProfilePicture)
  *
  * Les contrôleurs sont responsables de:
  * - Traiter les requêtes HTTP
@@ -54,7 +55,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllUsers = exports.deleteUser = exports.changePassword = exports.updateCurrentUser = exports.updateUser = exports.getUserById = exports.getCurrentUser = void 0;
+exports.deleteProfilePicture = exports.uploadProfilePicture = exports.getAllUsers = exports.deleteUser = exports.changePassword = exports.updateCurrentUser = exports.updateUser = exports.getUserById = exports.getCurrentUser = void 0;
 const userService = __importStar(require("../services/user.service"));
 const logger_1 = __importDefault(require("../utils/logger"));
 /**
@@ -407,3 +408,88 @@ const getAllUsers = async (req, res) => {
     }
 };
 exports.getAllUsers = getAllUsers;
+/**
+ * Upload or update profile picture for current user
+ *
+ * @route POST /api/users/me/profile-picture
+ * @param {Request} req - Express request
+ * @param {Response} res - Express response
+ */
+const uploadProfilePicture = async (req, res) => {
+    var _a;
+    try {
+        if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a.userId)) {
+            return res.status(401).json({
+                status: "error",
+                message: "Not authenticated"
+            });
+        }
+        logger_1.default.info(`Profile picture upload initiated for user ${req.user.userId}`);
+        // Update profile picture with the validated data
+        const updatedUser = await userService.updateProfilePicture(req.user.userId, {
+            profilePicture: req.body.profilePicture,
+            profilePictureType: req.body.profilePictureType
+        });
+        return res.status(200).json({
+            status: "success",
+            message: "Profile picture updated successfully",
+            data: updatedUser
+        });
+    }
+    catch (error) {
+        logger_1.default.error(`Error uploading profile picture: ${error.message}`);
+        if (error.message === "User not found") {
+            return res.status(404).json({
+                status: "error",
+                message: "User not found"
+            });
+        }
+        return res.status(500).json({
+            status: "error",
+            message: "Failed to update profile picture",
+            details: error.message
+        });
+    }
+};
+exports.uploadProfilePicture = uploadProfilePicture;
+/**
+ * Delete profile picture for current user
+ *
+ * @route DELETE /api/users/me/profile-picture
+ * @param {Request} req - Express request
+ * @param {Response} res - Express response
+ */
+const deleteProfilePicture = async (req, res) => {
+    var _a;
+    try {
+        if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a.userId)) {
+            return res.status(401).json({
+                status: "error",
+                message: "Not authenticated"
+            });
+        }
+        logger_1.default.info(`Profile picture deletion initiated for user ${req.user.userId}`);
+        // Remove profile picture
+        const updatedUser = await userService.deleteProfilePicture(req.user.userId);
+        return res.status(200).json({
+            status: "success",
+            message: "Profile picture deleted successfully",
+            data: updatedUser
+        });
+    }
+    catch (error) {
+        logger_1.default.error(`Error deleting profile picture: ${error.message}`);
+        if (error.message === "User not found") {
+            return res.status(404).json({
+                status: "error",
+                message: "User not found"
+            });
+        }
+        return res.status(500).json({
+            status: "error",
+            message: "Failed to delete profile picture",
+            details: error.message
+        });
+    }
+};
+exports.deleteProfilePicture = deleteProfilePicture;

@@ -50,26 +50,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_middleware_1 = require("../../middleware/auth.middleware");
 const roadbookController = __importStar(require("../../controllers/roadbook.controller"));
+const competencyController = __importStar(require("../../controllers/competency.controller"));
+const validation_middleware_1 = require("../../middleware/validation.middleware");
 const router = express_1.default.Router();
 // Toutes les routes nécessitent une authentification
-router.use(auth_middleware_1.authenticateJWT);
+router.use(auth_middleware_1.authenticate);
 // Routes de gestion des roadbooks
 router.get("/", roadbookController.getUserRoadbooks);
-router.post("/", roadbookController.createRoadbook);
+router.post("/", validation_middleware_1.validateRoadbook, roadbookController.createRoadbook);
 router.get("/guided", roadbookController.getGuidedRoadbooks);
 // Routes pour roadbooks spécifiques
 router.get("/:id", roadbookController.getRoadbookById);
-router.put("/:id", roadbookController.updateRoadbook);
+router.put("/:id", validation_middleware_1.validateRoadbook, roadbookController.updateRoadbook);
 router.delete("/:id", roadbookController.deleteRoadbook);
-router.patch("/:id/status", roadbookController.updateRoadbookStatus);
+router.patch("/:id/status", validation_middleware_1.validateRoadbookStatus, roadbookController.updateRoadbookStatus);
 router.post("/:id/guide", roadbookController.assignGuide);
 // Routes pour les statistiques et l'exportation
 router.get("/:id/statistics", roadbookController.getRoadbookStatistics);
 router.get("/:id/export", roadbookController.exportRoadbook);
 // Routes de gestion des sessions
 router.get("/:id/sessions", roadbookController.getRoadbookSessions);
-router.post("/:id/sessions", roadbookController.createSession);
+router.post("/:id/sessions", validation_middleware_1.validateCreateSession, roadbookController.createSession);
 // Routes de progression des compétences
-router.get("/:id/competencies", roadbookController.getCompetencyProgress);
-router.patch("/:id/competencies/:competencyId", roadbookController.updateCompetencyStatus);
+router.get("/:id/competencies", competencyController.getCompetencyProgressForRoadbook);
+router.put("/:id/competencies/:competencyId", validation_middleware_1.validateCompetencyStatus, competencyController.updateCompetencyStatus);
+router.get("/:id/competencies/:competencyId/detail", competencyController.getCompetencyProgressDetail);
 exports.default = router;

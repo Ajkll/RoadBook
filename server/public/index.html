@@ -397,6 +397,414 @@
             font-style: normal;
             font-size: 1.2rem;
         }
+        
+        /* Competencies Module Styles */
+        .competencies-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .phase-container {
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .phase-title {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            margin: 0;
+            font-size: 1rem;
+        }
+        
+        .categories-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        .category-container {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: white;
+        }
+        
+        .category-title {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            margin: 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .competencies-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .competency-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .competency-item:last-child {
+            border-bottom: none;
+        }
+        
+        .competency-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .competency-description {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+        
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .details-table td {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .details-table td:first-child {
+            width: 150px;
+            background-color: #f8f9fa;
+        }
+        
+        .description-section {
+            margin-top: 15px;
+        }
+        
+        .description-section h4 {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-stats {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stats-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .phase-progress, .category-progress {
+            margin-bottom: 15px;
+        }
+        
+        .phase-progress-percentage, .category-progress-percentage {
+            font-size: 0.85rem;
+            font-weight: normal;
+            color: #6c757d;
+        }
+        
+        .competencies-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .competencies-table th, .competencies-table td {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        
+        .competencies-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-not-started {
+            background-color: #dee2e6;
+            color: #495057;
+        }
+        
+        .status-in-progress {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+        
+        .status-mastered {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .status-select {
+            width: auto;
+            display: inline-block;
+            padding: 4px;
+            font-size: 0.85rem;
+            margin-right: 5px;
+        }
+        
+        .competency-validation-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        
+        .competency-validation-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .competency-validation-item textarea {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .validation-message {
+            padding: 15px;
+            font-style: italic;
+            color: #6c757d;
+            text-align: center;
+        }
+        
+        .status-distribution {
+            margin-top: 20px;
+        }
+        
+        .status-counts {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .status-count-item {
+            flex: 1;
+            text-align: center;
+            padding: 15px 10px;
+            border-radius: 6px;
+            margin: 0 5px;
+        }
+        
+        .status-count-item.mastered {
+            background-color: #d1e7dd;
+        }
+        
+        .status-count-item.in-progress {
+            background-color: #cff4fc;
+        }
+        
+        .status-count-item.not-started {
+            background-color: #f8f9fa;
+        }
+        
+        .status-count-label {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .status-count-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        /* Progress bar for small containers */
+        .progress-bar-container.small {
+            height: 12px;
+        }
+        
+        .progress-bar-container.small .progress-fill {
+            line-height: 12px;
+            font-size: 8px;
+        }
+        
+        /* Community Module Styles */
+        .post-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: white;
+        }
+        
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .post-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .post-content {
+            margin-bottom: 15px;
+        }
+        
+        .post-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .post-stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .like-button {
+            color: #dc3545;
+        }
+        
+        .like-button.liked {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        
+        .comment {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .comment-author {
+            font-weight: 600;
+        }
+        
+        .comment-content {
+            margin-top: 5px;
+        }
+        
+        .like-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* Notifications Module Styles */
+        .notification-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 12px;
+            background-color: white;
+        }
+        
+        .notification-unread {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .notification-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .notification-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -431,6 +839,18 @@
         <button class="module-button" data-module="sessions">
             <span class="icon">🚗</span>
             Sessions
+        </button>
+        <button class="module-button" data-module="competencies">
+            <span class="icon">📊</span>
+            Compétences
+        </button>
+        <button class="module-button" onclick="window.location.href='/marketplace-test.html'">
+            <span class="icon">🛒</span>
+            Marketplace
+        </button>
+        <button class="module-button" onclick="window.location.href='/test-modules.html'">
+            <span class="icon">🧪</span>
+            Test Modules
         </button>
         <button class="module-button" data-module="debug">
             <span class="icon">🔍</span>
@@ -482,6 +902,22 @@
                             <button class="btn btn-primary" onclick="showModule('sessions')">Accéder</button>
                         </div>
                     </div>
+                    
+                    <div class="card">
+                        <div class="card-header">Module Compétences</div>
+                        <div class="card-body">
+                            <p>Gestion et suivi de la progression des compétences de conduite.</p>
+                            <button class="btn btn-primary" onclick="showModule('competencies')">Accéder</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">Module Marketplace</div>
+                        <div class="card-body">
+                            <p>Achat et vente de produits et services pédagogiques.</p>
+                            <button class="btn btn-primary" onclick="window.location.href='/marketplace-test.html'">Accéder</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="user-guide" style="margin-top: 20px;">
@@ -490,7 +926,11 @@
                         <li>Commencez par vous <strong>inscrire</strong> ou vous <strong>connecter</strong> dans le module Authentification</li>
                         <li>Une fois connecté, testez les différentes fonctionnalités des modules</li>
                         <li>Utilisez le module Debug pour voir les réponses détaillées de l'API</li>
-                        <li>Les modules Compétences et Communauté seront disponibles prochainement</li>
+                        <li>Le module <strong>Compétences</strong> permet de suivre la progression des compétences de conduite par phase et catégorie</li>
+                        <li>Le module <strong>Communauté</strong> permet de créer et interagir avec des publications et commentaires</li>
+                        <li>Le module <strong>Badges</strong> permet de gérer les badges de gamification</li>
+                        <li>Le module <strong>Marketplace</strong> permet de gérer les produits et services (interface séparée)</li>
+                        <li>Le module <strong>Notifications</strong> permet de gérer les alertes et messages du système</li>
                     </ul>
                 </div>
                 
@@ -654,6 +1094,36 @@
                         <textarea id="update-bio" class="form-control form-control-textarea" placeholder="Votre bio..."></textarea>
                     </div>
                     <button class="btn btn-primary" onclick="updateProfile()">Mettre à jour le profil</button>
+                </div>
+            </div>
+            
+            <!-- Nouvelle carte pour les photos de profil -->
+            <div class="card">
+                <div class="card-header">Photo de profil</div>
+                <div class="card-body">
+                    <div id="profile-picture-container" style="margin-bottom: 20px; text-align: center;">
+                        <div id="current-profile-picture" style="margin: 0 auto; width: 150px; height: 150px; border-radius: 50%; background-color: #e9ecef; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <img id="profile-image" src="" alt="Photo de profil" style="max-width: 100%; max-height: 100%; display: none;">
+                            <span id="profile-placeholder" style="font-size: 18px; color: #6c757d;">Aucune photo</span>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 15px;">Mettre à jour la photo de profil</h3>
+                    <div class="form-group">
+                        <label for="profile-picture-url">URL de la photo</label>
+                        <input type="url" id="profile-picture-url" class="form-control" placeholder="https://example.com/ma-photo.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-picture-type">Type de photo</label>
+                        <select id="profile-picture-type" class="form-control">
+                            <option value="url">URL</option>
+                            <option value="base64">Base64</option>
+                        </select>
+                    </div>
+                    <div class="btn-group" style="margin-top: 10px;">
+                        <button class="btn btn-primary" onclick="uploadProfilePicture()">Mettre à jour la photo</button>
+                        <button class="btn btn-danger" onclick="deleteProfilePicture()">Supprimer la photo</button>
+                    </div>
                 </div>
             </div>
 
@@ -840,6 +1310,455 @@
         </div>
     </section>
 
+    <!-- Badges Module -->
+    <section id="badges-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Liste des badges</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="badge-category-filter">Filtrer par catégorie</label>
+                        <select id="badge-category-filter" class="form-control">
+                            <option value="">Toutes les catégories</option>
+                            <option value="BEGINNER">Débutant</option>
+                            <option value="MANEUVERING">Manœuvres</option>
+                            <option value="ADVANCED">Avancé</option>
+                            <option value="SPECIAL">Spécial</option>
+                            <option value="SOCIAL">Social</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="getAllBadges()">Afficher tous les badges</button>
+                    <button class="btn btn-secondary" onclick="getBadgesByCategory()">Filtrer par catégorie</button>
+                    
+                    <div id="badges-list-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- Liste des badges affichée dynamiquement -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Mes badges</div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="getUserBadges()">Afficher mes badges</button>
+                    <button class="btn btn-secondary" onclick="checkAndAwardBadges()">Vérifier les nouveaux badges</button>
+                    
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="badge-user-id">ID de l'utilisateur (laissez vide pour vous-même)</label>
+                        <input type="text" id="badge-user-id" class="form-control" placeholder="ID de l'utilisateur">
+                    </div>
+                    <button class="btn btn-primary" onclick="getUserBadges()">Afficher les badges de l'utilisateur</button>
+                    
+                    <div id="user-badges-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- Badges de l'utilisateur affichés dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Détails du badge</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="badge-id-input">ID du badge</label>
+                        <input type="text" id="badge-id-input" class="form-control" placeholder="ID du badge">
+                    </div>
+                    <button class="btn btn-primary" onclick="getBadgeDetails()">Afficher les détails</button>
+                    
+                    <div id="badge-details-container" style="margin-top: 20px; display: none;">
+                        <!-- Détails du badge affichés dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Tableau des meilleurs utilisateurs</div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="getBadgeLeaderboard()">Afficher le classement</button>
+                
+                <div id="leaderboard-container" style="margin-top: 20px; display: none;">
+                    <!-- Classement affiché dynamiquement -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Administration des badges (Admin seulement)</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <h4>Créer un nouveau badge</h4>
+                    <div class="form-group">
+                        <label for="create-badge-name">Nom</label>
+                        <input type="text" id="create-badge-name" class="form-control" placeholder="Nom du badge">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-badge-description">Description</label>
+                        <textarea id="create-badge-description" class="form-control" placeholder="Description du badge"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-badge-image-url">URL de l'image</label>
+                        <input type="text" id="create-badge-image-url" class="form-control" placeholder="URL de l'image">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-badge-category">Catégorie</label>
+                        <select id="create-badge-category" class="form-control">
+                            <option value="BEGINNER">Débutant</option>
+                            <option value="MANEUVERING">Manœuvres</option>
+                            <option value="ADVANCED">Avancé</option>
+                            <option value="SPECIAL">Spécial</option>
+                            <option value="SOCIAL">Social</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="create-badge-criteria">Critères d'obtention</label>
+                        <select id="create-badge-criteria" class="form-control">
+                            <option value="FIRST_SESSION">Première session de conduite</option>
+                            <option value="FIVE_SESSIONS">Cinq sessions de conduite</option>
+                            <option value="TEN_SESSIONS">Dix sessions de conduite</option>
+                            <option value="TWENTY_SESSIONS">Vingt sessions de conduite</option>
+                            <option value="FIRST_COMPETENCY">Première compétence maîtrisée</option>
+                            <option value="FIVE_COMPETENCIES">Cinq compétences maîtrisées</option>
+                            <option value="PHASE_COMPLETE">Phase complétée</option>
+                            <option value="ALL_PHASES_COMPLETE">Toutes les phases complétées</option>
+                            <option value="COMMUNITY_ACTIVE">Actif dans la communauté</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="createBadge()">Créer le badge</button>
+                </div>
+                
+                <hr style="margin: 20px 0">
+                
+                <div id="award-badge-form">
+                    <h4>Attribuer un badge</h4>
+                    <div class="form-group">
+                        <label for="award-user-id">ID de l'utilisateur</label>
+                        <input type="text" id="award-user-id" class="form-control" placeholder="ID de l'utilisateur">
+                    </div>
+                    <div class="form-group">
+                        <label for="award-badge-id">ID du badge</label>
+                        <input type="text" id="award-badge-id" class="form-control" placeholder="ID du badge">
+                    </div>
+                    <button class="btn btn-primary" onclick="awardBadge()">Attribuer le badge</button>
+                </div>
+                
+                <hr style="margin: 20px 0">
+                
+                <div id="revoke-badge-form">
+                    <h4>Révoquer un badge</h4>
+                    <div class="form-group">
+                        <label for="revoke-user-id">ID de l'utilisateur</label>
+                        <input type="text" id="revoke-user-id" class="form-control" placeholder="ID de l'utilisateur">
+                    </div>
+                    <div class="form-group">
+                        <label for="revoke-badge-id">ID du badge</label>
+                        <input type="text" id="revoke-badge-id" class="form-control" placeholder="ID du badge">
+                    </div>
+                    <button class="btn btn-danger" onclick="revokeBadge()">Révoquer le badge</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Community Module -->
+    <section id="community-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Publications</div>
+                <div class="card-body">
+                    <div class="form-inline" style="margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="posts-page" style="margin-right: 10px;">Page:</label>
+                            <input type="number" id="posts-page" class="form-control" min="1" value="1" style="width: 70px;">
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <label for="posts-limit" style="margin-right: 10px;">Par page:</label>
+                            <input type="number" id="posts-limit" class="form-control" min="5" max="50" value="10" style="width: 70px;">
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <label for="posts-sort" style="margin-right: 10px;">Trier par:</label>
+                            <select id="posts-sort" class="form-control" style="width: 120px;">
+                                <option value="createdAt">Date création</option>
+                                <option value="updatedAt">Date mise à jour</option>
+                                <option value="title">Titre</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <label for="posts-order" style="margin-right: 10px;">Ordre:</label>
+                            <select id="posts-order" class="form-control" style="width: 80px;">
+                                <option value="desc">Décroissant</option>
+                                <option value="asc">Croissant</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="getPosts()">Afficher les publications</button>
+                        
+                        <div class="input-group" style="margin-top: 10px;">
+                            <input type="text" id="post-search-input" class="form-control" placeholder="Rechercher des publications...">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" onclick="searchPosts()">Rechercher</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="post-user-id">Publications d'un utilisateur spécifique:</label>
+                        <div class="input-group">
+                            <input type="text" id="post-user-id" class="form-control" placeholder="ID de l'utilisateur">
+                            <div class="input-group-append">
+                                <button class="btn btn-secondary" onclick="getUserPosts()">Afficher</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="posts-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- Publications affichées dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Créer une publication</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="post-title">Titre</label>
+                        <input type="text" id="post-title" class="form-control" placeholder="Titre de la publication">
+                    </div>
+                    <div class="form-group">
+                        <label for="post-content">Contenu</label>
+                        <textarea id="post-content" class="form-control form-control-textarea" placeholder="Contenu de la publication..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="post-media-urls">URLs des médias (une par ligne)</label>
+                        <textarea id="post-media-urls" class="form-control" placeholder="https://example.com/image.jpg"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="createPost()">Publier</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Détails de la publication</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="post-id-input">ID de la publication</label>
+                    <input type="text" id="post-id-input" class="form-control" placeholder="ID de la publication">
+                </div>
+                <button class="btn btn-primary" onclick="getPostDetails()">Afficher les détails</button>
+                
+                <div id="post-details-container" style="margin-top: 20px; display: none;">
+                    <!-- Détails de la publication affichés dynamiquement -->
+                </div>
+                
+                <div id="post-likes-container" style="margin-top: 20px; display: none;">
+                    <!-- Liste des utilisateurs qui ont aimé la publication -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notifications Module -->
+    <section id="notifications-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span>Notifications</span>
+                    <span id="notification-count" class="badge badge-primary" style="display: none;">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-inline" style="margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label for="notification-page" style="margin-right: 10px;">Page:</label>
+                            <input type="number" id="notification-page" class="form-control" min="1" value="1" style="width: 70px;">
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <label for="notification-limit" style="margin-right: 10px;">Nombre par page:</label>
+                            <input type="number" id="notification-limit" class="form-control" min="5" max="50" value="20" style="width: 70px;">
+                        </div>
+                        <div class="form-group" style="margin-left: 15px;">
+                            <div class="form-check">
+                                <input type="checkbox" id="include-read-checkbox" class="form-check-input" checked>
+                                <label for="include-read-checkbox" class="form-check-label">Inclure lues</label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="getUserNotifications()" style="margin-left: 15px;">Rafraîchir</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="getUserNotifications()">Afficher mes notifications</button>
+                        <button class="btn btn-secondary" onclick="getUnreadCount()">Vérifier non lues</button>
+                        <button class="btn btn-secondary" onclick="markAllAsRead()">Tout marquer comme lu</button>
+                        <button class="btn btn-danger" onclick="deleteAllNotifications()">Supprimer toutes</button>
+                    </div>
+                    
+                    <div id="notifications-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- Notifications affichées dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Administration (Admin seulement)</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="cleanup-days">Supprimer les notifications lues plus anciennes que (jours):</label>
+                        <input type="number" id="cleanup-days" class="form-control" min="1" value="30">
+                    </div>
+                    <button class="btn btn-danger" onclick="cleanupOldNotifications()">Nettoyer les anciennes notifications</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Competencies Module -->
+    <section id="competencies-module" class="module-container">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Liste des compétences</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="competency-phase-filter">Filtrer par phase</label>
+                        <select id="competency-phase-filter" class="form-control">
+                            <option value="">Toutes les phases</option>
+                            <option value="PHASE1">Phase 1 - Bases</option>
+                            <option value="PHASE2">Phase 2 - Environnement routier simple</option>
+                            <option value="PHASE3">Phase 3 - Situations complexes</option>
+                            <option value="PHASE4">Phase 4 - Conditions spéciales</option>
+                            <option value="PHASE5">Phase 5 - Autonomie</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="competency-category-filter">Filtrer par catégorie</label>
+                        <select id="competency-category-filter" class="form-control">
+                            <option value="">Toutes les catégories</option>
+                            <option value="CONTROL">Contrôle du véhicule</option>
+                            <option value="MANEUVERING">Manœuvres</option>
+                            <option value="TRAFFIC_RULES">Règles de circulation</option>
+                            <option value="RISK_PERCEPTION">Perception des risques</option>
+                            <option value="ECOFRIENDLY_DRIVING">Conduite écologique</option>
+                            <option value="SPECIAL_CONDITIONS">Conditions spéciales</option>
+                            <option value="SAFETY">Sécurité</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="getAllCompetencies()">Rechercher les compétences</button>
+                    
+                    <div id="competencies-list-container" class="scroll-container" style="margin-top: 20px; display: none;">
+                        <!-- Liste des compétences affichée dynamiquement -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Détails d'une compétence</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="competency-id-input">ID de la compétence</label>
+                        <input type="text" id="competency-id-input" class="form-control" placeholder="ID de la compétence">
+                    </div>
+                    <button class="btn btn-primary" onclick="getCompetencyById()">Afficher les détails</button>
+                    
+                    <div id="competency-details-container" style="margin-top: 20px; display: none;">
+                        <!-- Détails de la compétence affichés dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Progression des compétences</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="roadbook-id-input">ID du RoadBook</label>
+                        <input type="text" id="roadbook-id-input" class="form-control" placeholder="ID du RoadBook">
+                    </div>
+                    <button class="btn btn-primary" onclick="getCompetencyProgressForRoadbook()">Afficher la progression</button>
+                    
+                    <div id="competency-progress-container" style="margin-top: 20px; display: none;">
+                        <!-- Progression des compétences affichée dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Mettre à jour une compétence</div>
+            <div class="card-body">
+                <div id="update-competency-form">
+                    <div class="form-group">
+                        <label for="update-roadbook-id">ID du RoadBook</label>
+                        <input type="text" id="update-roadbook-id" class="form-control" placeholder="ID du RoadBook">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-competency-id">ID de la compétence</label>
+                        <input type="text" id="update-competency-id" class="form-control" placeholder="ID de la compétence">
+                    </div>
+                    <div class="form-group">
+                        <label for="update-status">Statut</label>
+                        <select id="update-status" class="form-control">
+                            <option value="NOT_STARTED">Non débutée</option>
+                            <option value="IN_PROGRESS">En progression</option>
+                            <option value="MASTERED">Maîtrisée</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="update-notes">Notes</label>
+                        <textarea id="update-notes" class="form-control form-control-textarea" placeholder="Notes sur la progression..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateCompetencyStatus()">Mettre à jour</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Valider des compétences en session</div>
+            <div class="card-body">
+                <div id="validation-form">
+                    <div class="form-group">
+                        <label for="validation-session-id">ID de la session</label>
+                        <input type="text" id="validation-session-id" class="form-control" placeholder="ID de la session">
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        Pour valider des compétences, sélectionnez d'abord la session, puis utilisez le bouton "Sélectionner" 
+                        dans la liste des compétences pour ajouter des compétences à valider.
+                    </div>
+                    
+                    <div id="validation-competencies" class="scroll-container" style="margin-top: 20px;">
+                        <div class="validation-message">Sélectionnez des compétences dans la liste pour les valider</div>
+                        
+                        <!-- Les compétences à valider seront ajoutées dynamiquement ici -->
+                        <div class="competencies-to-validate">
+                            <!-- Exemple de structure (sera générée dynamiquement) -->
+                            <!-- 
+                            <div class="competency-validation-item">
+                                <input type="checkbox" name="validate-competency" value="comp-id-1" id="validate-comp-1">
+                                <label for="validate-comp-1">Nom de la compétence</label>
+                                <textarea id="validation-notes-comp-id-1" placeholder="Notes de validation..."></textarea>
+                            </div>
+                            -->
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="validateCompetencies()">Valider les compétences</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">Statistiques des compétences</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="apprentice-id-input">ID de l'apprenti (laissez vide pour vous-même)</label>
+                    <input type="text" id="apprentice-id-input" class="form-control" placeholder="ID de l'apprenti (optionnel)">
+                </div>
+                <button class="btn btn-primary" onclick="getApprenticeCompetencyStats()">Afficher les statistiques</button>
+                
+                <div id="competency-stats-container" style="margin-top: 20px; display: none;">
+                    <!-- Statistiques affichées dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Debug Module -->
     <section id="debug-module" class="module-container">
         <div class="card">
@@ -850,53 +1769,30 @@
         </div>
     </section>
 
-    <!-- Charger app.js -->
-    <script src="app.js"></script>
-
+    <!-- Charger les fichiers modulaires -->
+    <!-- Configuration et utilitaires -->
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    
+    <!-- Modules fonctionnels -->
+    <script src="js/modules/auth.js"></script>
+    <script src="js/modules/users.js"></script>
+    <script src="js/modules/roadbooks.js"></script>
+    <script src="js/modules/sessions.js"></script>
+    <script src="js/modules/competencies.js"></script>
+    
+    <!-- Configuration globale et point d'entrée principal -->
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Informations sur les routes disponibles (injectées par le serveur) -->
     <script>
-        // Fonctions d'interface
-        document.addEventListener('DOMContentLoaded', function() {
-            // Attachement événements
-            document.querySelectorAll('.module-button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const moduleId = this.getAttribute('data-module');
-                    showModule(moduleId);
-                });
-            });
-            
-            // Initialisation avec date du jour
-            if (document.getElementById('session-date')) {
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('session-date').value = today;
-            }
-            
-            // Initialiser l'heure actuelle et +1h pour les sessions
-            if (document.getElementById('session-start-time') && document.getElementById('session-end-time')) {
-                const now = new Date();
-                const startTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                
-                now.setHours(now.getHours() + 1);
-                const endTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                
-                document.getElementById('session-start-time').value = startTime;
-                document.getElementById('session-end-time').value = endTime;
-            }
-        });
-
-        // Fonction pour changer de module
-        function showModule(moduleId) {
-            // Désactiver tous les modules et onglets
-            document.querySelectorAll('.module-container').forEach(module => {
-                module.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.module-button').forEach(button => {
-                button.classList.remove('active');
-            });
-            
-            // Activer le module et l'onglet sélectionnés
-            document.getElementById(`${moduleId}-module`).classList.add('active');
-            document.querySelector(`.module-button[data-module="${moduleId}"]`).classList.add('active');
+        // Ces données sont injectées dynamiquement par le serveur
+        const availableRoutes = <!-- ROUTE_LIST --> || [];
+        
+        // Log pour le débogage
+        if (availableRoutes.length > 0) {
+            console.log('Routes API disponibles:', availableRoutes);
         }
     </script>
 </body>

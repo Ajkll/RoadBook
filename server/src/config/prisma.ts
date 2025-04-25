@@ -24,10 +24,11 @@ dotenv.config();
  * En développement, tous les types de logs sont affichés pour faciliter le débogage.
  * En production ou test, seules les erreurs sont affichées pour éviter de surcharger les logs.
  */
-const prisma = new PrismaClient({
+export const prisma = new PrismaClient({
   log: process.env.NODE_ENV === "development" 
     ? ['query', 'info', 'warn', 'error']
     : ['error'],
 });
 
+// Exporter à la fois comme export nommé et export par défaut pour la compatibilité
 export default prisma;

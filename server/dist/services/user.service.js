@@ -51,7 +51,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllUsers = exports.deleteUser = exports.changePassword = exports.updateUser = exports.getUserByEmail = exports.getUserById = exports.createUser = void 0;
+exports.deleteProfilePicture = exports.updateProfilePicture = exports.getAllUsers = exports.deleteUser = exports.changePassword = exports.updateUser = exports.getUserByEmail = exports.getUserById = exports.createUser = void 0;
 const prisma_1 = __importDefault(require("../config/prisma"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const authService = __importStar(require("./auth.service"));
@@ -104,6 +104,8 @@ const createUser = async (data) => {
                 birthDate: data.birthDate,
                 phoneNumber: data.phoneNumber,
                 profilePicture: data.profilePicture,
+                profilePictureType: data.profilePictureType,
+                profilePictureLastUpdated: data.profilePicture ? new Date() : undefined,
                 address: data.address,
                 role: data.role || 'APPRENTICE',
                 bio: data.bio
@@ -266,6 +268,10 @@ const updateUser = async (id, data, currentUserId) => {
         // Normaliser l'email s'il est fourni
         if (updateData.email) {
             updateData.email = updateData.email.toLowerCase().trim();
+        }
+        // Si une photo de profil est fournie, mettre à jour la date de modification
+        if (updateData.profilePicture !== undefined) {
+            updateData.profilePictureLastUpdated = new Date();
         }
         // Si un nouveau mot de passe est fourni, le hasher
         if (data.password) {
@@ -464,3 +470,76 @@ const getAllUsers = async (options) => {
     }
 };
 exports.getAllUsers = getAllUsers;
+/**
+ * Update user's profile picture
+ *
+ * @param userId - ID of the user
+ * @param pictureData - Profile picture data (URL or base64)
+ * @returns Updated user without password
+ */
+const updateProfilePicture = async (userId, pictureData) => {
+    try {
+        logger_1.default.info(`Updating profile picture for user ${userId}`);
+        // Verify user exists
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        // Update profile picture
+        const updatedUser = await prisma_1.default.user.update({
+            where: { id: userId },
+            data: {
+                profilePicture: pictureData.profilePicture,
+                profilePictureType: pictureData.profilePictureType,
+                profilePictureLastUpdated: new Date()
+            }
+        });
+        logger_1.default.info(`Profile picture updated for user ${userId}`);
+        // Return user without password
+        const { passwordHash, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword;
+    }
+    catch (error) {
+        logger_1.default.error(`Error updating profile picture for user ${userId}: ${error}`);
+        throw error;
+    }
+};
+exports.updateProfilePicture = updateProfilePicture;
+/**
+ * Delete user's profile picture
+ *
+ * @param userId - ID of the user
+ * @returns Updated user without password
+ */
+const deleteProfilePicture = async (userId) => {
+    try {
+        logger_1.default.info(`Deleting profile picture for user ${userId}`);
+        // Verify user exists
+        const user = await prisma_1.default.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        // Remove profile picture
+        const updatedUser = await prisma_1.default.user.update({
+            where: { id: userId },
+            data: {
+                profilePicture: null,
+                profilePictureType: null,
+                profilePictureLastUpdated: new Date()
+            }
+        });
+        logger_1.default.info(`Profile picture deleted for user ${userId}`);
+        // Return user without password
+        const { passwordHash, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword;
+    }
+    catch (error) {
+        logger_1.default.error(`Error deleting profile picture for user ${userId}: ${error}`);
+        throw error;
+    }
+};
+exports.deleteProfilePicture = deleteProfilePicture;

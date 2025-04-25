@@ -21,7 +21,7 @@ import {
   validateForgotPassword, 
   validateResetPassword 
 } from "../../middleware/validation.middleware";
-import { authenticateJWT } from "../../middleware/auth.middleware";
+import { authenticate } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 

@@ -8,6 +8,10 @@ import { seedCommunity } from "./05-community";
 import { seedBadges } from "./06-badges";
 import { seedMarketplace } from "./07-marketplace";
 import { seedNotifications } from "./08-notifications";
+import * as dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 const prisma = new PrismaClient();
 

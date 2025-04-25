@@ -9,6 +9,44 @@ export async function seedUsers(prisma: PrismaClient) {
 
   // Create different types of users
   const users = [
+    // Demo test users (always available)
+    {
+      email: "user@roadbook.com",
+      passwordHash: defaultPassword,
+      displayName: "Demo User",
+      firstName: "Demo",
+      lastName: "User",
+      nationalRegisterNumber: "99.01.01-111.11",
+      birthDate: new Date("1999-01-01"),
+      phoneNumber: "+32470000000",
+      role: "APPRENTICE" as UserRole,
+      bio: "Compte de démonstration pour tester l'application en tant qu'apprenti.",
+    },
+    {
+      email: "guide@roadbook.com",
+      passwordHash: defaultPassword,
+      displayName: "Demo Guide",
+      firstName: "Guide",
+      lastName: "Demo",
+      nationalRegisterNumber: "80.01.01-222.22",
+      birthDate: new Date("1980-01-01"),
+      phoneNumber: "+32471111111",
+      role: "GUIDE" as UserRole,
+      bio: "Compte de démonstration pour tester l'application en tant que guide.",
+    },
+    {
+      email: "admin@roadbook.com",
+      passwordHash: defaultPassword,
+      displayName: "Admin",
+      firstName: "Admin",
+      lastName: "User",
+      nationalRegisterNumber: "75.01.01-333.33",
+      birthDate: new Date("1975-01-01"),
+      phoneNumber: "+32472222222",
+      role: "ADMIN" as UserRole,
+      bio: "Compte administrateur pour tester toutes les fonctionnalités.",
+    },
+    
     // Apprentices
     {
       email: "paul.dupont@example.com",
@@ -79,7 +117,7 @@ export async function seedUsers(prisma: PrismaClient) {
     {
       email: "admin@roadbook.be",
       passwordHash: defaultPassword,
-      displayName: "Admin",
+      displayName: "Admin RB",
       firstName: "Admin",
       lastName: "Système",
       nationalRegisterNumber: "85.07.20-678.90",

@@ -8,6 +8,7 @@
  * - Changement de mot de passe (changePassword)
  * - Liste des utilisateurs (getAllUsers - admin uniquement)
  * - Suppression d'un utilisateur (deleteUser - admin ou soi-même)
+ * - Gestion des photos de profil (uploadProfilePicture, deleteProfilePicture)
  * 
  * Les contrôleurs sont responsables de:
  * - Traiter les requêtes HTTP
@@ -398,6 +399,97 @@ export const getAllUsers = async (req: Request, res: Response) => {
     return res.status(500).json({
       status: "error",
       message: "Failed to get users",
+      details: error.message
+    });
+  }
+};
+
+/**
+ * Upload or update profile picture for current user
+ * 
+ * @route POST /api/users/me/profile-picture
+ * @param {Request} req - Express request
+ * @param {Response} res - Express response
+ */
+export const uploadProfilePicture = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "Not authenticated"
+      });
+    }
+    
+    logger.info(`Profile picture upload initiated for user ${req.user.userId}`);
+    
+    // Update profile picture with the validated data
+    const updatedUser = await userService.updateProfilePicture(req.user.userId, {
+      profilePicture: req.body.profilePicture,
+      profilePictureType: req.body.profilePictureType
+    });
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Profile picture updated successfully",
+      data: updatedUser
+    });
+  } catch (error: any) {
+    logger.error(`Error uploading profile picture: ${error.message}`);
+    
+    if (error.message === "User not found") {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+    
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to update profile picture",
+      details: error.message
+    });
+  }
+};
+
+/**
+ * Delete profile picture for current user
+ * 
+ * @route DELETE /api/users/me/profile-picture
+ * @param {Request} req - Express request
+ * @param {Response} res - Express response
+ */
+export const deleteProfilePicture = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "Not authenticated"
+      });
+    }
+    
+    logger.info(`Profile picture deletion initiated for user ${req.user.userId}`);
+    
+    // Remove profile picture
+    const updatedUser = await userService.deleteProfilePicture(req.user.userId);
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Profile picture deleted successfully",
+      data: updatedUser
+    });
+  } catch (error: any) {
+    logger.error(`Error deleting profile picture: ${error.message}`);
+    
+    if (error.message === "User not found") {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+    
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to delete profile picture",
       details: error.message
     });
   }

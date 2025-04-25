@@ -42,7 +42,7 @@ jest.fn().mockReturnValue = function(value: any) {
 
 // Mock global.fetch if needed
 if (!global.fetch) {
-  global.fetch = jest.fn(() => 
+  global.fetch = jest.fn().mockImplementation(() => 
     Promise.resolve({
       json: () => Promise.resolve({}),
       text: () => Promise.resolve(''),
@@ -51,7 +51,7 @@ if (!global.fetch) {
       statusText: 'OK',
       headers: new Headers(),
     } as Response)
-  ) as jest.Mock;
+  ) as unknown as typeof global.fetch;
 }
 
 // Log setup completion

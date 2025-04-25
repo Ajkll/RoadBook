@@ -70,3 +70,398 @@
 {"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-23 16:40:24"}
 {"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:41:26"}
 {"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-23 16:41:26"}
+{"level":"debug","message":"Token verification failed: jwt expired","timestamp":"2025-04-24 08:59:32"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 09:08:02"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 09:08:02"}
+{"level":"info","message":"User created successfully: ac45a591-910e-45f8-898d-7b4e6f51c5ac","timestamp":"2025-04-24 09:08:02"}
+{"level":"info","message":"User registered successfully: ac45a591-910e-45f8-898d-7b4e6f51c5ac","timestamp":"2025-04-24 09:08:02"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:15"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:15"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 09:08:15"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:16"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:16"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 09:08:16"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:17"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:17"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 09:08:17"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:17"}
+{"level":"warn","message":"Login attempt threshold approaching for: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:17"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:17"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 09:08:17"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:17"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:17"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 09:08:17"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:17"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:17"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:17"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:18"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:18"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:18"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:18"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:18"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:18"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:19"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:19"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:19"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:19"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:19"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:19"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:19"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:19"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:19"}
+{"level":"info","message":"Revoking specific refresh token","timestamp":"2025-04-24 09:08:21"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:25"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:25"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:25"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:26"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:26"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:26"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:27"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:27"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:27"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:27"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:27"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:27"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:27"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:27"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:27"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:36"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:36"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:36"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:37"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:37"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:37"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:37"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:37"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:37"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:37"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:37"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:37"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:38"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:38"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:38"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:38"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:38"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:38"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:39"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:39"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:39"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:39"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:39"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:39"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 09:08:40"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:08:40"}
+{"level":"warn","message":"Login failed: Account temporarily locked. Try again in 15 minutes","timestamp":"2025-04-24 09:08:40"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-24 09:30:39"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:31:46"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-24 09:31:46"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:34"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:34"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:34"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:35"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:35"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:35"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:35"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:35"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:35"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:36"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:36"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:36"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:36"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:36"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:36"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:37"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:37"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:37"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:47"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:47"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:47"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 07:39:48"}
+{"level":"error","message":"Login error: [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:39:48"}
+{"level":"warn","message":"Login failed: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/auth.service.js:66:50\n\n  63     }\n  64 }\n  65 // Trouver l'utilisateur par email\n→ 66 const user = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database.","timestamp":"2025-04-24 07:39:48"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:24"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:24"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:24"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:29"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:29"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:29"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:30"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:30"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:36"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:36"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:36"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:37"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:37"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:38"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:38"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:39"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:39"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:39"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:39"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:39"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:39"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:40:46"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:40:46"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:40:46"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 07:41:33"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 07:41:33"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:41:33"}
+{"level":"info","message":"Registration attempt for email: nono@example.com","timestamp":"2025-04-24 07:41:57"}
+{"level":"info","message":"Creating new user with email: nono@example.com","timestamp":"2025-04-24 07:41:57"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:41:57"}
+{"level":"info","message":"Registration attempt for email: nono@example.com","timestamp":"2025-04-24 07:42:00"}
+{"level":"info","message":"Creating new user with email: nono@example.com","timestamp":"2025-04-24 07:42:00"}
+{"level":"error","message":"Registration error: \nInvalid `prisma_1.default.user.findUnique()` invocation in\n/app/dist/services/user.service.js:74:54\n\n  71 // Normaliser l'email (minuscules, sans espaces)\n  72 data.email = data.email.toLowerCase().trim();\n  73 // Vérifier si l'email existe déjà\n→ 74 const existingUser = await prisma_1.default.user.findUnique(\nThe table `public.User` does not exist in the current database. [{\"name\":\"PrismaClientKnownRequestError\",\"code\":\"P2021\",\"clientVersion\":\"5.22.0\",\"meta\":{\"modelName\":\"User\",\"table\":\"public.User\"}}]","timestamp":"2025-04-24 07:42:00"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-24 09:48:05"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-24 09:48:05"}
+{"level":"info","message":"Registration attempt for email: alex@example.com","timestamp":"2025-04-24 08:55:00"}
+{"level":"info","message":"Creating new user with email: alex@example.com","timestamp":"2025-04-24 08:55:00"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-24 08:55:24"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-24 08:55:24"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-24 08:55:24"}
+{"level":"info","message":"Registration attempt for email: alex@example.com","timestamp":"2025-04-24 08:56:11"}
+{"level":"info","message":"Creating new user with email: alex@example.com","timestamp":"2025-04-24 08:56:11"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 23:49:41"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 23:49:41"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-24 23:49:51"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-24 23:49:51"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 00:22:18"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 00:22:18"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-25 00:46:09"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 00:46:10"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 00:46:10"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 00:46:10"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 00:46:10"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-25 00:46:10"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 00:47:26"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-25 00:47:26"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 00:48:06"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 00:48:06"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 00:48:15"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 00:48:15"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 00:48:25"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 00:48:25"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 00:48:25"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 01:00:48"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 01:00:48"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 01:02:28"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 01:02:28"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 01:02:49"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 01:02:49"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 01:02:49"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 01:03:48"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 01:03:48"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 01:03:48"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 01:04:39"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 01:04:39"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 01:04:39"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 01:04:52"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 01:04:52"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 01:04:54"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 01:04:54"}
+{"level":"info","message":"Registration attempt for email: test_api_user@example.com","timestamp":"2025-04-25 01:18:00"}
+{"level":"info","message":"Creating new user with email: test_api_user@example.com","timestamp":"2025-04-25 01:18:00"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 04:24:39"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 04:24:39"}
+{"level":"info","message":"User created successfully: 2163554e-098d-4df0-bdf6-377113ac581b","timestamp":"2025-04-25 04:24:40"}
+{"level":"info","message":"User registered successfully: 2163554e-098d-4df0-bdf6-377113ac581b","timestamp":"2025-04-25 04:24:40"}
+{"level":"info","message":"Revoking specific refresh token","timestamp":"2025-04-25 04:25:03"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 04:25:07"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 04:25:07"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 04:25:07"}
+{"level":"info","message":"Login attempt for user: user@roadbook.com","timestamp":"2025-04-25 04:28:47"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 04:28:47"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 04:28:47"}
+{"level":"info","message":"Login attempt for user: user@roadbook.com","timestamp":"2025-04-25 04:28:49"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 04:28:49"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 04:28:49"}
+{"level":"info","message":"Login attempt for user: test@example.com","timestamp":"2025-04-25 04:30:18"}
+{"level":"info","message":"User logged in successfully: 2163554e-098d-4df0-bdf6-377113ac581b","timestamp":"2025-04-25 04:30:18"}
+{"level":"debug","message":"Getting current user profile: 2163554e-098d-4df0-bdf6-377113ac581b","timestamp":"2025-04-25 04:30:57"}
+{"level":"info","message":"Revoking specific refresh token","timestamp":"2025-04-25 04:32:22"}
+{"level":"info","message":"Login attempt for user: user@roadbook.com","timestamp":"2025-04-25 04:33:12"}
+{"level":"info","message":"User logged in successfully: 6a47395e-f603-4630-a985-d2dfc307b0df","timestamp":"2025-04-25 04:33:12"}
+{"level":"debug","message":"Getting current user profile: 6a47395e-f603-4630-a985-d2dfc307b0df","timestamp":"2025-04-25 04:33:20"}
+{"level":"debug","message":"Getting current user profile: 6a47395e-f603-4630-a985-d2dfc307b0df","timestamp":"2025-04-25 04:33:34"}
+{"level":"debug","message":"Token verification failed: jwt expired","timestamp":"2025-04-25 07:23:28"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:51"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:51"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:51"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:51"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:52"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:52"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:52"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:52"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:53"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:53"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:54"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:54"}
+{"level":"info","message":"Registration attempt for email: test@example.com","timestamp":"2025-04-25 07:43:59"}
+{"level":"info","message":"Creating new user with email: test@example.com","timestamp":"2025-04-25 07:43:59"}
+{"level":"warn","message":"Attempted to create user with existing email: test@example.com","timestamp":"2025-04-25 07:43:59"}
+{"level":"error","message":"Registration error: User with this email already exists [{}]","timestamp":"2025-04-25 07:43:59"}
+{"level":"info","message":"Login attempt for user: apprentice@roadbook.com","timestamp":"2025-04-25 07:44:32"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 07:44:32"}
+{"level":"warn","message":"Login failed: Invalid credentials","timestamp":"2025-04-25 07:44:32"}
+{"level":"info","message":"Login attempt for user: user@roadbook.com","timestamp":"2025-04-25 07:44:42"}
+{"level":"info","message":"User logged in successfully: 6a47395e-f603-4630-a985-d2dfc307b0df","timestamp":"2025-04-25 07:44:42"}
+{"level":"debug","message":"Token verification failed: jwt expired","timestamp":"2025-04-25 08:01:44"}
+{"level":"error","message":"Error deleting profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:14:02"}
+{"level":"error","message":"Error updating profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:14:21"}
+{"level":"error","message":"Error deleting profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:36"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error updating profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error deleting profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-25 08:22:46"}
+{"level":"error","message":"Error retrieving user by ID non-existent-id: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error retrieving user by email nonexistent@example.com: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error updating user user-id-123: Error: Email is already in use","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error updating user user-id-123: Error: National register number is already in use","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error updating user target-user-id: Error: Unauthorized to update this user","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password is incorrect","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: New password must be different from current password","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error changing password for user user-id-123: Error: Current password and new password are required","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error changing password for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error deleting user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error deleting user target-user-id: Error: Unauthorized to delete this user","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error updating profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Error deleting profile picture for user non-existent-id: Error: User not found","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Login error: [{}]","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:24:05"}
+{"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-25 08:24:05"}
