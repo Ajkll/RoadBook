@@ -14,8 +14,6 @@ const GoBackHomeButton: React.FC<GoBackHomeButtonProps> = ({
 }) => {
   const router = useRouter();
   const theme = useTheme();
-
-  // Créez les styles dynamiquement avec le thème
   const styles = createStyles(theme);
 
   return (
@@ -27,7 +25,6 @@ const GoBackHomeButton: React.FC<GoBackHomeButtonProps> = ({
   );
 };
 
-// Déplacez la création des styles dans une fonction séparée
 const createStyles = (theme: any) =>
   StyleSheet.create({
     bottomButtonContainer: {

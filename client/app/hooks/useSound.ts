@@ -41,7 +41,7 @@ export const useSound = () => {
     );
   };
 
-  // Préchargement des sons au montage
+  // prechargement des sons
   useEffect(() => {
     const preloadSounds = async () => {
       try {
@@ -53,8 +53,6 @@ export const useSound = () => {
         });
 
         const soundKeys = Object.keys(SOUNDS) as SoundKey[];
-
-        // Chargement séquentiel pour éviter les conflits
         for (const key of soundKeys) {
           try {
             if (!SOUNDS[key].soundObject) {
@@ -75,7 +73,6 @@ export const useSound = () => {
     preloadSounds();
 
     return () => {
-      // Nettoyage
       const soundKeys = Object.keys(SOUNDS) as SoundKey[];
       soundKeys.forEach((key) => {
         if (SOUNDS[key].soundObject) {

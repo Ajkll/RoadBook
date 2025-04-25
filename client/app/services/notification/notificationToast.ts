@@ -11,10 +11,9 @@ export const showNotification = (
   options?: {
     position?: 'top' | 'center' | 'bottom';
     soundEnabled?: boolean;
-    visibilityTime?: number; // Ajout cohérent avec la version hook
+    visibilityTime?: number;
   }
 ) => {
-  // Afficher le Toast
   Toast.show({
     type,
     text1,
@@ -23,7 +22,6 @@ export const showNotification = (
     visibilityTime: options?.visibilityTime || (type === 'error' ? 5000 : 3000), // Même logique que la version hook
   });
 
-  // Jouer le son correspondant si activé
   if (options?.soundEnabled !== false) {
     let soundKey: keyof typeof SOUNDS;
     switch (type) {
@@ -42,7 +40,6 @@ export const showNotification = (
         break;
     }
 
-    // Utilisation directe du player (version simplifiée)
     const playSound = async () => {
       try {
         const { sound } = await Audio.Sound.createAsync(SOUNDS[soundKey].asset, {
@@ -63,7 +60,6 @@ export const showNotification = (
   }
 };
 
-// Version avec hook (pour les composants React)
 export const useNotification = () => {
   const { play } = useSound();
 

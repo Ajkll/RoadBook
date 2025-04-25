@@ -34,7 +34,7 @@ import StartButtonModal from '../components/modals/StartButtonModal';
 import * as Location from 'expo-location';
 import { startTracking, setMapReady } from '../store/slices/locationSlice';
 import { startChrono } from '../store/slices/chronoSlice';
-import { playSound } from '../utils/soundPlayer';
+import { useSound } from '../hooks/useSound';
 import ActionSheet from 'react-native-actions-sheet';
 
 const { width, height } = Dimensions.get('window');
@@ -61,7 +61,7 @@ export default function StartDriveScreen() {
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
-
+  const { play } = useSound();
   const [mapType, setMapType] = useState('standard');
   const [polylineColor, setPolylineColor] = useState(theme.colors.ui.map.polyline.default);
   const [customizationVisible, setCustomizationVisible] = useState(false);
@@ -387,6 +387,7 @@ export default function StartDriveScreen() {
           setMapReady(true);
           actionSheetRef.current?.show();
           dispatch({ type: 'location/setMapReady', payload: true });
+          play('GPS_READY');
         }}
         onPanDrag={handleMapDragStart}
         onTouchStart={handleMapDragStart}

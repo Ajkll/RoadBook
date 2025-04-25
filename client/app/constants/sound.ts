@@ -39,7 +39,7 @@ export const SOUNDS = {
   NOTIFICATION: {
     key: 'NOTIFICATION',
     asset: require('../assets/sounds/notification-sound-1.mp3'),
-    isShortSound: true, // <-- Ajouté
+    isShortSound: true,
     defaultConfig: {
       volume: 0.5,
       isMuted: false,

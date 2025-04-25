@@ -26,11 +26,9 @@ const StartButtonModal = ({
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
-
   const [isExpanded, setIsExpanded] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
 
-  // Snap points en dp
   const SNAP_POINTS = [160, 230];
 
   return (
@@ -48,7 +46,7 @@ const StartButtonModal = ({
 
       <ActionSheet
         ref={actionSheetRef}
-        // Rendu en View sous la nav bar
+        // sous la nav bar
         isModal={false}
         backgroundInteractionEnabled={true}
         zIndex={0}
@@ -59,15 +57,15 @@ const StartButtonModal = ({
         gestureEnabled
         snapPoints={SNAP_POINTS}
         initialSnapIndex={0}
-        springOffset={SNAP_POINTS[0]}                // Empêche de passer sous 100 dp :contentReference[oaicite:6]{index=6}
+        springOffset={SNAP_POINTS[0]}
         overdrawEnabled
         overdrawFactor={10}
         overdrawSize={50}
         enableContentPanningGesture={true}
-        closable={false}                             // Empêche la fermeture automatique :contentReference[oaicite:7]{index=7}
-        closeOnTouchBackdrop={false}                 // Même comportement au tap dehors :contentReference[oaicite:8]{index=8}
+        closable={false}
+        closeOnTouchBackdrop={false}
 
-        onSnapIndexChange={(index) => {              // Callback qui alerte véritablement sur le snap atteint :contentReference[oaicite:9]{index=9}
+        onSnapIndexChange={(index) => {
           const expanded = index === 1;
           setIsExpanded(expanded);
           setOverlayVisible(expanded);

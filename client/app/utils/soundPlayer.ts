@@ -4,7 +4,6 @@ import { SOUNDS, SoundKey } from '../constants/sound';
 let soundCache: Record<SoundKey, Audio.Sound | null> = {} as Record<SoundKey, Audio.Sound | null>;
 let currentlyPlaying: SoundKey[] = [];
 
-// Fonction pour charger un son une seule fois
 const loadSound = async (key: SoundKey) => {
   if (soundCache[key]) return soundCache[key];
 
@@ -40,7 +39,6 @@ export const playSound = async (
   try {
     if (volume <= 0) return;
 
-    // Solution spéciale pour les sons courts
     if (SOUNDS[key].isShortSound) {
       return await playShortSound(key, volume);
     }
@@ -59,7 +57,7 @@ export const playSound = async (
     }
 
     await sound.setVolumeAsync(volume);
-    await sound.replayAsync(); // Utilisation de replayAsync au lieu de playAsync
+    await sound.replayAsync();
 
     currentlyPlaying = currentlyPlaying.filter((k) => k !== key);
     currentlyPlaying.push(key);
@@ -68,14 +66,13 @@ export const playSound = async (
   }
 };
 
-// Fonction spéciale pour les sons très courts
 const playShortSound = async (key: SoundKey, volume: number) => {
   try {
     const { sound } = await Audio.Sound.createAsync(
       SOUNDS[key].asset,
       { shouldPlay: true, volume },
       undefined,
-      true // enableInstantPlayback - crucial pour les sons courts
+      true
     );
 
     sound.setOnPlaybackStatusUpdate(async (status) => {

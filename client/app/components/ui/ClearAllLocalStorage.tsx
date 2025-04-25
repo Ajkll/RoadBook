@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
 import { clearAllPendingItems } from '../../store/slices/syncSlice';
 import { useTheme } from '../../constants/theme';
@@ -20,17 +19,13 @@ const CleanupStorage = () => {
     try {
       await clearAllStorageData();
       dispatch(clearAllPendingItems({ force: true }));
-
-      Toast.show({
-        type: 'success',
-        text1: 'Confirmation de la suppression',
-        text2: 'Les données ont été correctement supprimées',
+      showSuccess('Confirmation de la suppression', "Les données ont été correctement supprimées.", {
         position: 'top',
       });
     } catch (error) {
       console.error('Erreur lors du netoyage :', error);
     } finally {
-      setShowModal(false); //on ferme le modal dans tous les cas
+      setShowModal(false); //on ferme le modal dans tout les cas
     }
   };
 

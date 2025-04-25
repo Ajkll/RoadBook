@@ -11,21 +11,16 @@ const SoundCardParameters = () => {
   const theme = useTheme();
   const { setVolume, setMute, updateConfig, globalVolume, globalMute, getSoundConfig } = useSound();
 
-  // Sons à exclure de la configuration
+  // Sons à exclure
   const excludedSounds: SoundKey[] = ['silent'];
-
-  // Filtrage des sons
   const soundKeys = useMemo(
     () =>
       Object.keys(SOUNDS).filter((key) => !excludedSounds.includes(key as SoundKey)) as SoundKey[],
     []
   );
 
-  // États pour le pliage/dépliage
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
-
-  // État local synchronisé avec globalVolume
   const [sliderValue, setSliderValue] = useState(globalVolume);
   const [isSliding, setIsSliding] = useState(false);
 
@@ -85,7 +80,6 @@ const SoundCardParameters = () => {
 
   return (
     <View style={styles.container}>
-      {/* En-tête pliable */}
       <TouchableOpacity style={styles.header} onPress={() => setIsCardExpanded(false)}>
         <Text style={styles.sectionTitle}>Paramètres Audio</Text>
         <MaterialIcons name="keyboard-arrow-up" size={24} color={theme.colors.primary} />
@@ -114,8 +108,6 @@ const SoundCardParameters = () => {
           />
         </View>
       </View>
-
-      {/* Section avancée pliable */}
       <TouchableOpacity
         style={styles.advancedHeader}
         onPress={() => setIsAdvancedExpanded(!isAdvancedExpanded)}
@@ -220,7 +212,7 @@ const createStyles = (theme: any) =>
       borderRadius: theme.borderRadius.medium,
     },
     scrollContainer: {
-      maxHeight: 200, // hauteur maximal avant scroll
+      maxHeight: 200,
     },
   });
 

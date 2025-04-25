@@ -12,7 +12,6 @@ import { RootState } from '../store/store';
 import { saveDriveSession } from '../services/firebase/driveSession';
 import { getAuthData } from '../services/secureStorage';
 import { getWeather } from '../services/api/weather';
-import Toast from 'react-native-toast-message';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
 import { useNotifications } from './NotificationHandler';

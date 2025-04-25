@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { selectIsConnected, selectIsInternetReachable } from '../../store/slices/networkSlice';
 import { useTheme } from '../../constants/theme';
-import Toast from 'react-native-toast-message';
+import { useNotifications } from '../NotificationHandler';
 
 const OfflineToast = () => {
   const isConnected = useSelector(selectIsConnected);
@@ -11,33 +11,19 @@ const OfflineToast = () => {
   const theme = useTheme();
   const prevConnectedRef = useRef(true);
   const styles = createStyles(theme);
-
+  const { showError } = useNotifications();
   const isOffline = !isConnected || !IsInternetReachable;
 
   useEffect(() => {
     if (prevConnectedRef.current === true && isOffline === true) {
-      Toast.show({
-        type: 'error',
-        text1: 'Vous êtes hors ligne',
-        text2: 'Les données seront synchronisées lorsque la connexion sera rétablie',
+      showError('⛔ Vous êtes hors ligne', "Les données seront synchronisées lorsque la connexion sera rétablie.", {
         position: 'bottom',
         visibilityTime: 3000,
-        props: {
-          backgroundColor: theme.colors.error,
-          textColor: theme.colors.primaryText,
-        },
       });
     } else if (prevConnectedRef.current === false && isOffline === false) {
-      Toast.show({
-        type: 'success',
-        text1: 'Connexion rétablie',
-        text2: 'Synchronisation des données en cours...',
+      showSuccess('Connexion rétablie', "Synchronisation des données en cours....", {
         position: 'bottom',
         visibilityTime: 3000,
-        props: {
-          backgroundColor: theme.colors.success,
-          textColor: theme.colors.primaryText,
-        },
       });
     }
 
