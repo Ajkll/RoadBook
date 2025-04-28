@@ -1,82 +1,139 @@
-# RoadBook Server
+# RoadBook Server - Backend API
 
-Backend pour l'application RoadBook.
+Ce dépôt contient l'API backend pour l'application RoadBook, une plateforme de gestion d'apprentissage de conduite.
+
+## Architecture Modulaire
+
+Le backend est développé selon une **architecture modulaire**, organisée autour des domaines fonctionnels suivants:
+
+### Structure des Modules
+
+1. **Module 01: Utilisateurs et Authentification**
+   - Gestion des utilisateurs (profils, rôles)
+   - Authentification (inscription, connexion, jetons)
+   - Sécurité avec JWT et tokens de rafraîchissement
+
+2. **Module 02: RoadBooks**
+   - Gestion des carnets de route d'apprentissage
+   - Cycles de vie (actif, complété, archivé)
+   - Relation apprenti-guide
+   - Statistiques et métriques
+
+3. **Module 03: Sessions de Conduite**
+   - Enregistrement des sessions pratiques
+   - Traçage des heures, distances et conditions
+   - Validation des sessions par guides/instructeurs
+
+4. **Module 04: Compétences**
+   - Suivi des compétences par roadbook
+   - Progression (non commencé → en cours → maîtrisé)
+   - Validation des compétences acquises
+
+5. **Module 05: Communauté**
+   - Posts et commentaires
+   - Partage d'expériences
+   - Réactions (likes)
+
+6. **Module 06: Badges (Gamification)**
+   - Système de récompenses
+   - Motivation par accomplissements
+   - Reconnaissance des progrès
+
+7. **Module 07: Marketplace**
+   - Échange de services (mentorat, cours)
+   - Produits liés à l'apprentissage
+   - Gestion des transactions
+
+8. **Module 08: Notifications**
+   - Alertes système
+   - Rappels de sessions
+   - Annonces de validations
+
+### Architecture technique
+
+Pour chaque module, l'architecture suit une structure en couches:
+
+- **Model** (Prisma Schema): Définition des entités et relations dans `/prisma/schema.prisma`
+- **Services**: Logique métier dans `/src/services/{module}.service.ts`
+- **Contrôleurs**: Gestionnaires HTTP dans `/src/controllers/{module}.controller.ts`
+- **Routes**: Points d'entrée API dans `/src/api/routes/{module}.routes.ts`
+- **Tests**: Tests unitaires et d'intégration dans `/src/tests/{module}.*.test.ts`
 
 ## Prérequis
 
-- Node.js v16+
-- PostgreSQL 14+ (installé localement)
-- npm ou yarn
+- Node.js v18+
+- PostgreSQL 14+
+- npm
 
-## Procédure de lancement détaillée
+## Configuration
 
-### 1. Configuration initiale et installation
+1. **Installation des dépendances**:
+   ```bash
+   npm install
+   ```
 
-```bash
-# Installation des dépendances
-npm install
+2. **Configuration de l'environnement**:
+   Créez un fichier `.env` basé sur `.env.example`:
+   ```
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/roadbook"
+   JWT_SECRET="your-jwt-secret"
+   JWT_REFRESH_SECRET="your-refresh-token-secret"
+   PORT=4002
+   NODE_ENV=development
+   ```
 
-# Compiler le code TypeScript
-npm run build
+3. **Migration de la base de données**:
+   ```bash
+   npm run migrate:dev
+   ```
 
-# Générer le client Prisma
-npx prisma generate
-```
+4. **Génération du client Prisma**:
+   ```bash
+   npm run prisma:generate
+   ```
 
-> **Note:** La génération du client Prisma est nécessaire pour créer les types TypeScript correspondant à votre schéma de base de données.
+## Lancement
 
-### 2. Configuration de la base de données
-
-Assurez-vous que PostgreSQL est en cours d'exécution sur votre machine.
- docker ps -a | grep postgres 
- docker-compose up -d ou   docker-compose up -d --build server
-
-Vérifiez que le fichier `.env` contient bien les informations de connexion:
-```
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/roadbook"
-JWT_SECRET="votre_secret_jwt"
-JWT_REFRESH_SECRET="votre_refresh_secret_jwt"
-```
-
-Puis exécutez:
-```bash
-# Créer la base de données et appliquer les migrations
-npx prisma migrate dev
-
-# Remplir la base de données avec des données de test
-npx prisma db seed
-```
-
-> **Important:** Si vous rencontrez des erreurs de connexion, vérifiez que PostgreSQL est bien démarré et que les informations dans `.env` sont correctes.
-
-### 3. Lancement du serveur de développement
+### Développement
 
 ```bash
-# Démarrer le serveur en mode développement
 npm run dev
 ```
 
-Le serveur sera disponible à l'adresse: http://localhost:4000/api
+### Production
+
+```bash
+npm run build
+npm start
+```
+
+### Tests
+
+```bash
+# Exécuter tous les tests
+npm test
+
+# Tester un module spécifique
+npm test -- -t "Auth Service"
+
+# Mode watch
+npm run test:watch
+```
+
+### API Test UI
+
+Pour faciliter les tests manuels, une interface HTML de test est disponible:
+
+```bash
+npm run test:api
+```
+
+Puis accédez à http://localhost:4001/
 
 ## Procédure de test simplifiée
 
 Si vous souhaitez simplement tester que tout fonctionne correctement:
 
-### 1. Test de la base de données avec Prisma Studio
-
-Dans un nouveau terminal:
-```bash
-cd /chemin/vers/RoadBook/server
-npx prisma studio
-```
-
-Prisma Studio s'ouvrira dans votre navigateur à l'adresse: http://localhost:5555
-
-> **À vérifier:** Assurez-vous que les tables User, RoadBook, Session et RefreshToken sont présentes et contiennent des données.
-
-### 2. Test de l'API via l'interface web
-
-Pour lancer tout l'environnement de test en une seule commande:
 ```bash
 # Script complet de lancement interactif
 npm run test:simple
@@ -95,7 +152,7 @@ Accédez aux interfaces de test dans votre navigateur:
 - Interface API: http://localhost:4001
 - Prisma Studio: http://localhost:5555
 
-### 3. Vérifications à effectuer
+### Vérifications à effectuer
 
 1. **Test d'authentification:**
    - Connectez-vous avec l'utilisateur `apprentice@roadbook.com` / `Password123!`
@@ -121,14 +178,99 @@ Accédez aux interfaces de test dans votre navigateur:
 | `instructor@roadbook.com` | `Password123!` | INSTRUCTOR |
 | `admin@roadbook.com` | `Password123!` | ADMIN |
 
-## Structure du projet
+## Configuration Docker
 
-- `prisma/` - Schéma de base de données et migrations
-- `src/api/routes/` - Points d'entrée API
-- `src/controllers/` - Logique de traitement des requêtes
-- `src/services/` - Logique métier et interaction avec la base de données
-- `src/middleware/` - Middlewares (authentification, validation...)
-- `src/utils/` - Fonctions utilitaires
+Vous pouvez également utiliser Docker pour lancer votre environnement de développement:
+
+```bash
+# Lancer PostgreSQL uniquement
+docker-compose up -d postgres
+
+# Lancer tout l'environnement (PostgreSQL + serveur)
+docker-compose up -d
+
+# Reconstruire et relancer le serveur après modifications
+docker-compose up -d --build server
+```
+
+## Architecture des authentifications et sécurité
+
+Le système d'authentification utilise une approche à double token:
+
+- **Access Token**: Token JWT de courte durée (15min) pour l'accès aux ressources protégées
+- **Refresh Token**: Token de longue durée (7 jours) stocké en BDD pour obtenir de nouveaux access tokens
+
+Caractéristiques de sécurité:
+- Rotation des refresh tokens (un nouveau token à chaque rafraîchissement)
+- Détection des tentatives de réutilisation de tokens (blocage de tous les tokens lors d'une détection)
+- Stockage des mots de passe avec bcrypt
+- Protection contre les attaques par force brute
+- Contrôles d'accès basés sur les rôles (RBAC)
+
+## Documentation API
+
+### Routes Authentification
+
+- `POST /api/auth/register` - Inscription d'un nouvel utilisateur
+- `POST /api/auth/login` - Connexion et génération de token
+- `POST /api/auth/logout` - Déconnexion (révocation de token)
+- `POST /api/auth/refresh-token` - Rafraîchissement du token d'accès
+- `GET /api/auth/verify` - Vérification de validité du token
+- `POST /api/auth/forgot-password` - Demande de réinitialisation
+- `POST /api/auth/reset-password` - Réinitialisation avec token
+
+### Routes Utilisateurs
+
+- `GET /api/users/me` - Profil de l'utilisateur connecté
+- `PUT /api/users/me` - Mise à jour du profil
+- `PUT /api/users/me/password` - Changement de mot de passe
+- `GET /api/users` - Liste des utilisateurs (admin)
+- `GET /api/users/:id` - Détails d'un utilisateur
+- `DELETE /api/users/:id` - Suppression d'un utilisateur
+
+### Routes Roadbooks
+
+- `GET /api/roadbooks` - Liste des roadbooks de l'utilisateur
+- `POST /api/roadbooks` - Création d'un roadbook
+- `GET /api/roadbooks/guided` - Roadbooks où l'utilisateur est guide
+- `GET /api/roadbooks/:id` - Détails d'un roadbook
+- `PUT /api/roadbooks/:id` - Mise à jour d'un roadbook
+- `DELETE /api/roadbooks/:id` - Suppression d'un roadbook
+- `PATCH /api/roadbooks/:id/status` - Changement de statut
+- `POST /api/roadbooks/:id/guide` - Assignation d'un guide
+- `GET /api/roadbooks/:id/statistics` - Statistiques d'un roadbook
+- `GET /api/roadbooks/:id/export` - Exportation (JSON/PDF)
+
+### Routes Sessions
+
+- `GET /api/roadbooks/:id/sessions` - Sessions d'un roadbook
+- `POST /api/roadbooks/:id/sessions` - Ajout d'une session
+
+### Routes Compétences
+
+- `GET /api/roadbooks/:id/competencies` - Progression compétences
+- `PATCH /api/roadbooks/:id/competencies/:competencyId` - Mise à jour progression
+
+## Structure des dossiers
+
+```
+server/
+├── prisma/                 # Schéma de base de données et migrations
+│   ├── migrations/         # Migrations Prisma
+│   ├── schema.prisma       # Définition du schéma de données
+│   └── seeds/              # Données de test (seeding)
+├── src/
+│   ├── api/                # Définition des routes API
+│   │   └── routes/
+│   ├── config/             # Configuration (DB, Firebase, etc.)
+│   ├── controllers/        # Contrôleurs HTTP
+│   ├── middleware/         # Middleware Express (auth, validation)
+│   ├── services/           # Logique métier
+│   ├── tests/              # Tests unitaires et d'intégration
+│   └── utils/              # Utilitaires (logging, validation, etc.)
+├── public/                 # Interface HTML de test
+└── dist/                   # Code compilé (build)
+```
 
 ## Flux d'authentification
 
@@ -136,140 +278,3 @@ Accédez aux interfaces de test dans votre navigateur:
 2. Connexion (`/api/auth/login`) → vérifie les identifiants et génère des tokens
 3. Rafraîchissement (`/api/auth/refresh-token`) → obtient un nouveau token d'accès
 4. Déconnexion (`/api/auth/logout`) → révoque le token de rafraîchissement
-
-## Modèles principaux
-
-- `User` - Utilisateurs (avec différents rôles)
-- `RoadBook` - Carnet de route principal
-- `Session` - Sessions d'apprentissage 
-- `RefreshToken` - Tokens de rafraîchissement
-
-
-
-
-
-
-
-
-
-
-
- 1. Un README.md clair avec:
-    - Des instructions détaillées pour l'installation
-  et la configuration
-    - Une procédure de test pas à pas
-    - Des explications sur ce qu'il faut vérifier pour
-   s'assurer que tout fonctionne
-  2. Un script simplifié (launch-test-simple.sh) qui:
-    - Compile le code
-    - Propose d'appliquer les migrations et de seed la
-   base
-    - Démarre Prisma Studio en arrière-plan
-    - Lance le serveur de test sur le port 4001
-  3. Une commande npm (npm run test:simple) pour
-  exécuter ce script facilement
-  4. Une interface web de test pour interagir avec
-  l'API sans avoir besoin d'un frontend complet
-
-  Cette configuration vous permet de tester rapidement
-   votre backend, de vous assurer que
-  l'authentification fonctionne, et de vérifier que
-  les opérations CRUD sont correctement implémentées,
-  le tout sans dépendre de Docker ou d'autres outils
-  externes.
-
-
- 1. docker-compose.yml
-
-  Ce fichier définit deux services
-  Docker pour votre application:
-
-  - postgres: Un container
-  PostgreSQL qui:
-    - Utilise l'image officielle
-  PostgreSQL 14
-    - Configure un utilisateur, mot
-  de passe et base de données
-  (postgres/postgres/roadbook)
-    - Expose le port 5432 pour que
-  votre application puisse y accéder
-    - Conserve les données dans un
-  volume pour la persistance
-    - Inclut une vérification de
-  santé pour s'assurer que
-  PostgreSQL est prêt
-  - server: Votre application
-  Node.js qui:
-    - Est construite à partir de
-  votre Dockerfile.server
-    - Expose le port 4000 pour l'API
-    - Dépend du service PostgreSQL
-  (attend qu'il soit en bonne santé)
-    - Configure toutes les variables
-   d'environnement nécessaires
-    - Monte votre code source pour
-  le développement
-
-  2. Dockerfile.server
-
-  Ce fichier définit comment
-  construire l'image Docker pour
-  votre serveur:
-
-  - Utilise Node.js 18 sur Alpine
-  Linux (léger)
-  - Installe les outils nécessaires
-  (comme PostgreSQL client)
-  - Configure l'application,
-  installe les dépendances
-  - Génère le client Prisma
-  - Crée un script de démarrage qui:
-    - Attend que PostgreSQL soit
-  disponible
-    - Exécute les migrations Prisma
-    - Crée des utilisateurs de test
-    - Démarre l'application
-
-  Comment utiliser ces fichiers:
-
-  Pour lancer l'ensemble de
-  l'environnement avec PostgreSQL et
-   votre serveur:
-
-  # Se placer dans le répertoire du 
-  serveur
-  cd /workspaces/RoadBook/server
-
-  # Lancer tous les services en 
-  arrière-plan
-  docker-compose up -d
-
-  Pour lancer uniquement PostgreSQL
-  (si vous voulez exécuter le
-  serveur Node.js directement):
-
-  # Lancer uniquement PostgreSQL
-  docker-compose up -d postgres
-
-  Pour reconstruire l'image Docker
-  après modifications:
-
-  # Reconstruire et relancer le 
-  serveur
-  docker-compose up -d --build
-  server
-
-  C'est une très bonne configuration
-   qui vous permet de:
-  1. Avoir un environnement cohérent
-   (fonctionne de la même façon sur
-  toutes les machines)
-  2. Ne pas avoir à installer
-  PostgreSQL directement sur votre
-  machine
-  3. Avoir une configuration
-  automatisée (scripts de démarrage,
-   migrations, etc.)
-  4. Facilement partager la
-  configuration avec d'autres
-  développeurs

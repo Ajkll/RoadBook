@@ -91,12 +91,15 @@ export const createRoadbook = async (req: JwtRequest, res: Response, next: NextF
  * 
  * @route GET /api/roadbooks/:id
  * @access Private - Requires authentication and ownership or guide role
- * @returns {Object} - Roadbook details with sessions
+ * @returns {Object} - Roadbook details with sessions and optional statistics
  */
 export const getRoadbookById = async (req: JwtRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
+    
+    // Vérifier si des statistiques détaillées sont demandées
+    const includeStats = req.query.stats === 'true';
     
     if (!userId) {
       return res.status(401).json({ 
@@ -105,8 +108,8 @@ export const getRoadbookById = async (req: JwtRequest, res: Response, next: Next
       });
     }
 
-    // Get roadbook with access check
-    const roadbook = await roadbookService.getRoadbookById(id, userId);
+    // Get roadbook with access check and optional statistics
+    const roadbook = await roadbookService.getRoadbookById(id, userId, includeStats);
     
     res.status(200).json({
       status: "success",
@@ -605,6 +608,143 @@ export const updateCompetencyStatus = async (req: JwtRequest, res: Response, nex
       return res.status(403).json({
         status: "error",
         message: "You don't have permission to update competencies in this roadbook"
+      });
+    }
+    
+    next(error);
+  }
+};
+
+/**
+ * Export roadbook data for PDF generation
+ * 
+ * @route GET /api/roadbooks/:id/export
+ * @access Private - Requires authentication and ownership or guide role
+ * @returns {Object} - Complete roadbook data for PDF export
+ */
+export const exportRoadbook = async (req: JwtRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        status: "error", 
+        message: "User ID not found in token" 
+      });
+    }
+    
+    // Récupérer le format demandé (json ou directement pdf)
+    const format = (req.query.format as string)?.toLowerCase() || 'json';
+    
+    if (!['json', 'pdf'].includes(format)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid format requested. Use 'json' or 'pdf'"
+      });
+    }
+    
+    // Préparer les données d'exportation avec vérification d'accès
+    const exportData = await roadbookService.prepareRoadbookExportData(id, userId);
+    
+    // Selon le format demandé, renvoyer les données brutes ou générer un PDF
+    if (format === 'json') {
+      res.status(200).json({
+        status: "success",
+        data: exportData
+      });
+    } else {
+      // Pour le format PDF, on prépare un téléchargement
+      // Note: Cette partie nécessiterait une bibliothèque de génération PDF
+      // comme PDFKit, mais est simplifiée ici pour démonstration
+      
+      // Préparer un nom de fichier basé sur le roadbook
+      const fileName = `roadbook-${id}-export.pdf`;
+      
+      // En l'absence d'une vraie génération PDF, on renvoie les données JSON
+      // avec des en-têtes indiquant qu'un PDF aurait dû être renvoyé
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Type', 'application/json'); // Serait 'application/pdf' dans l'implémentation réelle
+      
+      res.status(200).json({
+        status: "success",
+        message: "PDF export is not implemented in this demo version",
+        data: exportData
+      });
+    }
+  } catch (error: any) {
+    console.error(`Error exporting roadbook ${req.params.id}:`, error);
+    
+    if (error.message === "Roadbook not found") {
+      return res.status(404).json({
+        status: "error",
+        message: "Roadbook not found"
+      });
+    }
+    
+    if (error.message === "Unauthorized access") {
+      return res.status(403).json({
+        status: "error",
+        message: "You don't have permission to export this roadbook"
+      });
+    }
+    
+    next(error);
+  }
+};
+
+/**
+ * Get roadbook statistics summary
+ * 
+ * @route GET /api/roadbooks/:id/statistics
+ * @access Private - Requires authentication and ownership or guide role
+ * @returns {Object} - Roadbook statistics
+ */
+export const getRoadbookStatistics = async (req: JwtRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        status: "error", 
+        message: "User ID not found in token" 
+      });
+    }
+    
+    // Vérifier les permissions en calculant les statistiques
+    // (la fonction calculateRoadbookStatistics ne fait pas de vérification d'accès)
+    // D'abord, vérifions si l'utilisateur a accès au roadbook
+    const roadbook = await roadbookService.getRoadbookById(id, userId, false);
+    
+    if (!roadbook) {
+      return res.status(404).json({
+        status: "error",
+        message: "Roadbook not found"
+      });
+    }
+    
+    // Si on arrive ici, l'utilisateur a bien les permissions nécessaires
+    const statistics = await roadbookService.calculateRoadbookStatistics(id);
+    
+    res.status(200).json({
+      status: "success",
+      data: statistics
+    });
+  } catch (error: any) {
+    console.error(`Error getting roadbook statistics for ${req.params.id}:`, error);
+    
+    if (error.message === "Roadbook not found") {
+      return res.status(404).json({
+        status: "error",
+        message: "Roadbook not found"
+      });
+    }
+    
+    if (error.message === "Unauthorized access") {
+      return res.status(403).json({
+        status: "error",
+        message: "You don't have permission to access this roadbook's statistics"
       });
     }
     

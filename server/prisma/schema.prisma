@@ -60,6 +60,7 @@ model User {
   
   // Auth
   refreshTokens    RefreshToken[]
+  passwordResets   PasswordReset[] @relation("PasswordResets")
 }
 
 // ---- ROADBOOK CORE ----
@@ -397,6 +398,16 @@ model RefreshToken {
   token       String    @unique
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked     Boolean   @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model PasswordReset {
+  id          String    @id @default(uuid())
+  token       String    @unique  // Hashed token
+  userId      String
+  user        User      @relation("PasswordResets", fields: [userId], references: [id], onDelete: Cascade)
   revoked     Boolean   @default(false)
   expiresAt   DateTime
   createdAt   DateTime  @default(now())
