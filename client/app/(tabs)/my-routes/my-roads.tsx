@@ -4,7 +4,11 @@ import { useRouter, usePathname } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AddRouteForm from '../../components/ui/addRoadForm';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+  ScrollView,
+} from 'react-native-gesture-handler';
 import { db } from '../../services/firebase/firebaseConfig';
 import { getDocs, collection } from 'firebase/firestore';
 
@@ -26,7 +30,7 @@ export default function MyRoutes() {
   const [roads, setRoads] = useState<RoadTypes[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleSwipe = ({ nativeEvent }) => {
+  const handleHorizontalSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
       router.push('/(tabs)/my-routes/my-roads');
     } else if (nativeEvent.translationX > 50 && currentPath.includes('my-roads')) {
@@ -62,26 +66,42 @@ export default function MyRoutes() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PanGestureHandler onGestureEvent={handleSwipe}>
+      <PanGestureHandler
+        onGestureEvent={handleHorizontalSwipe}
+        activeOffsetX={[-2, 2]} // Only activate when movement exceeds 20px horizontally
+        failOffsetY={[-20, 20]} // Fail when movement exceeds 20px vertically (so ScrollView handles it)
+      >
         <View style={styles.container}>
-          <View style={styles.cardsContainer}>
-            {roads.map((route, index) => (
-              <ExpandableCard key={index} route={route} colors={colors} />
-            ))}
-          </View>
+          {/* Use React Native Gesture Handler's ScrollView for better gesture integration */}
+          <ScrollView
+            contentContainerStyle={styles.scrollViewContent}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+            scrollEventThrottle={5}
+          >
+            <View style={styles.cardsContainer}>
+              {roads.map((route, index) => (
+                <ExpandableCard key={route.id || index} route={route} colors={colors} />
+              ))}
+            </View>
+
+            {/* Add space at the bottom so content isn't hidden by buttons */}
+            <View style={{ height: 150 }} />
+          </ScrollView>
 
           <AddRouteForm
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             onSave={() => setModalVisible(false)}
           />
-
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-            <MaterialIcons name="add-box" size={40} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.printButton}>
-            <Ionicons name="print-outline" size={40} color={colors.primary} />
-          </TouchableOpacity>
+          <View style={styles.test}>
+            <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+              <MaterialIcons name="add-box" size={40} color={colors.primaryIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.printButton}>
+              <Ionicons name="print-outline" size={40} color={colors.primaryIcon} />
+            </TouchableOpacity>
+          </View>
         </View>
       </PanGestureHandler>
     </GestureHandlerRootView>
@@ -199,13 +219,17 @@ const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      justifyContent: 'flex-start',
-      alignItems: 'center',
       backgroundColor: colors.background,
+      position: 'relative',
+    },
+    scrollViewContent: {
       paddingTop: 20,
+      paddingBottom: 150, // Ensure enough space at bottom so content isn't hidden by buttons
+      alignItems: 'center',
     },
     cardsContainer: {
       alignItems: 'center',
+      width: '100%',
     },
     roadCard: {
       backgroundColor: colors.primary,
@@ -259,13 +283,14 @@ const createStyles = (colors: ThemeColors) =>
       position: 'absolute',
       bottom: 100,
       left: 45,
+      zIndex: 999, // Ensure buttons stay on top
     },
     printButton: {
       position: 'absolute',
       bottom: 100,
       right: 45,
+      zIndex: 999, // Ensure buttons stay on top
     },
-
     profile: {
       position: 'relative',
       alignItems: 'center',
@@ -329,5 +354,8 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 10,
       height: 170,
       marginTop: 20,
+    },
+    test: {
+      height: 0,
     },
   });

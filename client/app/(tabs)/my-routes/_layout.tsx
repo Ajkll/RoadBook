@@ -30,7 +30,7 @@ export default function MyRoutesLayout() {
           <FontAwesome
             name={isStatsActive ? 'circle' : 'circle-o'}
             size={isStatsActive ? 20 : 15}
-            color={colors.primary}
+            color={colors.primaryIcon}
           />
         </TouchableOpacity>
 
@@ -38,7 +38,7 @@ export default function MyRoutesLayout() {
           <FontAwesome
             name={isMyRoadsActive ? 'circle' : 'circle-o'}
             size={isStatsActive ? 15 : 20}
-            color={colors.primary}
+            color={colors.primaryIcon}
           />
         </TouchableOpacity>
       </View>

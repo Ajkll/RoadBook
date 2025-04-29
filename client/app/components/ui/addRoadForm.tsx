@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import PropTypes from 'prop-types';
+import { db } from '../../services/firebase/firebaseConfig';
+import { collection, addDoc } from 'firebase/firestore';
 
 AddRouteForm.propTypes = {
   visible: PropTypes.bool.isRequired,
@@ -15,12 +17,60 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [date, setDate] = useState(new Date());
-  const [departureTime, setDepartureTime] = useState(new Date());
-  const [arrivalTime, setArrivalTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDeparturePicker, setShowDeparturePicker] = useState(false);
   const [showArrivalPicker, setShowArrivalPicker] = useState(false);
+
+  const [roadName, setRoadName] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [departureTime, setDepartureTime] = useState(new Date());
+  const [arrivalTime, setArrivalTime] = useState(new Date());
+
+  const id = useRef<number>(2);
+
+  const sendRoadsData = async (id, roadName, date, duration, distance) => {
+    try {
+      await addDoc(collection(db, 'roads'), {
+        id: id,
+        name: roadName,
+        date: date,
+        duration: duration,
+        distance: distance,
+      });
+    } catch (e) {
+      console.error('Erreur lors de l ajout du document : ', e);
+    }
+  };
+
+  const handleSave = () => {
+    const formData = {
+      roadName,
+      date,
+      departureTime,
+      arrivalTime,
+    };
+
+    console.log('Données du trajet:', formData);
+    console.log(formData.date);
+
+    const durationMs = formData.arrivalTime.getTime() - formData.departureTime.getTime();
+    const durationMin = Math.floor(durationMs / (1000 * 60));
+    // const hours = Math.floor(durationMin / 60);
+    // const minutes = durationMin % 60;
+
+    const distance = 10;
+
+    sendRoadsData(id.current, formData.roadName, formData.date, durationMin, distance);
+    id.current += 1;
+
+    if (onSave) {
+      onSave(formData);
+    }
+
+    if (onClose) {
+      onClose();
+    }
+  };
 
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
@@ -50,6 +100,8 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
             style={[styles.fullWidthInput, { color: colors.secondaryText }]}
             placeholder="Trajet 3"
             placeholderTextColor="#999"
+            value={roadName}
+            onChangeText={setRoadName}
           />
 
           <View style={styles.groupForm}>
@@ -119,7 +171,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.addButton} onPress={onSave}>
+            <TouchableOpacity style={styles.addButton} onPress={handleSave}>
               <Text style={styles.buttonText}>Ajouter</Text>
               <MaterialIcons name="add-box" size={35} color={colors.primaryText} />
             </TouchableOpacity>
