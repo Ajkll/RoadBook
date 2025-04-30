@@ -42,18 +42,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Flag to bypass login for development purposes
+  const bypassLogin = process.env.NODE_ENV === 'development'; // Bypass login only in development mode
+
   // Effet pour charger l'utilisateur depuis le stockage sécurisé au démarrage
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
+        if (bypassLogin) {
+          console.log('Bypassing login for development...');
+          const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
+          setUser(mockUser); // Set mock user
+          setIsLoading(false);
+          return;
+        }
+
         console.log('Loading user data from secure storage...');
         const { user, accessToken } = await getAuthData();
 
         if (user && accessToken) {
           console.log('Found stored user data:', user.email);
-
-          // Simply set the user - we're not checking token expiration for now
-          // This ensures redirection works correctly
           console.log('Setting user state without token validation');
           setUser(user);
         } else {
@@ -67,9 +75,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    // This function is removed as we'll simply trust the token and set authentication to true
-    // This ensures we redirect properly to the tabs
-
     loadUserFromStorage();
   }, []);
 
@@ -81,6 +86,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       setError(null);
+
+      if (bypassLogin) {
+        console.log('Bypassing login for development...');
+        const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
+        setUser(mockUser); // Set mock user
+        setIsLoading(false);
+        return;
+      }
 
       console.log('Sending login request:', credentials.email);
 
@@ -100,14 +113,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Mettre à jour l'état d'authentification
       setUser(response.user);
 
-      // Ne pas rediriger immédiatement, laisser le composant root le faire
-      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
-
       return response;
     } catch (err) {
       console.error('Login error:', err);
 
-      // Extraire le message d'erreur
       const errorMessage = err.response?.data?.message || err.message || 'Échec de connexion';
       setError(errorMessage);
       throw err;
@@ -127,24 +136,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('Sending registration data to server:', userData);
 
-      // Appel à l'API d'inscription
       const response = await authApi.register(userData);
       console.log('Registration successful:', response);
 
-      // Stocker les données d'authentification
       await saveAuthData(response.accessToken, response.refreshToken, response.user);
 
-      // Mettre à jour l'état d'authentification
       setUser(response.user);
-
-      // Ne pas rediriger immédiatement, laisser le composant root le faire
-      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
 
       return response;
     } catch (err) {
       console.error('Registration error:', err);
 
-      // Extraire le message d'erreur
       const errorMessage = err.response?.data?.message || err.message || "Échec d'inscription";
       setError(errorMessage);
       throw err;
@@ -155,20 +157,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /**
    * Handles user logout
-   *
    * Clears authentication session data and redirects to login
-   * - Always attempts to invalidate tokens on the server first
-   * - Clears local authentication state regardless of server response
-   * - Redirects to login screen
    */
   const logout = async () => {
     try {
       setIsLoading(true);
       console.log('==== LOGOUT ATTEMPT ====');
 
-      // Always try to logout on server first, regardless of account type
       try {
-        // Get refresh token to send to server
         const refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
         if (refreshToken) {
           console.log('Attempting to invalidate session on server');
@@ -182,7 +178,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Continuing with client-side logout despite server error');
       }
 
-      // Always clear authentication data from storage
       try {
         console.log('Clearing authentication data from secure storage');
         await clearAuthData();
@@ -191,26 +186,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error clearing auth data from storage:', storageError);
       }
 
-      // Reset authentication state
       console.log('Resetting user state');
       setUser(null);
 
-      // Ne pas rediriger immédiatement, laisser le composant root le faire
-      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
     } catch (err) {
       console.error('==== LOGOUT ERROR ====', err);
 
-      // Ensure state is cleared even during errors
       try {
         await clearAuthData();
-      } catch {
-        // Silently continue on storage errors
-      }
+      } catch {}
 
       setUser(null);
-
-      // Ne pas rediriger immédiatement, laisser le composant root le faire
-      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
     } finally {
       setIsLoading(false);
     }
@@ -231,7 +217,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Function to proactively refresh the access token
   const refreshToken = async (): Promise<boolean> => {
     try {
       console.log('Attempting to refresh access token');
