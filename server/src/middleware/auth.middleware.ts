@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 // Define user payload interface
 export interface JwtPayload {
   userId: string;
+  id: string; // Alias for userId for compatibility
   role: string;
   email?: string;
   displayName?: string;
@@ -36,7 +37,7 @@ declare global {
  * Middleware to verify JWT access token
  * This adds the decoded user to the request object
  */
-export const authenticateJWT = (
+export const authenticate = (
   req: Request,
   res: Response,
   next: NextFunction
@@ -59,7 +60,10 @@ export const authenticateJWT = (
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
     
     // Add user data to request
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      id: decoded.userId  // Ensure id is available for compatibility
+    };
     
     next();
   } catch (error) {
@@ -106,7 +110,7 @@ export const authorizeRoles = (...roles: string[]) => {
 /**
  * Middleware to require admin role
  */
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+export const authorizeAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({
       status: "error",
@@ -140,7 +144,10 @@ export const optionalAuth = (
       const token = authHeader.split(" ")[1];
       const jwtSecret = process.env.JWT_SECRET || "your-jwt-secret";
       const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
-      req.user = decoded;
+      req.user = {
+        ...decoded,
+        id: decoded.userId  // Ensure id is available for compatibility
+      };
     }
     
     // Always continue to next middleware
