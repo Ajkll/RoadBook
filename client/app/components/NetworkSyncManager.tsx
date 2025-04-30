@@ -5,7 +5,7 @@ import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { selectPendingItems, selectIsSyncing } from '../store/slices/syncSlice';
 import { completeSync } from '../services/sync/syncManager'; // Changé pour utiliser completeSync
 import Toast from 'react-native-toast-message';
-import { useNotifications } from '../NotificationHandler';
+import { useNotifications } from './NotificationHandler';
 
 
 const NetworkSyncManager: React.FC = () => {
