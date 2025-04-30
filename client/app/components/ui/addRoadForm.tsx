@@ -34,92 +34,96 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-        <Text style={styles.modalTitle}>Ajouter un trajet</Text>
+          <Text style={styles.modalTitle}>Ajouter un trajet</Text>
 
-        <TextInput
+          <TextInput
             style={[styles.fullWidthInput, { color: colors.secondaryText }]}
             placeholder="Trajet 3"
             placeholderTextColor="#999"
-        />
+          />
 
-        <View style={styles.groupForm}>
+          <View style={styles.groupForm}>
             <TouchableOpacity style={styles.halfWidthInput} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.inputText}>
-                    {date ? date.toLocaleDateString() : 'Date'}
-                </Text>
-                <View style={styles.iconContainer}>
-                    <Ionicons name="calendar-outline" size={30} color={colors.secondaryIcon} />
-                </View>
+              <Text style={styles.inputText}>{date ? date.toLocaleDateString() : 'Date'}</Text>
+              <View style={styles.iconContainer}>
+                <Ionicons name="calendar-outline" size={30} color={colors.secondaryIcon} />
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.halfWidthInput}>
-            <Text style={styles.requiredStar}>*</Text>
-                <Text style={styles.inputText}>Distance</Text>
-                <View style={styles.iconContainer}>
-                <MaterialCommunityIcons name="map-marker-distance" size={28} color={colors.secondaryIcon} />
-                </View>
+              <Text style={styles.requiredStar}>*</Text>
+              <Text style={styles.inputText}>Distance</Text>
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons
+                  name="map-marker-distance"
+                  size={28}
+                  color={colors.secondaryIcon}
+                />
+              </View>
             </TouchableOpacity>
-        </View>
+          </View>
 
-        <View style={styles.timePickersContainer}>
+          <View style={styles.timePickersContainer}>
             <Text style={styles.requiredStar}>*</Text>
-            <TouchableOpacity onPress={() => setShowDeparturePicker(true)} style={styles.timePicker}>
-                <Text style={styles.inputText}>
-                    {departureTime
-                    ? departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : 'Départ'}
-                </Text>
-                    <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
+            <TouchableOpacity
+              onPress={() => setShowDeparturePicker(true)}
+              style={styles.timePicker}
+            >
+              <Text style={styles.inputText}>
+                {departureTime
+                  ? departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'Départ'}
+              </Text>
+              <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
             </TouchableOpacity>
 
             <Ionicons name="chevron-forward" size={30} color={colors.secondaryDarker} />
 
             <TouchableOpacity onPress={() => setShowArrivalPicker(true)} style={styles.timePicker}>
-            <Text style={styles.inputText}>
+              <Text style={styles.inputText}>
                 {arrivalTime
-                ? arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : 'Arrivée'}
-            </Text>
-                <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
+                  ? arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'Arrivée'}
+              </Text>
+              <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
             </TouchableOpacity>
-        </View>
+          </View>
 
-        <View style={styles.groupForm}>
-        <TouchableOpacity style={styles.halfWidthInput}>
-            <Text style={styles.inputText}>Météo</Text>
-            <View style={styles.iconContainer}>
-            <MaterialCommunityIcons name="weather-snowy-rainy" size={30} color={colors.secondaryIcon} />
-            </View>
-        </TouchableOpacity>
+          <View style={styles.groupForm}>
+            <TouchableOpacity style={styles.halfWidthInput}>
+              <Text style={styles.inputText}>Météo</Text>
+              <View style={styles.iconContainer}>
+                <MaterialCommunityIcons
+                  name="weather-snowy-rainy"
+                  size={30}
+                  color={colors.secondaryIcon}
+                />
+              </View>
+            </TouchableOpacity>
 
-        <TouchableOpacity style={styles.halfWidthInput}>
-            <Text style={styles.inputText}>Moniteur</Text>
-            <View style={styles.iconContainer}>
-            <MaterialIcons name="person" size={30} color={colors.secondaryIcon} />
-            </View>
-        </TouchableOpacity>
-        </View>
+            <TouchableOpacity style={styles.halfWidthInput}>
+              <Text style={styles.inputText}>Moniteur</Text>
+              <View style={styles.iconContainer}>
+                <MaterialIcons name="person" size={30} color={colors.secondaryIcon} />
+              </View>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.buttonText}>Annuler</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.addButton} onPress={onSave}>
-            <Text style={styles.buttonText}>Ajouter</Text>
-            <Octicons name="diff-added" size={26} color={colors.primaryText} />
-        </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+              <Text style={styles.buttonText}>Annuler</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addButton} onPress={onSave}>
+              <Text style={styles.buttonText}>Ajouter</Text>
+              <Octicons name="diff-added" size={26} color={colors.primaryText} />
+            </TouchableOpacity>
+          </View>
         </View>
-    </View>
-    </View>
+      </View>
 
       {/* Sélecteur de date */}
       {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
+        <DateTimePicker value={date} mode="date" display="default" onChange={handleDateChange} />
       )}
 
       {/* Sélecteur d'heure de départ */}
@@ -233,42 +237,42 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     addButton: {
-        backgroundColor: colors.primaryDarker,
-        borderRadius: 10,
-        padding: 10,
-        paddingLeft: 20,
-        paddingRight: 20,
-        width: '40%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+      backgroundColor: colors.primaryDarker,
+      borderRadius: 10,
+      padding: 10,
+      paddingLeft: 20,
+      paddingRight: 20,
+      width: '40%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     buttonText: {
-        color: colors.primaryText,
-        fontWeight: 'bold',
-        marginRight: 5,
+      color: colors.primaryText,
+      fontWeight: 'bold',
+      marginRight: 5,
     },
     timePickersContainer: {
-        backgroundColor: colors.secondary,
-        color: colors.primaryText,
-        borderRadius: 10,
-        height: 55,
-        width: '100%',
-        marginBottom: 15,
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+      backgroundColor: colors.secondary,
+      color: colors.primaryText,
+      borderRadius: 10,
+      height: 55,
+      width: '100%',
+      marginBottom: 15,
+      paddingHorizontal: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     timePicker: {
-        backgroundColor: colors.secondaryDark,
-        borderRadius: 10,
-        height: 45,
-        width: '40%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingRight: 10,
-        paddingLeft: 5,
+      backgroundColor: colors.secondaryDark,
+      borderRadius: 10,
+      height: 45,
+      width: '40%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingRight: 10,
+      paddingLeft: 5,
     },
   });
