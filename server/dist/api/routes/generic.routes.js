@@ -61,10 +61,10 @@ function createCrudRoutes(service, options = {}) {
     // Apply auth middleware if required
     const authMiddlewares = [];
     if (requireAuth) {
-        authMiddlewares.push(authMiddleware.authenticateJWT);
+        authMiddlewares.push(authMiddleware.authenticate);
     }
     if (requireAdmin) {
-        authMiddlewares.push(authMiddleware.requireAdmin);
+        authMiddlewares.push(authMiddleware.authorizeAdmin);
     }
     // GET /:id - Get by ID
     router.get(`${basePath}/:id`, ...authMiddlewares, controller.getById);

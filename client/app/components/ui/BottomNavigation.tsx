@@ -1,181 +1,240 @@
-// app/components/ui/BottomNavigation.tsx (complete)
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../constants/theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { stopTracking, resetLocation } from '../../store/slices/locationSlice';
+import {
+  startChrono,
+  finishChrono,
+  resetChrono,
+  setShouldSave,
+} from '../../store/slices/chronoSlice';
+import SessionEndModal from '../modals/SessionEndModal';
+import Toast from 'react-native-toast-message';
+import { Modalize } from 'react-native-modalize';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useNotifications } from '../NotificationHandler';
 
 const BottomNavigation = () => {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const dispatch = useDispatch();
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { showError } = useNotifications();
+  const [showModal, setShowModal] = useState(false);
+  const isChronoRunning = useSelector((state: RootState) => state.chrono.isRunning);
 
-  // Helper to check which tab is active
-  const isActive = (path) => {
-    return pathname === path || pathname.startsWith(path);
+  const normalizedPathname = pathname.startsWith('/') ? pathname.slice(1) : pathname;
+  const isActive = (path: string) => normalizedPathname === path;
+  const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
+  const mapReady = useSelector((state: RootState) => state.location.mapReady);
+
+  const handleStartDrivePress = () => {
+    if (isActive('start-drive')) {
+      if (!isChronoRunning) {
+        if (!mapReady) {
+          showError('⛔ Carte non prête', 'Veuillez attendre que la carte soit chargée', {
+            position: 'center',
+          });
+          return;
+        }
+        dispatch(startChrono());
+      } else {
+        setShowModal(true);
+      }
+    } else {
+      router.push('/(tabs)/start-drive');
+    }
+  };
+
+  const handleLongPressStartDrive = () => {
+    if (isChronoRunning) {
+      setShowModal(true);
+    }
+  };
+
+  const handleConfirmSave = () => {
+    dispatch(finishChrono());
+    dispatch(stopTracking());
+    setShowModal(false);
+  };
+
+  const handleConfirmNoSave = () => {
+    dispatch(setShouldSave(false));
+    setTimeout(() => {
+      dispatch(finishChrono());
+      setShowModal(false);
+    }, 50);
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingBottom: Math.max(insets.bottom, 8),
-          backgroundColor: colors.tabBar,
-          borderTopColor: colors.border,
-        },
-      ]}
-    >
-      {/* Home Tab */}
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
-        <Ionicons
-          name={isActive('/(tabs)/') ? 'home' : 'home-outline'}
-          size={24}
-          color={isActive('/(tabs)/') ? colors.primary : colors.tabBarInactive}
-        />
-        <Text
-          style={[
-            styles.navText,
-            { color: isActive('/(tabs)/') ? colors.primary : colors.tabBarInactive },
-          ]}
-        >
-          Accueil
-        </Text>
-      </TouchableOpacity>
-
-      {/* Explorer Tab */}
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
-        <Ionicons
-          name={isActive('/(tabs)/explorer') ? 'search' : 'search-outline'}
-          size={24}
-          color={isActive('/(tabs)/explorer') ? colors.primary : colors.tabBarInactive}
-        />
-        <Text
-          style={[
-            styles.navText,
-            { color: isActive('/(tabs)/explorer') ? colors.primary : colors.tabBarInactive },
-          ]}
-        >
-          Explorer
-        </Text>
-      </TouchableOpacity>
-
-      {/* Record Button (Center) */}
-      <TouchableOpacity
-        style={styles.recordButton}
-        onPress={() => router.push('/(tabs)/start-drive')}
-      >
-        <View
-          style={[
-            styles.recordIcon,
-            {
-              backgroundColor: colors.recordButton,
-              borderColor: isActive('/(tabs)/start-drive')
-                ? colors.primary
-                : colors.recordButtonBorder,
-            },
-          ]}
-        >
+    <>
+      <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
           <Ionicons
-            name={isActive('/(tabs)/start-drive') ? 'radio-button-on' : 'radio-button-off'}
-            size={28}
-            color={isActive('/(tabs)/start-drive') ? colors.primary : colors.tabBarInactive}
+            name={isActive('') ? 'home' : 'home-outline'}
+            size={24}
+            color={isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-        </View>
-      </TouchableOpacity>
-
-      {/* My Routes Tab */}
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
-        <Ionicons
-          name={isActive('/(tabs)/my-routes') ? 'map' : 'map-outline'}
-          size={24}
-          color={isActive('/(tabs)/my-routes') ? colors.primary : colors.tabBarInactive}
-        />
-        <Text
-          style={[
-            styles.navText,
-            { color: isActive('/(tabs)/my-routes') ? colors.primary : colors.tabBarInactive },
-          ]}
-        >
-          Mes trajets
-        </Text>
-      </TouchableOpacity>
-
-      {/* Profile Tab */}
-      <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
-        <Ionicons
-          name={isActive('/(tabs)/profile') ? 'person' : 'person-outline'}
-          size={24}
-          color={isActive('/(tabs)/profile') ? colors.primary : colors.tabBarInactive}
-        />
-        <Text
-          style={[
-            styles.navText,
-            { color: isActive('/(tabs)/profile') ? colors.primary : colors.tabBarInactive },
-          ]}
-        >
-          Profil
-        </Text>
-      </TouchableOpacity>
-
-      {/* API Test Tab (hidden in UI but accessible) */}
-      {isActive('/(tabs)/api-test') && (
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
-          <Ionicons name="bug" size={24} color={colors.primary} />
-          <Text style={[styles.navText, { color: colors.primary }]}>API Test</Text>
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
+            Accueil
+          </Text>
         </TouchableOpacity>
-      )}
-    </View>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
+          <Ionicons
+            name={isActive('explorer') ? 'search' : 'search-outline'}
+            size={24}
+            color={isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
+            Explorer
+          </Text>
+        </TouchableOpacity>
+
+        <Pressable
+          style={styles.recordButton}
+          onPress={handleStartDrivePress}
+          onLongPress={handleLongPressStartDrive}
+          delayLongPress={1600}
+        >
+          <View
+            style={[
+              styles.recordIcon,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: isActive('start-drive')
+                  ? theme.colors.activeItem
+                  : theme.colors.inactiveItem,
+              },
+            ]}
+          >
+            <MaterialIcons
+              name={isChronoRunning ? 'square' : 'circle'}
+              size={isChronoRunning ? 30 : 40}
+              color={isChronoRunning ? theme.colors.error : theme.colors.inactiveItem}
+            />
+          </View>
+        </Pressable>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
+          <Ionicons
+            name={isActive('my-routes') ? 'map' : 'map-outline'}
+            size={24}
+            color={isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text
+            style={[
+              styles.navText,
+              {
+                color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem,
+              },
+            ]}
+          >
+            Mes trajets
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
+          <Ionicons
+            name={isActive('profile') ? 'person' : 'person-outline'}
+            size={24}
+            color={isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem}
+          />
+          <Text
+            style={[
+              styles.navText,
+              { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem },
+            ]}
+          >
+            Profile
+          </Text>
+        </TouchableOpacity>
+
+        {isActive('/(tabs)/api-test') && (
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
+            <Ionicons name="bug" size={24} color={theme.colors.primary} />
+            <Text style={[styles.navText, { color: theme.colors.primary }]}>API Test</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <SessionEndModal
+        visible={showModal}
+        onConfirmSave={handleConfirmSave}
+        onConfirmNoSave={handleConfirmNoSave}
+        onCancel={handleCancel}
+      />
+    </>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    height: Platform.OS === 'ios' ? 80 : 60, // Taller on iOS to accommodate safe area
-    borderTopWidth: 1,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 6,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    zIndex: 1000,
-  },
-  navItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  navText: {
-    fontSize: 11,
-    marginTop: 4,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  recordButton: {
-    width: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -20, // Raises the button above the bar
-  },
-  recordIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-});
+const createStyles = (theme: any, insets: any) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      height: Platform.OS === 'ios' ? 85 : 65,
+      borderTopWidth: 1.6,
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingTop: 6,
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      zIndex: 1000,
+      backgroundColor: theme.colors.background,
+      borderTopColor: theme.colors.border,
+      ...theme.shadow.sm,
+    },
+    navItem: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xs,
+    },
+    navText: {
+      fontSize: theme.typography.caption.fontSize,
+      marginTop: theme.spacing.xs,
+      textAlign: 'center',
+      fontWeight: theme.typography.caption.fontWeight,
+    },
+    recordButton: {
+      width: 70,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: -20,
+      ...theme.shadow.md,
+    },
+    recordIcon: {
+      width: 56,
+      height: 56,
+      padding: 0,
+      borderRadius: 34,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 3,
+      ...theme.shadow.xl,
+    },
+  });
 
 export default BottomNavigation;

@@ -1,18 +1,23 @@
 // app/(tabs)/_layout.tsx
+import React from 'react';
 import { Tabs } from 'expo-router';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
 import BottomNavigation from '../components/ui/BottomNavigation';
+import Header from '../components/layout/Header';
 
 export default function TabsLayout() {
-  //const colorScheme = useColorScheme();
+  const navigation = useNavigation();
+
+  const openDrawer = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
-        // Hide the default tab bar since we're using our custom one
-        tabBarStyle: { display: 'none' },
+        header: () => <Header title="RoadBook Tracker" onMenuPress={openDrawer} />,
+        tabBarStyle: { display: 'none' }, // Cache la tab bar par défaut
       }}
-      // Use our improved custom tab bar
       tabBar={(props) => <BottomNavigation {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />

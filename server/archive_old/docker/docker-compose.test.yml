@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:14
+    container_name: postgres-test
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=roadbook_test
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["postgres", "-c", "log_statement=all"]
+    networks:
+      - roadbook-test-network
+
+  test-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: test-server
+    ports:
+      - "4002:4000"  # Map test server port for debugging
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-test:5432/roadbook_test
+      - JWT_SECRET=your-very-secure-jwt-secret-for-testing
+      - JWT_REFRESH_SECRET=your-very-secure-refresh-token-secret-for-testing
+      - NODE_ENV=test
+      - PORT=4000
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=roadbook_test
+      - TEST_APP=true
+      - CORS_ORIGINS=http://localhost:19000,http://localhost:19006,http://localhost:3000,http://localhost:4002
+    volumes:
+      - ./:/app  
+      - /app/node_modules
+      - ./test-results:/app/test-results
+      - ./logs:/app/logs
+    networks:
+      - roadbook-test-network
+    command: ["npm", "run", "test"]
+
+networks:
+  roadbook-test-network:
+    name: roadbook-test-network
+
+volumes:
+  postgres_test_data:
+    name: roadbook-postgres-test-data

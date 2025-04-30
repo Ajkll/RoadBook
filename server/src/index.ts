@@ -29,7 +29,11 @@ const corsOrigins = process.env.CORS_ORIGINS ?
     "http://localhost:3000", 
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+    "http://10.0.2.2:8081",
+    "http://10.0.2.2:19000", 
+    "http://10.0.2.2:19006",
     "exp://localhost:19000",
+    "exp://10.0.2.2:19000",
   ];
 
 // CORS configuration
@@ -38,8 +42,14 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps, curl, etc)
     if (!origin) return callback(null, true);
     
+    // In development mode, always allow any origin for easier testing
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CORS: Allowing origin in dev mode: ${origin}`);
+      return callback(null, true);
+    }
+    
     // Check if origin is allowed
-    if (corsOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    if (corsOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.log(`Origin ${origin} not allowed by CORS`);
