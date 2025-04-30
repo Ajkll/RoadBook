@@ -497,6 +497,18 @@ export function useTheme(): Theme {
   return useContext(ThemeContext);
 }
 
+// Créer un objet pour l'export
+const theme = {
+  Colors,
+  ThemeContext,
+  ThemeProvider,
+  useTheme,
+  getShadowStyle,
+  getBorderStyle,
+};
+
+export default theme;
+
 // Helper pour les ombres
 export const getShadowStyle = (theme: Theme) => ({
   shadowColor: theme.colors.border,
@@ -512,3 +524,4 @@ export const getBorderStyle = (theme: Theme, size: 'small' | 'medium' | 'large' 
   borderWidth: size === 'small' ? 1 : size === 'medium' ? 1.5 : 2,
   borderRadius: theme.borderRadius.medium,
 });
+

@@ -1,4 +1,4 @@
-// client/app/services/api/roadbook.api.ts
+/*// client/app/services/api/roadbook.api.ts
 import apiClient from './client';
 import { Platform } from 'react-native';
 
@@ -409,10 +409,17 @@ export const roadbookApi = {
   // Test connection to API
   testConnection: async (): Promise<{ status: string; details: Record<string, unknown> }> => {
     logDebug('Testing connection to RoadBook API');
-
+    
+    // Get client URL 
+    const apiUrl = apiClient.defaults.baseURL;
+    const { apiProxy } = require('../../api-proxy');
+    const tunnelMode = apiProxy.isTunnelMode();
+    const hostUri = require('expo-constants').default.expoConfig?.hostUri || 'N/A';
+    
     try {
       const startTime = Date.now();
-      const response = await apiClient.get('/');
+      // Try the health endpoint instead of root
+      const response = await apiClient.get('/health');
       const pingTime = Date.now() - startTime;
 
       return {
@@ -420,6 +427,9 @@ export const roadbookApi = {
         details: {
           pingTime: `${pingTime}ms`,
           serverResponse: response.data,
+          apiUrl: apiUrl,
+          tunnelMode: tunnelMode,
+          hostUri: hostUri,
           platform: Platform.OS,
           timestamp: new Date().toISOString(),
         },
@@ -431,6 +441,9 @@ export const roadbookApi = {
         status: 'error',
         details: {
           message: error.message,
+          apiUrl: apiUrl,
+          tunnelMode: tunnelMode,
+          hostUri: hostUri,
           platform: Platform.OS,
           networkError: !error.response,
           statusCode: error.response?.status,
@@ -442,4 +455,4 @@ export const roadbookApi = {
   },
 };
 
-export default roadbookApi;
+export default roadbookApi;*/

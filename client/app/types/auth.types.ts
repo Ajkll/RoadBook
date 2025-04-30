@@ -56,3 +56,19 @@ export interface AuthResponse {
 export interface TokenRefreshResponse {
   accessToken: string;
 }
+
+// Exporter toutes les définitions de types/interfaces
+const authTypes = {
+  UserRole,
+  // Les interfaces ne sont pas exportables directement comme valeurs
+  // mais on peut les mentionner ici pour documentation
+  types: {
+    User: 'interface',
+    LoginRequest: 'interface',
+    RegisterRequest: 'interface',
+    AuthResponse: 'interface',
+    TokenRefreshResponse: 'interface'
+  }
+};
+
+export default authTypes;

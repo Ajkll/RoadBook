@@ -150,3 +150,16 @@ export async function getAuthData(): Promise<{
     user: userJson ? JSON.parse(userJson) : null,
   };
 }
+
+// Exporter toutes les fonctions
+const secureStorage = {
+  STORAGE_KEYS,
+  saveItem,
+  getItem,
+  removeItem,
+  saveAuthData,
+  clearAuthData,
+  getAuthData
+};
+
+export default secureStorage;

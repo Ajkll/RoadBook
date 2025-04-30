@@ -49,3 +49,13 @@ export const validateNationalRegisterNumber = (nrn?: string): string | null => {
 
   return null;
 };
+
+// Exporter toutes les fonctions de validation
+const validation = {
+  validateEmail,
+  validatePassword,
+  validateDisplayName,
+  validateNationalRegisterNumber
+};
+
+export default validation;
