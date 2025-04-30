@@ -12,16 +12,16 @@ import { RootState } from '../store/store';
 import { saveDriveSession } from '../services/firebase/driveSession';
 import { getAuthData } from '../services/secureStorage';
 import { getWeather } from '../services/api/weather';
-import Toast from 'react-native-toast-message';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
+import { useNotifications } from './NotificationHandler';
 
-// Create a static instance tracker using module-level variable
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
 
 export default function ChronoWatcher() {
   const dispatch = useDispatch();
+  const { showError, showWarning } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const isOnline = useSelector(selectIsInternetReachable);
 
@@ -106,7 +106,7 @@ export default function ChronoWatcher() {
   useEffect(() => {
     let setupTimerRef: NodeJS.Timeout | null = null;
 
-    console.log(`[${instanceId}] isrunning :`, isRunning, "isInitialLoad:", isInitialLoad);
+    console.log(`[${instanceId}] isrunning :`, isRunning, 'isInitialLoad:', isInitialLoad);
 
     const startTrackingFn = async () => {
       if (isProcessing.current || isTrackingActive.current) {
@@ -205,12 +205,9 @@ export default function ChronoWatcher() {
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
 
-          if (finalElapsedTime === 0 || (!finalPath || finalPath.length < 3)) {
+          if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
             console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            Toast.show({
-              type: 'error',
-              text1: '⛔ Échec de la sauvegarde',
-              text2: "Ton trajet n'a pas été enregistré.",
+            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré.", {
               position: 'center',
             });
           } else {
@@ -224,7 +221,9 @@ export default function ChronoWatcher() {
                 console.error(`[${instanceId}] récupération des infos routières echoué:`, error);
               }
             } else {
-              console.log(`[${instanceId}] Pas de connexion internet, informations routières ignorées`);
+              console.log(
+                `[${instanceId}] Pas de connexion internet, informations routières ignorées`
+              );
             }
 
             // sauvegarde vers firebase
@@ -242,19 +241,17 @@ export default function ChronoWatcher() {
               console.log(`[${instanceId}] session sauvegardée `);
             } catch (error) {
               console.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
-              Toast.show({
-                type: 'error',
-                text1: '⚠️ Problème de sauvegarde',
-                text2: "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
-                position: 'center',
-              });
+              showWarning(
+                '⚠️ Problème de sauvegarde',
+                "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
+                { position: 'center' }
+              );
             }
           }
         } else {
           console.log(`[${instanceId}] sauvegarde désactivée la session est ignorée.`);
         }
       } finally {
-
         console.log(`[${instanceId}] reset des states chrono et location`);
         dispatch(resetChrono());
         dispatch(resetLocation());
@@ -274,8 +271,7 @@ export default function ChronoWatcher() {
         setupTimerRef = setTimeout(() => {
           startTrackingFn();
         }, 300);
-      }
-      else if (!isRunning && isTrackingActive.current) {
+      } else if (!isRunning && isTrackingActive.current) {
         setupTimerRef = setTimeout(() => {
           stopTrackingAndSave();
         }, 300);

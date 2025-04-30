@@ -8,7 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Image,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import MapView, { Polyline, Marker } from 'react-native-maps';
 import {
@@ -84,7 +84,7 @@ const getRegionForCoordinates = (points: Point[]) => {
   let minLng = points[0].longitude;
   let maxLng = points[0].longitude;
 
-  points.forEach(point => {
+  points.forEach((point) => {
     minLat = Math.min(minLat, point.latitude);
     maxLat = Math.max(maxLat, point.latitude);
     minLng = Math.min(minLng, point.longitude);
@@ -119,11 +119,14 @@ const formatWeather = (weather: any): string | WeatherDetails => {
     windSpeed: weather.windSpeed,
     visibility: weather.visibility,
     humidity: weather.humidity,
-    pressure: weather.pressure
+    pressure: weather.pressure,
   };
 };
 
-const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets, onScrollIndexChange }) => {
+const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
+  trajets: propsTrajets,
+  onScrollIndexChange,
+}) => {
   const theme = useTheme();
   const [trajets, setTrajets] = useState<Trajet[]>([]);
   const [selectedTrajet, setSelectedTrajet] = useState<Trajet | null>(null);
@@ -153,13 +156,13 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
           weather: weatherText,
           elapsedTime: session.elapsedTime ?? 0,
           nom: session.nom ?? `Trajet ${index + 1}`,
-          roadInfo: session.roadInfo
+          roadInfo: session.roadInfo,
         };
       });
 
       setTrajets(combined);
     } catch (err) {
-      console.error("Erreur lors du chargement des trajets:", err);
+      console.error('Erreur lors du chargement des trajets:', err);
     } finally {
       setLoading(false);
     }
@@ -173,7 +176,7 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
 
   useEffect(() => {
     if (propsTrajets && propsTrajets.length > 0) {
-      const formattedTrajets = propsTrajets.map(trajet => ({
+      const formattedTrajets = propsTrajets.map((trajet) => ({
         ...trajet,
         weather: formatWeather(trajet.weather),
       }));
@@ -284,21 +287,21 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
       alignSelf: 'center',
       zIndex: 10,
       backgroundColor: theme.colors.background,
-      width: 40,
-      height: 40,
+      width: 50,
+      height: 50,
       borderRadius: 20,
       justifyContent: 'center',
       alignItems: 'center',
       shadowColor: theme.colors.border,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
+      shadowOpacity: 0.6,
       shadowRadius: 3,
-      elevation: 3,
+      elevation: 5,
     },
     refreshArrow: {
-      fontSize: 24,
+      fontSize: 30,
       color: theme.colors.primary,
-    }
+    },
   });
 
   return (
@@ -308,8 +311,8 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
           styles.refreshIndicator,
           {
             opacity: arrowOpacity,
-            transform: [{ rotate: arrowRotation }]
-          }
+            transform: [{ rotate: arrowRotation }],
+          },
         ]}
       >
         <Text style={styles.refreshArrow}>↓</Text>
@@ -324,10 +327,9 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
         decelerationRate="fast"
         snapToInterval={ITEM_FULL_HEIGHT}
         scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+          useNativeDriver: true,
+        })}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -358,25 +360,16 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
           });
 
           const region = item.path.length > 1 ? getRegionForCoordinates(item.path) : undefined;
-          const weatherText = typeof item.weather === 'string' ? item.weather : item.weather?.conditions;
+          const weatherText =
+            typeof item.weather === 'string' ? item.weather : item.weather?.conditions;
 
           return (
-            <Animated.View
-              style={[styles.card, { transform: [{ scale }, { translateY }] }]}
-            >
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => setSelectedTrajet(item)}
-              >
+            <Animated.View style={[styles.card, { transform: [{ scale }, { translateY }] }]}>
+              <TouchableOpacity style={styles.menuButton} onPress={() => setSelectedTrajet(item)}>
                 <Text style={styles.menuText}>≡</Text>
               </TouchableOpacity>
 
-              <MapView
-                style={styles.map}
-                region={region}
-                scrollEnabled={false}
-                zoomEnabled={false}
-              >
+              <MapView style={styles.map} region={region} scrollEnabled={false} zoomEnabled={false}>
                 <Polyline
                   coordinates={item.path.filter(
                     (p) => p && typeof p.latitude === 'number' && typeof p.longitude === 'number'
@@ -393,7 +386,7 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
                     coordinate={item.path[0]}
                     title="Départ"
                     image={icon_depart}
-                    anchor={{x: 0.5, y: 0.6}}
+                    anchor={{ x: 0.5, y: 0.6 }}
                   />
                 )}
                 {item.path[item.path.length - 1] && (
@@ -401,7 +394,7 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
                     coordinate={item.path[item.path.length - 1]}
                     title="Arrivée"
                     image={icon_arriver}
-                    anchor={{x: 0.5, y: 0.6}}
+                    anchor={{ x: 0.5, y: 0.6 }}
                   />
                 )}
               </MapView>
@@ -409,7 +402,9 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
               <View style={styles.info}>
                 <Text style={styles.title}>{item.nom}</Text>
                 <Text style={styles.boldSubtitle}>Météo: {weatherText}</Text>
-                <Text style={styles.boldSubtitle}>Durée: {formatElapsedTime(item.elapsedTime || 0)}</Text>
+                <Text style={styles.boldSubtitle}>
+                  Durée: {formatElapsedTime(item.elapsedTime || 0)}
+                </Text>
               </View>
             </Animated.View>
           );
@@ -426,6 +421,5 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({ trajets: propsTrajets
 };
 
 export default TrajetsCarousel;
-
 
 // to do : optimiser l'aspect visuel en ajoutant une animation polyline

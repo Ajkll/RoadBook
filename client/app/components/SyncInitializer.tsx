@@ -4,7 +4,7 @@ import { addPendingItem, selectPendingItems } from '../store/slices/syncSlice';
 import {
   getPendingDriveSessions,
   getPendingWeatherRequests,
-  getPendingRoadInfoRequests
+  getPendingRoadInfoRequests,
 } from '../utils/storageUtils';
 
 const SyncInitializer = () => {
@@ -17,7 +17,7 @@ const SyncInitializer = () => {
         console.log('initialiser sync');
 
         // anti doublon
-        const existingIds = new Set(existingItems.map(item => item.id));
+        const existingIds = new Set(existingItems.map((item) => item.id));
         console.log(` ${existingIds.size} éléments déjà dans le store Redux`);
 
         const pendingSessions = await getPendingDriveSessions();
@@ -25,16 +25,20 @@ const SyncInitializer = () => {
 
         // Ajouter les nouvelles sessions
         let newSessionsCount = 0;
-        pendingSessions.forEach(session => {
+        pendingSessions.forEach((session) => {
           if (!existingIds.has(session.id)) {
-            dispatch(addPendingItem({
-              id: session.id,
-              type: 'trajet',
-              data: session
-            }));
+            dispatch(
+              addPendingItem({
+                id: session.id,
+                type: 'trajet',
+                data: session,
+              })
+            );
             existingIds.add(session.id);
             newSessionsCount++;
-          }else{console.log("la session était bien initialiser dans le store redux !")}
+          } else {
+            console.log('la session était bien initialiser dans le store redux !');
+          }
         });
         console.log(`donc ${newSessionsCount} nouvelles sessions ajoutées au store redux`);
 
@@ -42,13 +46,15 @@ const SyncInitializer = () => {
         const pendingWeatherRequests = await getPendingWeatherRequests();
 
         let newWeatherCount = 0;
-        pendingWeatherRequests.forEach(request => {
+        pendingWeatherRequests.forEach((request) => {
           if (!existingIds.has(request.id)) {
-            dispatch(addPendingItem({
-              id: request.id,
-              type: 'weather',
-              data: request
-            }));
+            dispatch(
+              addPendingItem({
+                id: request.id,
+                type: 'weather',
+                data: request,
+              })
+            );
             existingIds.add(request.id);
             newWeatherCount++;
           }
@@ -57,18 +63,19 @@ const SyncInitializer = () => {
         // pareille pour les infos de la route (desuet aussi)
         const pendingRoadInfoRequests = await getPendingRoadInfoRequests();
         let newRoadInfoCount = 0;
-        pendingRoadInfoRequests.forEach(request => {
+        pendingRoadInfoRequests.forEach((request) => {
           if (!existingIds.has(request.id)) {
-            dispatch(addPendingItem({
-              id: request.id,
-              type: 'roadInfo',
-              data: request
-            }));
+            dispatch(
+              addPendingItem({
+                id: request.id,
+                type: 'roadInfo',
+                data: request,
+              })
+            );
             existingIds.add(request.id);
             newRoadInfoCount++;
           }
         });
-
       } catch (error) {
         console.error('erreur de sync api route:', error);
       }

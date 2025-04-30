@@ -21,10 +21,10 @@ interface OfflineContentProps {
  * @param variant Display variant ('default', 'compact', 'full')
  */
 const OfflineContent: React.FC<OfflineContentProps> = ({
-  message = "Vous êtes hors ligne. Certaines fonctionnalités ne sont pas disponibles.",
+  message = 'Vous êtes hors ligne. Certaines fonctionnalités ne sont pas disponibles.',
   children,
   showImage = true,
-  variant = 'default'
+  variant = 'default',
 }) => {
   const theme = useTheme();
   const isConnected = useSelector(selectIsConnected);
@@ -54,26 +54,27 @@ const OfflineContent: React.FC<OfflineContentProps> = ({
   );
 };
 
-const createStyles = (theme: any, variant: string) => StyleSheet.create({
-  container: {
-    flex: variant === 'full' ? 1 : undefined,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing[variant === 'compact' ? 'sm' : 'lg'],
-    backgroundColor: variant === 'full' ? theme.colors.background : 'transparent',
-  },
-  image: {
-    height: variant === 'default' ? 200 : 150,
-    marginBottom: theme.spacing.md,
-    opacity: theme.dark ? 0.9 : 1,
-  },
-  message: {
-    textAlign: 'center',
-    fontSize: theme.typography[variant === 'compact' ? 'caption' : 'body'].fontSize,
-    color: theme.colors.backgroundTextSoft,
-    lineHeight: variant === 'compact' ? 10 : 20,
-    maxWidth: '90%',
-  }
-});
+const createStyles = (theme: any, variant: string) =>
+  StyleSheet.create({
+    container: {
+      flex: variant === 'full' ? 1 : undefined,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: theme.spacing[variant === 'compact' ? 'sm' : 'lg'],
+      backgroundColor: variant === 'full' ? theme.colors.background : 'transparent',
+    },
+    image: {
+      height: variant === 'default' ? 200 : 150,
+      marginBottom: theme.spacing.md,
+      opacity: theme.dark ? 0.9 : 1,
+    },
+    message: {
+      textAlign: 'center',
+      fontSize: theme.typography[variant === 'compact' ? 'caption' : 'body'].fontSize,
+      color: theme.colors.backgroundTextSoft,
+      lineHeight: variant === 'compact' ? 10 : 20,
+      maxWidth: '90%',
+    },
+  });
 
 export default OfflineContent;

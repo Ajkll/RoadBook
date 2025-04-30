@@ -6,7 +6,8 @@ import locationReducer from './slices/locationSlice';
 import vehicleReducer from './slices/vehicleSlice';
 import networkSlice from './slices/networkSlice';
 import syncSlice from './slices/syncSlice';
-import videoReducer from './slices/videoSlice'
+import videoReducer from './slices/videoSlice';
+import soundReducer from './slices/appSoundSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,7 +19,12 @@ export const store = configureStore({
     network: networkSlice,
     sync: syncSlice,
     video: videoReducer,
+    sound: soundReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

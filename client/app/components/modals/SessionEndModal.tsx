@@ -70,21 +70,13 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
 
       <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
         <Text style={styles.title}>Fin de session</Text>
-        <Text style={styles.subtitle}>
-          Souhaitez-vous sauvegarder ce trajet ou continuer ?
-        </Text>
+        <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
 
-        <TouchableOpacity
-          style={[styles.button, styles.primaryButton]}
-          onPress={onConfirmSave}
-        >
+        <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={onConfirmSave}>
           <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.dangerButton]}
-          onPress={onConfirmNoSave}
-        >
+        <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={onConfirmNoSave}>
           <Text style={styles.buttonText}>Terminer sans sauvegarder</Text>
         </TouchableOpacity>
 
@@ -96,64 +88,65 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
   );
 };
 
-const createStyles = (theme: Theme) => StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.ui.modal.overlay,
-  },
-  container: {
-    position: 'absolute',
-    top: '25%',
-    alignSelf: 'center',
-    backgroundColor: theme.colors.ui.modal.background,
-    width: '85%',
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.xlarge,
-    ...theme.shadow.lg
-  },
-  title: {
-    ...theme.typography.header,
-    color: theme.colors.backgroundText,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...theme.typography.body,
-    textAlign: 'center',
-    color: theme.colors.backgroundTextSoft,
-    marginBottom: theme.spacing.lg,
-  },
-  button: {
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.medium,
-    width: '100%',
-    marginBottom: theme.spacing.sm,
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.ui.button.primary,
-  },
-  dangerButton: {
-    backgroundColor: theme.colors.ui.status.error,
-  },
-  buttonText: {
-    color: theme.colors.ui.button.primaryText,
-    fontWeight: theme.typography.button.fontWeight,
-    fontSize: theme.typography.button.fontSize,
-    textAlign: 'center',
-  },
-  cancelButton: {
-    marginTop: theme.spacing.xs,
-  },
-  cancelText: {
-    color: theme.colors.primary,
-    fontWeight: theme.typography.button.fontWeight,
-    fontSize: theme.typography.button.fontSize,
-    textAlign: 'center',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    overlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.ui.modal.overlay,
+    },
+    container: {
+      position: 'absolute',
+      top: '25%',
+      alignSelf: 'center',
+      backgroundColor: theme.colors.ui.modal.background,
+      width: '85%',
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.xlarge,
+      ...theme.shadow.lg,
+    },
+    title: {
+      ...theme.typography.header,
+      color: theme.colors.backgroundText,
+      marginBottom: theme.spacing.sm,
+      textAlign: 'center',
+    },
+    subtitle: {
+      ...theme.typography.body,
+      textAlign: 'center',
+      color: theme.colors.backgroundTextSoft,
+      marginBottom: theme.spacing.lg,
+    },
+    button: {
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.borderRadius.medium,
+      width: '100%',
+      marginBottom: theme.spacing.sm,
+    },
+    primaryButton: {
+      backgroundColor: theme.colors.ui.button.primary,
+    },
+    dangerButton: {
+      backgroundColor: theme.colors.ui.status.error,
+    },
+    buttonText: {
+      color: theme.colors.ui.button.primaryText,
+      fontWeight: theme.typography.button.fontWeight,
+      fontSize: theme.typography.button.fontSize,
+      textAlign: 'center',
+    },
+    cancelButton: {
+      marginTop: theme.spacing.xs,
+    },
+    cancelText: {
+      color: theme.colors.primary,
+      fontWeight: theme.typography.button.fontWeight,
+      fontSize: theme.typography.button.fontSize,
+      textAlign: 'center',
+    },
+  });
 
 export default SessionEndModal;

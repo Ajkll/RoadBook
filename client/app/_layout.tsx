@@ -4,7 +4,7 @@ import { Platform, View, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import CustomDrawerContent from './components/layout/CustomDrawerContent';
-import { GestureHandlerRootView , PanGestureHandler  } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './constants/theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -19,13 +19,13 @@ import SyncInitializer from './components/SyncInitializer';
 import NetworkSyncManager from './components/NetworkSyncManager';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
-
+import { SoundProvider } from './components/SoundProvider';
+import { NotificationHandler } from './components/NotificationHandler';
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const { colors, dark } = useTheme();
   const { isConnected, isInternetReachable } = useNetworkStatus();
-
 
   if (isLoading) {
     return (
@@ -76,11 +76,11 @@ function RootNavigator() {
           drawerType: Platform.OS === 'web' ? 'permanent' : 'front',
           drawerStyle: {
             backgroundColor: colors.background,
-            width: 310,
+            width: '64%',
             elevation: 1000,
             zIndex: 1000,
           },
-          overlayColor: 'rgba(0,0,0,0.5)',
+          overlayColor: 'rgba(0,0,0,0.65)',
           swipeEdgeWidth: 100,
           gestureEnabled: true,
         }}
@@ -90,7 +90,7 @@ function RootNavigator() {
           options={{
             title: 'RoadBook Tracker',
             drawerLabel: 'Accueil',
-            headerShown: false
+            headerShown: false,
           }}
         />
 
@@ -105,23 +105,59 @@ function RootNavigator() {
             headerTintColor: colors.backgroundText,
             headerTitleStyle: {
               fontWeight: '600',
-              fontSize: 20
-            }
+              fontSize: 20,
+            },
           }}
         />
-        <Drawer.Screen name="DashboardScreen" options={{ title: 'Dashboard', drawerLabel: 'Dashboard' }} />
-        <Drawer.Screen name="MyRoadbookScreen" options={{ title: 'Mon Carnet', drawerLabel: 'Mon Carnet' }} />
-        <Drawer.Screen name="MyRoutesScreen" options={{ title: 'Mes trajets', drawerLabel: 'Mes trajets' }} />
-        <Drawer.Screen name="CommunityScreen" options={{ title: 'Communauté', drawerLabel: 'Communauté' }} />
-        <Drawer.Screen name="MentorsScreen" options={{ title: 'Mentors', drawerLabel: 'Mentors' }} />
-        <Drawer.Screen name="SkillsScreen" options={{ title: 'Compétences', drawerLabel: 'Compétences' }} />
-        <Drawer.Screen name="MarketplaceScreen" options={{ title: 'Marketplace', drawerLabel: 'Marketplace' }} />
-        <Drawer.Screen name="SettingsScreen" options={{ title: 'Paramètres', drawerLabel: 'Paramètres' }} />
-        <Drawer.Screen name="PrivacyScreen" options={{ title: 'Confidentialité', drawerLabel: 'Confidentialité' }} />
-        <Drawer.Screen name="ShareScreen" options={{ title: 'Partager', drawerLabel: 'Partager' }} />
+        <Drawer.Screen
+          name="DashboardScreen"
+          options={{ title: 'Dashboard', drawerLabel: 'Dashboard' }}
+        />
+        <Drawer.Screen
+          name="MyRoadbookScreen"
+          options={{ title: 'Mon Carnet', drawerLabel: 'Mon Carnet' }}
+        />
+        <Drawer.Screen
+          name="MyRoutesScreen"
+          options={{ title: 'Mes trajets', drawerLabel: 'Mes trajets' }}
+        />
+        <Drawer.Screen
+          name="CommunityScreen"
+          options={{ title: 'Communauté', drawerLabel: 'Communauté' }}
+        />
+        <Drawer.Screen
+          name="MentorsScreen"
+          options={{ title: 'Mentors', drawerLabel: 'Mentors' }}
+        />
+        <Drawer.Screen
+          name="SkillsScreen"
+          options={{ title: 'Compétences', drawerLabel: 'Compétences' }}
+        />
+        <Drawer.Screen
+          name="MarketplaceScreen"
+          options={{ title: 'Marketplace', drawerLabel: 'Marketplace' }}
+        />
+        <Drawer.Screen
+          name="SettingsScreen"
+          options={{ title: 'Paramètres', drawerLabel: 'Paramètres' }}
+        />
+        <Drawer.Screen
+          name="PrivacyScreen"
+          options={{ title: 'Confidentialité', drawerLabel: 'Confidentialité' }}
+        />
+        <Drawer.Screen
+          name="ShareScreen"
+          options={{ title: 'Partager', drawerLabel: 'Partager' }}
+        />
         <Drawer.Screen name="HelpScreen" options={{ title: 'Aide', drawerLabel: 'Aide' }} />
-        <Drawer.Screen name="AboutUsScreen" options={{ title: 'À propos de nous', drawerLabel: 'À propos de nous' }} />
-        <Drawer.Screen name="StartDriveScreen" options={{ title: 'Démarrer', drawerLabel: 'Démarrer' }} />
+        <Drawer.Screen
+          name="AboutUsScreen"
+          options={{ title: 'À propos de nous', drawerLabel: 'À propos de nous' }}
+        />
+        <Drawer.Screen
+          name="StartDriveScreen"
+          options={{ title: 'Démarrer', drawerLabel: 'Démarrer' }}
+        />
         <Drawer.Screen name="ProfileScreen" options={{ title: 'Profil', drawerLabel: 'Profil' }} />
       </Drawer>
       <OfflineToast />
@@ -140,15 +176,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <Provider store={store}>
-          <ChronoWatcher />
-          <SyncInitializer />
-          <NetworkSyncManager />
-          <ThemeProvider>
-            <AuthProvider>
-              <RootNavigator />
-              <Toast />
-            </AuthProvider>
-          </ThemeProvider>
+          <SoundProvider>
+            <ChronoWatcher />
+            <SyncInitializer />
+            <NetworkSyncManager />
+            <ThemeProvider>
+              <AuthProvider>
+                <RootNavigator />
+                <NotificationHandler />
+              </AuthProvider>
+            </ThemeProvider>
+          </SoundProvider>
         </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

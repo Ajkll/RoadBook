@@ -15,7 +15,7 @@ import {
   removePendingItem,
   setSyncing,
   setSyncError,
-  clearSyncError
+  clearSyncError,
 } from '../../store/slices/syncSlice';
 import { selectIsInternetReachable } from '../../store/slices/networkSlice';
 import Toast from 'react-native-toast-message';
@@ -92,7 +92,7 @@ async function saveOnlineSession(data: DriveSessionData): Promise<string> {
   // Récupérer les infos manquantes si possible
   const [weather, roadInfo] = await Promise.all([
     data.weather ? data.weather : tryGetWeather(data.path),
-    data.roadInfo ? data.roadInfo : tryGetRoadInfo(data.path, data.elapsedTime)
+    data.roadInfo ? data.roadInfo : tryGetRoadInfo(data.path, data.elapsedTime),
   ]);
 
   const docRef = await addDoc(collection(db, 'driveSessions'), {
@@ -125,7 +125,10 @@ async function saveOfflineSession(data: DriveSessionData, timestamp: number): Pr
   return sessionPackage.session.id;
 }
 
-async function createPendingSessionPackage(data: DriveSessionData, timestamp: number): Promise<PendingSessionPackage> {
+async function createPendingSessionPackage(
+  data: DriveSessionData,
+  timestamp: number
+): Promise<PendingSessionPackage> {
   const sessionId = `session_${timestamp}_${Math.random().toString(36).substr(2, 5)}`;
 
   const session: PendingDriveSession = {
@@ -142,12 +145,13 @@ async function createPendingSessionPackage(data: DriveSessionData, timestamp: nu
 
   const pkg: PendingSessionPackage = { session };
 
-  if (data.path.length >= 2) { // pas d'info si le trajet est non significatif (normalement déja préalablement filtrer par ChronoWatcher mais double vérification)
+  if (data.path.length >= 2) {
+    // pas d'info si le trajet est non significatif (normalement déja préalablement filtrer par ChronoWatcher mais double vérification)
     pkg.roadRequest = {
       id: `road_${timestamp}_${Math.random().toString(36).substr(2, 5)}`,
       driveSessionId: sessionId,
       path: data.path,
-      requestedAt: timestamp
+      requestedAt: timestamp,
     };
   }
 
@@ -160,7 +164,7 @@ async function createPendingSessionPackage(data: DriveSessionData, timestamp: nu
       latitude: lastPoint.latitude,
       longitude: lastPoint.longitude,
       timestamp,
-      requestedAt: timestamp
+      requestedAt: timestamp,
     };
   }
 
@@ -171,27 +175,33 @@ async function saveSessionPackage(pkg: PendingSessionPackage): Promise<void> {
   await savePendingDriveSession(pkg.session);
 
   if (pkg.roadRequest) {
-    store.dispatch(addPendingItem({
-      id: pkg.roadRequest.id,
-      type: 'api',
-      data: pkg.roadRequest
-    }));
+    store.dispatch(
+      addPendingItem({
+        id: pkg.roadRequest.id,
+        type: 'api',
+        data: pkg.roadRequest,
+      })
+    );
   }
 
   if (pkg.weatherRequest) {
-    store.dispatch(addPendingItem({
-      id: pkg.weatherRequest.id,
-      type: 'api',
-      data: pkg.weatherRequest
-    }));
+    store.dispatch(
+      addPendingItem({
+        id: pkg.weatherRequest.id,
+        type: 'api',
+        data: pkg.weatherRequest,
+      })
+    );
   }
 
   // Ajouter la session au store Redux
-  store.dispatch(addPendingItem({
-    id: pkg.session.id,
-    type: 'trajet',
-    data: pkg.session
-  }));
+  store.dispatch(
+    addPendingItem({
+      id: pkg.session.id,
+      type: 'trajet',
+      data: pkg.session,
+    })
+  );
 }
 
 async function handleSaveError(data: DriveSessionData, timestamp: number): Promise<string> {
@@ -208,12 +218,18 @@ async function tryGetWeather(path: { latitude: number; longitude: number }[]) {
     const lastPoint = path[path.length - 1];
     return await getWeather(lastPoint.latitude, lastPoint.longitude);
   } catch (error) {
-    console.error('Erreur lors de la récupération des données météo de la sauvegard de secoure (fallback):', error);
+    console.error(
+      'Erreur lors de la récupération des données météo de la sauvegard de secoure (fallback):',
+      error
+    );
     return null;
   }
 }
 
-async function tryGetRoadInfo(path: { latitude: number; longitude: number }[], elapsedTime: number) {
+async function tryGetRoadInfo(
+  path: { latitude: number; longitude: number }[],
+  elapsedTime: number
+) {
   if (path.length < 2) return null;
 
   try {
@@ -249,7 +265,6 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
 
     for (const session of pendingSessions) {
       try {
-
         // Envoye à Firebase
         const docRef = await addDoc(collection(db, 'driveSessions'), {
           userId: session.userId,
@@ -269,10 +284,12 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
         console.log(`Session ${session.id} synchronisée avec succès (ID Firebase: ${docRef.id})`);
       } catch (error) {
         console.error(`Échec de synchronisation pour la session ${session.id}:`, error);
-        store.dispatch(setSyncError({
-          id: session.id,
-          error: error instanceof Error ? error.message : 'Erreur inconnue'
-        }));
+        store.dispatch(
+          setSyncError({
+            id: session.id,
+            error: error instanceof Error ? error.message : 'Erreur inconnue',
+          })
+        );
         failedCount++;
       }
     }
@@ -310,14 +327,12 @@ export async function checkAndSync(): Promise<void> {
   await syncPendingSessions();
 }
 
-// Nouvelle fonction principale de synchronisation
 export async function completeSync(): Promise<void> {
   const isOnline = selectIsInternetReachable(store.getState());
   if (!isOnline) {
     return;
   }
 
-  // Vérifier si une synchronisation est déjà en cours
   if (store.getState().sync.syncing) {
     return;
   }
@@ -354,7 +369,7 @@ export async function completeSync(): Promise<void> {
 }
 
 async function processSingleSession(session: PendingDriveSession): Promise<void> {
-  let updatedSession = { ...session };
+  const updatedSession = { ...session };
 
   if (!updatedSession.weather && updatedSession.path.length > 0) {
     try {
@@ -365,7 +380,7 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
         updatedSession.locationTimestamp, // Utiliser le timestamp ei : pour les requete api "hystorique"
         {
           timePrecisionHours: 1,
-          distancePrecisionMeters: 1000
+          distancePrecisionMeters: 1000,
         }
       );
       if (weather) {
@@ -394,32 +409,37 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
       // Sauvegarde dans Firebase et suppression du localStorage et redux
       await saveSessionToFirebase(updatedSession);
       await removePendingDriveSession(updatedSession.id);
-      store.dispatch(removePendingItem({
-        id: updatedSession.id,
-        force: true
-      }));
+      store.dispatch(
+        removePendingItem({
+          id: updatedSession.id,
+          force: true,
+        })
+      );
 
       // Suppression des requêtes API associées a une session de conduite
       const state = store.getState();
-      state.sync.pendingItems.forEach(item => {
+      state.sync.pendingItems.forEach((item) => {
         if (item.data.driveSessionId === updatedSession.id) {
-          store.dispatch(removePendingItem({
-            id: item.id,
-            force: true
-          }));
+          store.dispatch(
+            removePendingItem({
+              id: item.id,
+              force: true,
+            })
+          );
         }
       });
 
       console.log(`Session ${updatedSession.id} et requêtes associées synchronisées et nettoyées`);
-
     } catch (error) {
       console.error(`Erreur lors de la sauvegarde Firebase pour ${updatedSession.id}:`, error);
       await savePendingDriveSession(updatedSession);
 
-      store.dispatch(setSyncError({
-        id: updatedSession.id,
-        error: error instanceof Error ? error.message : 'Erreur inconnue'
-      }));
+      store.dispatch(
+        setSyncError({
+          id: updatedSession.id,
+          error: error instanceof Error ? error.message : 'Erreur inconnue',
+        })
+      );
     }
   } else {
     console.log(`Session ${updatedSession.id} ignorée - aucune donnée API disponible`);
@@ -437,6 +457,5 @@ async function saveSessionToFirebase(session: PendingDriveSession): Promise<void
     createdAt: Timestamp.fromMillis(session.createdAt),
   });
 }
-
 
 // to do : ajoute de possibiliter de enregistrer des trajet "mes trajet " et d'attendre la connection pour les sync

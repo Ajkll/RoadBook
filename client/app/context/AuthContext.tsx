@@ -187,7 +187,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('Resetting user state');
       setUser(null);
-
     } catch (err) {
       console.error('==== LOGOUT ERROR ====', err);
 

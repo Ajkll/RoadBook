@@ -60,7 +60,7 @@ export type ThemeColors = {
     text: string;
     background: string;
     activityIndicator: string;
-  }
+  };
 
   // Autres
   red: string;
@@ -121,7 +121,8 @@ export type ThemeColors = {
 };
 
 export const Colors: { light: ThemeColors; dark: ThemeColors } = {
-  light: { // Couleurs plus vifs
+  light: {
+    // Couleurs plus vifs
     background: '#ffffff',
     backgroundText: '#6A6A6A',
     backgroundTextSoft: '#919191',
@@ -172,16 +173,16 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
             { color: 'rgba(0, 122, 255, 0.8)', label: 'Classique' },
             { color: 'rgba(255, 0, 0, 0.8)', label: 'Contraste' },
             { color: 'rgba(255, 255, 0, 0.8)', label: 'Daltonien' },
-          ]
+          ],
         },
         timerBackground: 'rgba(0, 0, 0, 0.7)',
         timerText: '#ffffff',
-        recenterButton: 'rgba(200, 200, 255, 0.7)',
-        recenterIcon: '#007AFF'
+        recenterButton: '#ffffff',
+        recenterIcon: '#007AFF',
       },
       modal: {
         overlay: '#000000',
-        background: '#ffffff'
+        background: '#ffffff',
       },
       card: {
         background: '#ffffff',
@@ -208,7 +209,8 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
       },
     },
   },
-  dark: { // Couleurs plus tèrnes
+  dark: {
+    // Couleurs plus tèrnes
     background: '#1E1E1E',
     backgroundText: '#ffffff',
     backgroundTextSoft: '#D9D9D9',
@@ -271,17 +273,17 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
             { color: 'rgba(100, 200, 255, 0.8)', label: 'Classique' },
             { color: 'rgba(255, 100, 100, 0.8)', label: 'Contraste' },
             { color: 'rgba(255, 255, 100, 0.8)', label: 'Daltonien' },
-          ]
+          ],
         },
         timerBackground: 'rgba(255, 255, 255, 0.2)',
         timerText: '#ffffff',
         recenterButton: 'rgba(100, 100, 150, 0.7)',
-        recenterIcon: '#7CA7D8'
+        recenterIcon: '#7CA7D8',
       },
 
       modal: {
         overlay: '#000000',
-        background: '#2E2E2E'
+        background: '#2E2E2E',
       },
       status: {
         success: '#81c784',
@@ -330,6 +332,10 @@ export type Theme = {
       fontSize: number;
       fontWeight: FontWeight;
     };
+    SuperTitle: {
+      fontSize: number;
+      fontWeight: FontWeight;
+    };
     subtitle: {
       fontSize: number;
       fontWeight: FontWeight;
@@ -356,7 +362,7 @@ const ThemeContext = createContext<Theme>({
   spacing: {
     xs: 4,
     sm: 8,
-    md: 16,
+    md: 18,
     lg: 24,
     xl: 32,
     xxl: 74,
@@ -375,6 +381,10 @@ const ThemeContext = createContext<Theme>({
     title: {
       fontSize: 20,
       fontWeight: '600',
+    },
+    SuperTitle: {
+      fontSize: 35,
+      fontWeight: '800',
     },
     subtitle: {
       fontSize: 16,
@@ -442,9 +452,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       xl: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        elevation: 12,
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 19,
       },
     },
     typography: {
@@ -459,6 +469,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       subtitle: {
         fontSize: 16,
         fontWeight: '500',
+      },
+      SuperTitle: {
+        fontSize: 23,
+        fontWeight: '800',
       },
       body: {
         fontSize: 14,
