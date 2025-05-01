@@ -4,8 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { FontAwesome, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import Header from './components/layout/Header';
 import BottomNavigation from './components/ui/BottomNavigation';
+import { useTheme } from './constants/theme';
 
 const ShareScreen = () => {
+  const theme = useTheme();
   const message = encodeURIComponent('📲 Essaie cette super app ! Elle est top 👉 lien.exemple');
 
   const openURL = async (url: string) => {
@@ -24,35 +26,67 @@ const ShareScreen = () => {
     openURL(`https://www.reddit.com/submit?url=${message}&title=Découvre%20cette%20app`);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar style={theme.dark ? 'light' : 'dark'} />
 
       <Header title="Partager l'application" />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <TouchableOpacity style={[styles.button, styles.whatsapp]} onPress={shareToWhatsApp}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { padding: theme.spacing.lg }]}>
+        <TouchableOpacity
+          style={[styles.button, {
+            backgroundColor: '#25D366',
+            borderRadius: theme.borderRadius.medium,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.lg
+          }]}
+          onPress={shareToWhatsApp}
+        >
           <FontAwesome name="whatsapp" size={24} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Partager sur WhatsApp</Text>
+          <Text style={[styles.buttonText, { color: '#fff' }]}>Partager sur WhatsApp</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.messenger]} onPress={shareToMessenger}>
+        <TouchableOpacity
+          style={[styles.button, {
+            backgroundColor: '#0078FF',
+            borderRadius: theme.borderRadius.medium,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.lg
+          }]}
+          onPress={shareToMessenger}
+        >
           <MaterialCommunityIcons
             name="facebook-messenger"
             size={24}
             color="#fff"
             style={styles.icon}
           />
-          <Text style={styles.buttonText}>Partager sur Messenger</Text>
+          <Text style={[styles.buttonText, { color: '#fff' }]}>Partager sur Messenger</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.email]} onPress={shareToEmail}>
+        <TouchableOpacity
+          style={[styles.button, {
+            backgroundColor: '#D44638',
+            borderRadius: theme.borderRadius.medium,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.lg
+          }]}
+          onPress={shareToEmail}
+        >
           <Feather name="mail" size={24} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Partager par e-mail</Text>
+          <Text style={[styles.buttonText, { color: '#fff' }]}>Partager par e-mail</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.reddit]} onPress={shareToReddit}>
+        <TouchableOpacity
+          style={[styles.button, {
+            backgroundColor: '#FF5700',
+            borderRadius: theme.borderRadius.medium,
+            padding: theme.spacing.md,
+            marginBottom: theme.spacing.lg
+          }]}
+          onPress={shareToReddit}
+        >
           <FontAwesome name="reddit-alien" size={24} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Partager sur Reddit</Text>
+          <Text style={[styles.buttonText, { color: '#fff' }]}>Partager sur Reddit</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -64,47 +98,20 @@ const ShareScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fefefe',
   },
   scrollContainer: {
-    padding: 30,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 40,
-    textAlign: 'center',
-    color: '#333',
+    flexGrow: 1,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     marginLeft: 12,
   },
   icon: {
     width: 24,
-  },
-  whatsapp: {
-    backgroundColor: '#25D366',
-  },
-  messenger: {
-    backgroundColor: '#0078FF',
-  },
-  instagram: {
-    backgroundColor: '#C13584',
-  },
-  email: {
-    backgroundColor: '#D44638',
-  },
-  reddit: {
-    backgroundColor: '#FF5700',
   },
 });
 

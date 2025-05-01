@@ -4,11 +4,15 @@ import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import Header from './components/layout/Header';
 import BottomNavigation from './components/ui/BottomNavigation';
+import { useTheme } from './constants/theme';
 
 const HelpScreen = () => {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+
   return (
-    <View style={[styles.container]}>
-      <StatusBar style="dark" />
+    <View style={styles.container}>
+      <StatusBar style={theme.dark ? 'light' : 'dark'} />
 
       <Header title="Aide" />
 
@@ -63,7 +67,7 @@ const HelpScreen = () => {
         </View>
 
         <View style={styles.footer}>
-          <MaterialIcons name="contact-support" size={24} color="#555" />
+          <MaterialIcons name="contact-support" size={24} color={theme.colors.backgroundText} />
           <Text style={styles.footerText}>Merci d'utiliser notre application 🙌</Text>
         </View>
       </ScrollView>
@@ -73,43 +77,43 @@ const HelpScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     flexGrow: 1,
   },
   scrollContainer: {
-    padding: 20,
+    padding: theme.spacing.md,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: theme.typography.header.fontSize,
+    fontWeight: theme.typography.header.fontWeight,
     textAlign: 'center',
-    marginBottom: 30,
-    color: '#333',
+    marginBottom: theme.spacing.xl,
+    color: theme.colors.backgroundText,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   question: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 6,
-    color: '#222',
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: theme.typography.title.fontWeight,
+    marginBottom: theme.spacing.xs,
+    color: theme.colors.backgroundText,
   },
   answer: {
-    fontSize: 15,
+    fontSize: theme.typography.body.fontSize,
     lineHeight: 22,
-    color: '#555',
+    color: theme.colors.backgroundTextSoft,
   },
   footer: {
-    marginTop: 40,
+    marginTop: theme.spacing.xxl,
     alignItems: 'center',
   },
   footerText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#888',
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.colors.backgroundTextSoft,
   },
 });
 

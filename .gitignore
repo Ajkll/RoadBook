@@ -10,3 +10,8 @@
 client/.env
 server/.env
 node_modules
+.idea/
+*.iml
+.gradle/
+build/
+local.properties

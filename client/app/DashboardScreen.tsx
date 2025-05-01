@@ -1,5 +1,3 @@
-// commentaire
-
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
@@ -12,8 +10,12 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useTheme } from './constants/theme';
 
 const PaymentScreen: React.FC = () => {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'google' | 'bancontact'>('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -93,8 +95,8 @@ const PaymentScreen: React.FC = () => {
       router.push({
         pathname: '/paymentConfirmation',
         params: {
-          products: JSON.stringify(products),  // Passer la valeur du nom du produit
-          totalPrice: products.reduce((acc, product) => acc + product.price, 0).toFixed(2), // Calcul du total
+          products: JSON.stringify(products),
+          totalPrice: products.reduce((acc, product) => acc + product.price, 0).toFixed(2),
         },
       });
       setIsLoading(false);
@@ -128,25 +130,33 @@ const PaymentScreen: React.FC = () => {
             style={[styles.methodButton, paymentMethod === 'card' && styles.methodSelected]}
             onPress={() => setPaymentMethod('card')}
           >
-            <Text style={styles.methodText}>💳 Carte</Text>
+            <Text style={[styles.methodText, paymentMethod === 'card' && styles.methodSelectedText]}>
+              💳 Carte
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.methodButton, paymentMethod === 'paypal' && styles.methodSelected]}
             onPress={() => setPaymentMethod('paypal')}
           >
-            <Text style={styles.methodText}>🅿️ PayPal</Text>
+            <Text style={[styles.methodText, paymentMethod === 'paypal' && styles.methodSelectedText]}>
+              🅿️ PayPal
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.methodButton, paymentMethod === 'google' && styles.methodSelected]}
             onPress={() => setPaymentMethod('google')}
           >
-            <Text style={styles.methodText}>📱 Google Pay</Text>
+            <Text style={[styles.methodText, paymentMethod === 'google' && styles.methodSelectedText]}>
+              📱 Google Pay
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.methodButton, paymentMethod === 'bancontact' && styles.methodSelected]}
             onPress={() => setPaymentMethod('bancontact')}
           >
-            <Text style={styles.methodText}>🇧🇪 Bancontact</Text>
+            <Text style={[styles.methodText, paymentMethod === 'bancontact' && styles.methodSelectedText]}>
+              🇧🇪 Bancontact
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -156,6 +166,7 @@ const PaymentScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               placeholder="Numéro de carte"
+              placeholderTextColor={theme.colors.backgroundTextSoft}
               keyboardType="numeric"
               value={cardNumber}
               onChangeText={setCardNumber}
@@ -168,6 +179,7 @@ const PaymentScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               placeholder="Expire (MM/YY)"
+              placeholderTextColor={theme.colors.backgroundTextSoft}
               value={expiry}
               onChangeText={setExpiry}
               onBlur={() => validateExpiry(expiry)}
@@ -179,6 +191,7 @@ const PaymentScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               placeholder="CVC"
+              placeholderTextColor={theme.colors.backgroundTextSoft}
               keyboardType="numeric"
               value={cvc}
               onChangeText={setCVC}
@@ -193,12 +206,16 @@ const PaymentScreen: React.FC = () => {
 
         {isLoading && (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#1E90FF" />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Chargement...</Text>
           </View>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={handlePayment} disabled={isLoading}>
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handlePayment}
+          disabled={isLoading}
+        >
           <Text style={styles.buttonText}>
             {paymentMethod === 'card'
               ? 'Payer par Carte'
@@ -214,108 +231,127 @@ const PaymentScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   content: {
-    padding: 20,
+    padding: theme.spacing.md,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: theme.typography.SuperTitle.fontSize,
+    fontWeight: theme.typography.SuperTitle.fontWeight,
+    marginBottom: theme.spacing.lg,
+    color: theme.colors.backgroundText,
   },
   summary: {
-    marginBottom: 30,
+    marginBottom: theme.spacing.xl,
+    backgroundColor: theme.colors.ui.card.background,
+    borderRadius: theme.borderRadius.medium,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.ui.card.border,
   },
   label: {
-    fontSize: 16,
-    color: '#777',
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.backgroundTextSoft,
+    marginBottom: theme.spacing.xs,
   },
   value: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: theme.typography.title.fontWeight,
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.backgroundText,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 10,
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: theme.typography.title.fontWeight,
+    marginBottom: theme.spacing.md,
+    color: theme.colors.backgroundText,
   },
   methodContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.sm,
   },
   methodButton: {
     flexBasis: '48%',
-    padding: 12,
-    marginBottom: 10,
-    backgroundColor: '#eee',
-    borderRadius: 8,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.medium,
     alignItems: 'center',
+    ...theme.shadow.sm,
   },
   methodSelected: {
-    backgroundColor: '#1E90FF',
+    backgroundColor: theme.colors.primary,
   },
   methodText: {
-    color: '#000',
-    fontWeight: '600',
+    color: theme.colors.secondaryText,
+    fontWeight: theme.typography.button.fontWeight,
+  },
+  methodSelectedText: {
+    color: theme.colors.primaryText,
   },
   input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-    fontSize: 16,
-    borderColor: '#ddd',
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.medium,
+    marginBottom: theme.spacing.md,
+    fontSize: theme.typography.body.fontSize,
+    borderColor: theme.colors.border,
     borderWidth: 1,
+    color: theme.colors.backgroundText,
   },
   button: {
-    backgroundColor: '#1E90FF',
-    paddingVertical: 15,
-    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.large,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
+    ...theme.shadow.md,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: theme.colors.primaryText,
+    fontSize: theme.typography.button.fontSize,
+    fontWeight: theme.typography.button.fontWeight,
   },
   errorText: {
-    color: 'red',
-    fontSize: 16,
-    marginBottom: 10,
+    color: theme.colors.error,
+    fontSize: theme.typography.caption.fontSize,
+    marginBottom: theme.spacing.sm,
   },
   loaderContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: theme.spacing.lg,
   },
   loadingText: {
-    fontSize: 18,
-    color: '#333',
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.backgroundText,
+    marginTop: theme.spacing.sm,
   },
   productContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: theme.spacing.sm,
   },
   productName: {
     flex: 2,
-    fontSize: 16,
+    fontSize: theme.typography.body.fontSize,
   },
   productPrice: {
     textAlign: 'right',
     flex: 1,
-    fontSize: 16,
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.backgroundText,
   },
-
 });
 
 export default PaymentScreen;
