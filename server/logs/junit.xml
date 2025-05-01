@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="63" failures="0" errors="0" time="0.777">
+  <testsuite name="User Service" errors="0" failures="0" skipped="0" timestamp="2025-04-25T06:24:05" time="0.513" tests="35">
+    <testcase classname="User Service createUser should create a new user with correct data" name="User Service createUser should create a new user with correct data" time="0.011">
+    </testcase>
+    <testcase classname="User Service createUser should normalize email to lowercase" name="User Service createUser should normalize email to lowercase" time="0.001">
+    </testcase>
+    <testcase classname="User Service createUser should throw an error when creating a user with an existing email" name="User Service createUser should throw an error when creating a user with an existing email" time="0.015">
+    </testcase>
+    <testcase classname="User Service createUser should throw an error when required fields are missing" name="User Service createUser should throw an error when required fields are missing" time="0.003">
+    </testcase>
+    <testcase classname="User Service createUser should throw an error when creating a user with existing national register number" name="User Service createUser should throw an error when creating a user with existing national register number" time="0.001">
+    </testcase>
+    <testcase classname="User Service getUserById should return user without password hash" name="User Service getUserById should return user without password hash" time="0.001">
+    </testcase>
+    <testcase classname="User Service getUserById should include relations when requested" name="User Service getUserById should include relations when requested" time="0.002">
+    </testcase>
+    <testcase classname="User Service getUserById should throw an error for non-existent user" name="User Service getUserById should throw an error for non-existent user" time="0.002">
+    </testcase>
+    <testcase classname="User Service getUserByEmail should return user with password hash when includePassword is true" name="User Service getUserByEmail should return user with password hash when includePassword is true" time="0">
+    </testcase>
+    <testcase classname="User Service getUserByEmail should return user without password hash when includePassword is false" name="User Service getUserByEmail should return user without password hash when includePassword is false" time="0.001">
+    </testcase>
+    <testcase classname="User Service getUserByEmail should normalize email before search" name="User Service getUserByEmail should normalize email before search" time="0.001">
+    </testcase>
+    <testcase classname="User Service getUserByEmail should throw an error for non-existent email" name="User Service getUserByEmail should throw an error for non-existent email" time="0.001">
+    </testcase>
+    <testcase classname="User Service updateUser should update user profile data" name="User Service updateUser should update user profile data" time="0.001">
+    </testcase>
+    <testcase classname="User Service updateUser should hash password when updating password" name="User Service updateUser should hash password when updating password" time="0">
+    </testcase>
+    <testcase classname="User Service updateUser should throw error when updating to an email that&apos;s already in use" name="User Service updateUser should throw error when updating to an email that&apos;s already in use" time="0">
+    </testcase>
+    <testcase classname="User Service updateUser should throw error when updating to a national register number that&apos;s already in use" name="User Service updateUser should throw error when updating to a national register number that&apos;s already in use" time="0.001">
+    </testcase>
+    <testcase classname="User Service updateUser should enforce permissions when updating another user" name="User Service updateUser should enforce permissions when updating another user" time="0.001">
+    </testcase>
+    <testcase classname="User Service changePassword should change user password successfully" name="User Service changePassword should change user password successfully" time="0.001">
+    </testcase>
+    <testcase classname="User Service changePassword should throw error if current password is incorrect" name="User Service changePassword should throw error if current password is incorrect" time="0.001">
+    </testcase>
+    <testcase classname="User Service changePassword should throw error if new password is same as current" name="User Service changePassword should throw error if new password is same as current" time="0.001">
+    </testcase>
+    <testcase classname="User Service changePassword should throw error if required fields are missing" name="User Service changePassword should throw error if required fields are missing" time="0.001">
+    </testcase>
+    <testcase classname="User Service changePassword should throw error for non-existent user" name="User Service changePassword should throw error for non-existent user" time="0.001">
+    </testcase>
+    <testcase classname="User Service deleteUser should delete user successfully" name="User Service deleteUser should delete user successfully" time="0.001">
+    </testcase>
+    <testcase classname="User Service deleteUser should throw error for non-existent user" name="User Service deleteUser should throw error for non-existent user" time="0.005">
+    </testcase>
+    <testcase classname="User Service deleteUser should enforce permissions when deleting another user" name="User Service deleteUser should enforce permissions when deleting another user" time="0.001">
+    </testcase>
+    <testcase classname="User Service getAllUsers should return a list of users with pagination" name="User Service getAllUsers should return a list of users with pagination" time="0.001">
+    </testcase>
+    <testcase classname="User Service getAllUsers should filter users by role" name="User Service getAllUsers should filter users by role" time="0.001">
+    </testcase>
+    <testcase classname="User Service getAllUsers should filter users by search term" name="User Service getAllUsers should filter users by search term" time="0.001">
+    </testcase>
+    <testcase classname="User Service getAllUsers should apply pagination correctly" name="User Service getAllUsers should apply pagination correctly" time="0">
+    </testcase>
+    <testcase classname="User Service getAllUsers should apply sorting correctly" name="User Service getAllUsers should apply sorting correctly" time="0">
+    </testcase>
+    <testcase classname="User Service getAllUsers should default to a safe sorting field if invalid field provided" name="User Service getAllUsers should default to a safe sorting field if invalid field provided" time="0.001">
+    </testcase>
+    <testcase classname="User Service updateProfilePicture should update a user&apos;s profile picture" name="User Service updateProfilePicture should update a user&apos;s profile picture" time="0">
+    </testcase>
+    <testcase classname="User Service updateProfilePicture should throw an error for non-existent user" name="User Service updateProfilePicture should throw an error for non-existent user" time="0.001">
+    </testcase>
+    <testcase classname="User Service deleteProfilePicture should delete a user&apos;s profile picture" name="User Service deleteProfilePicture should delete a user&apos;s profile picture" time="0.001">
+    </testcase>
+    <testcase classname="User Service deleteProfilePicture should throw an error for non-existent user" name="User Service deleteProfilePicture should throw an error for non-existent user" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="Roadbook Service" errors="0" failures="0" skipped="0" timestamp="2025-04-25T06:24:05" time="0.109" tests="12">
+    <testcase classname="Roadbook Service getRoadbookById should return roadbook when user is the apprentice" name="Roadbook Service getRoadbookById should return roadbook when user is the apprentice" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service getRoadbookById should return roadbook when user is the guide" name="Roadbook Service getRoadbookById should return roadbook when user is the guide" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service getRoadbookById should return roadbook when user is an admin" name="Roadbook Service getRoadbookById should return roadbook when user is an admin" time="0.006">
+    </testcase>
+    <testcase classname="Roadbook Service getRoadbookById should throw error when user has no access" name="Roadbook Service getRoadbookById should throw error when user has no access" time="0.035">
+    </testcase>
+    <testcase classname="Roadbook Service getRoadbookById should include detailed statistics when requested" name="Roadbook Service getRoadbookById should include detailed statistics when requested" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service updateRoadbookStatus should validate transition from ACTIVE to COMPLETED with sufficient conditions" name="Roadbook Service updateRoadbookStatus should validate transition from ACTIVE to COMPLETED with sufficient conditions" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service updateRoadbookStatus should reject transition when target hours not reached" name="Roadbook Service updateRoadbookStatus should reject transition when target hours not reached" time="0.006">
+    </testcase>
+    <testcase classname="Roadbook Service updateRoadbookStatus should reject invalid transition from COMPLETED to ACTIVE for normal users" name="Roadbook Service updateRoadbookStatus should reject invalid transition from COMPLETED to ACTIVE for normal users" time="0.006">
+    </testcase>
+    <testcase classname="Roadbook Service updateRoadbookStatus should allow admin to make any transition" name="Roadbook Service updateRoadbookStatus should allow admin to make any transition" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service calculateRoadbookStatistics should correctly calculate basic stats" name="Roadbook Service calculateRoadbookStatistics should correctly calculate basic stats" time="0.001">
+    </testcase>
+    <testcase classname="Roadbook Service prepareRoadbookExportData should prepare data for export with proper formatting" name="Roadbook Service prepareRoadbookExportData should prepare data for export with proper formatting" time="0.009">
+    </testcase>
+    <testcase classname="Roadbook Service prepareRoadbookExportData should reject export for unauthorized users" name="Roadbook Service prepareRoadbookExportData should reject export for unauthorized users" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth Service" errors="0" failures="0" skipped="0" timestamp="2025-04-25T06:24:05" time="0.071" tests="14">
+    <testcase classname="Auth Service Login should authenticate user and return tokens" name="Auth Service Login should authenticate user and return tokens" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Login should normalize email for login" name="Auth Service Login should normalize email for login" time="0">
+    </testcase>
+    <testcase classname="Auth Service Login should throw error for invalid credentials" name="Auth Service Login should throw error for invalid credentials" time="0.011">
+    </testcase>
+    <testcase classname="Auth Service Token Refresh should issue new tokens when refreshing with valid token" name="Auth Service Token Refresh should issue new tokens when refreshing with valid token" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Token Refresh should throw error for invalid refresh token" name="Auth Service Token Refresh should throw error for invalid refresh token" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Token Refresh should throw error for revoked refresh token" name="Auth Service Token Refresh should throw error for revoked refresh token" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Token Revocation should revoke a specific refresh token" name="Auth Service Token Revocation should revoke a specific refresh token" time="0">
+    </testcase>
+    <testcase classname="Auth Service Token Revocation should revoke all tokens for a user" name="Auth Service Token Revocation should revoke all tokens for a user" time="0">
+    </testcase>
+    <testcase classname="Auth Service Token Verification should verify and decode a valid access token" name="Auth Service Token Verification should verify and decode a valid access token" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Token Verification should throw error for invalid access token" name="Auth Service Token Verification should throw error for invalid access token" time="0">
+    </testcase>
+    <testcase classname="Auth Service Password Reset should generate a reset token for a valid email" name="Auth Service Password Reset should generate a reset token for a valid email" time="0">
+    </testcase>
+    <testcase classname="Auth Service Password Reset should not reveal if email exists when requesting password reset" name="Auth Service Password Reset should not reveal if email exists when requesting password reset" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Password Reset should normalize email for password reset" name="Auth Service Password Reset should normalize email for password reset" time="0.001">
+    </testcase>
+    <testcase classname="Auth Service Password Reset should complete password reset with valid token" name="Auth Service Password Reset should complete password reset with valid token" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="Basic tests" errors="0" failures="0" skipped="0" timestamp="2025-04-25T06:24:05" time="0.025" tests="2">
+    <testcase classname="Basic tests should pass a simple test" name="Basic tests should pass a simple test" time="0.001">
+    </testcase>
+    <testcase classname="Basic tests should handle async operations" name="Basic tests should handle async operations" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>

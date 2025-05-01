@@ -37,3 +37,34 @@
     DrawerContent.tsx
     ProgressBar.tsx
     WeatherCard.tsx
+
+
+
+
+/**
+ * NOTIFICATIONS TOAST AVEC SON
+ * ============================
+ *
+ * Pour mettre en place des notifications toast avec son :
+ *
+ * 1. Importer le handler et le hook :
+ *    import { NotificationHandler, useNotifications } from './chemin/vers/NotificationHandler';
+ *
+ * 2. Utiliser dans un composant :
+ *    const { showSuccess, showError, showWarning, showInfo } = useNotifications();
+ *
+ * 3. Options disponibles :
+ *    - showXxx(titre, message, options)
+ *    - options: {
+ *        position: 'top'|'center'|'bottom',
+ *        sound: [nom_du_son], // si implémenté
+ *        duration: number,
+ *        ...autres options react-native-toast-message
+ *      }
+ *
+ * Exemple d'utilisation :
+ *    showError('Erreur', 'Message d\'erreur', { position: 'center' });
+ *    showSuccess('Succès', 'Opération réussie');
+ *
+ * Pour les sons : implémenter la logique dans useNotification (service)
+ */
