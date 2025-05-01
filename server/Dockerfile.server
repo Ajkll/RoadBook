@@ -1,23 +1,70 @@
 FROM node:18-alpine
 
 # Install OpenSSL and other necessary packages
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat postgresql-client lsof
 
 # Define work directory
-WORKDIR /src
+WORKDIR /app
 
-# Copy package.json and install dependencies
+# Copy package.json and package-lock.json
 COPY package*.json ./
-RUN npm install
+
+# Install dependencies
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
 
+# Create directory structure with proper permissions
+RUN mkdir -p dist/tests/utils dist/tests/mocks logs && \
+    chmod -R 777 dist logs
+
 # Generate Prisma client
 RUN npx prisma generate
 
-# Expose the port the app runs on
-EXPOSE 4000
+# Expose ports
+EXPOSE 4000 4001 5555
 
-# Command to run the application with proper debugging
-CMD ["npm", "run", "dev"]
+# Create a script to wait for the database and then start the application
+RUN echo '#!/bin/sh \n\
+echo "Waiting for PostgreSQL..." \n\
+while ! pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do \n\
+  echo "PostgreSQL is unavailable - sleeping" \n\
+  sleep 2 \n\
+done \n\
+echo "PostgreSQL started" \n\
+\n\
+echo "Running migrations..." \n\
+npx prisma migrate deploy \n\
+\n\
+echo "Starting application based on NODE_ENV: $NODE_ENV" \n\
+if [ "$TEST_API" = "true" ]; then \n\
+  echo "Starting test API server..." \n\
+  npm run test:api \n\
+elif [ "$PRISMA_STUDIO" = "true" ]; then \n\
+  echo "Starting Prisma Studio..." \n\
+  npx prisma studio --port 5555 --hostname 0.0.0.0 \n\
+else \n\
+  if [ "$NODE_ENV" = "production" ]; then \n\
+    echo "Starting in production mode..." \n\
+    npm start \n\
+  else \n\
+    echo "Starting in development mode..." \n\
+    npm run dev \n\
+  fi \n\
+fi \n\
+' > /app/start.sh
+
+RUN chmod +x /app/start.sh
+
+# Environment variables with defaults
+ENV DB_HOST=postgres-dev \
+    DB_PORT=5432 \
+    DB_USER=postgres \
+    DB_PASS=postgres \
+    DB_NAME=roadbook_dev \
+    NODE_ENV=development \
+    PORT=4000
+
+# Command to run the application
+CMD ["/app/start.sh"]

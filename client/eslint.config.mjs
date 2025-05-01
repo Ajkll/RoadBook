@@ -22,6 +22,7 @@ export default [
     rules: {
       'react/react-in-jsx-scope': 'off', // Désactive l'erreur d'import React
       'react/no-unescaped-entities': 'off', // Désactive l'erreur d'entités HTML
+      'react/prop-types': 'off', // Désactive l'erreur de prop-types
       '@typescript-eslint/no-require-imports': 'off', // Désactive l'erreur de require()
     },
   },

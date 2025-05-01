@@ -1,22 +1,28 @@
-// SettingsScreen.tsx
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
-import BottomNavigation from './components/ui/BottomNavigation';
+import SoundCardParameters from './components/parameters/soundCardParameters';
+import { useTheme } from './constants/theme';
+import GoBackHomeButton from './components/common/GoBackHomeButton';
+import * as Notifications from 'expo-notifications';
 import {
   registerForPushNotificationsAsync,
   scheduleMotivationalNotification,
 } from './utils/notifications';
-import * as Notifications from 'expo-notifications';
 
 const SettingsScreen = () => {
+  const theme = useTheme();
+  const navigation = useNavigation();
+  
+  // États des fonctionnalités
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [soundEnable, setSoundEnabled] = useState(true);
   const [useMiles, setUseMiles] = useState(false);
 
+  // Gestion des notifications
   useEffect(() => {
     if (notificationsEnabled) {
       setupNotifications();
@@ -31,8 +37,7 @@ const SettingsScreen = () => {
       setNotificationsEnabled(false);
       return;
     }
-
-    await scheduleMotivationalNotification(25, 'daily'); // 25km restant (exemple)
+    await scheduleMotivationalNotification(25, 'daily');
   };
 
   const cancelAllNotifications = async () => {
@@ -47,78 +52,84 @@ const SettingsScreen = () => {
     setNotificationsEnabled((prev) => !prev);
   };
 
+  const openDrawer = () => navigation.dispatch(DrawerActions.openDrawer());
   const toggleDarkMode = () => setDarkModeEnabled((prev) => !prev);
-  const toggleSound = () => setSoundEnabled((prev) => !prev);
   const toggleUnits = () => setUseMiles((prev) => !prev);
 
-  return (
-    <View style={[styles.container, darkModeEnabled && styles.darkBackground]}>
-      <StatusBar style={darkModeEnabled ? 'light' : 'dark'} />
-      <Header title="Paramètres" />
+  const styles = createStyles(theme, darkModeEnabled);
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+  return (
+    <SafeAreaView style={styles.container} edges={['right', 'left']}>
+      <StatusBar style={darkModeEnabled ? 'light' : 'dark'} />
+      <Header 
+        title="Paramètres" 
+        onMenuPress={openDrawer} 
+      />
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Section Son (version améliorée de main) */}
+        <SoundCardParameters />
+
         {/* Notifications */}
         <View style={styles.settingItem}>
-          <Text style={[styles.label, darkModeEnabled && styles.darkText]}>
-            Activer les notifications
-          </Text>
-          <Switch value={notificationsEnabled} onValueChange={toggleNotifications} />
+          <Text style={styles.label}>Activer les notifications</Text>
+          <Switch 
+            value={notificationsEnabled} 
+            onValueChange={toggleNotifications}
+            trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
+          />
         </View>
 
         {/* Mode sombre */}
         <View style={styles.settingItem}>
-          <Text style={[styles.label, darkModeEnabled && styles.darkText]}>Mode sombre</Text>
-          <Switch value={darkModeEnabled} onValueChange={toggleDarkMode} />
-        </View>
-
-        {/* Son */}
-        <View style={styles.settingItem}>
-          <Text style={[styles.label, darkModeEnabled && styles.darkText]}>Activer le son</Text>
-          <Switch value={soundEnable} onValueChange={toggleSound} />
+          <Text style={styles.label}>Mode sombre</Text>
+          <Switch 
+            value={darkModeEnabled} 
+            onValueChange={toggleDarkMode}
+            trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
+          />
         </View>
 
         {/* Unité de mesure */}
         <View style={styles.settingItem}>
-          <Text style={[styles.label, darkModeEnabled && styles.darkText]}>
+          <Text style={styles.label}>
             Unité de mesure : {useMiles ? 'Miles' : 'Kilomètres'}
           </Text>
-          <Switch value={useMiles} onValueChange={toggleUnits} />
+          <Switch 
+            value={useMiles} 
+            onValueChange={toggleUnits}
+            trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
+          />
         </View>
 
-        <View style={{ height: 100 }} />
+        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
       </ScrollView>
-
-      <BottomNavigation />
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  darkBackground: {
-    backgroundColor: '#1c1c1e',
-  },
-  scrollContainer: {
-    padding: 20,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#ccc',
-  },
-  label: {
-    fontSize: 16,
-    color: '#333',
-  },
-  darkText: {
-    color: '#eee',
-  },
-});
+const createStyles = (theme: any, darkMode?: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: darkMode ? '#1c1c1e' : theme.colors.background,
+    },
+    content: {
+      padding: theme.spacing.md,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 0.5,
+      borderBottomColor: theme.colors.border,
+      marginBottom: theme.spacing.sm,
+    },
+    label: {
+      fontSize: 16,
+      color: darkMode ? '#eee' : theme.colors.text,
+    },
+  });
 
 export default SettingsScreen;

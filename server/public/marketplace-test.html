@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoadBook API - Test Marketplace</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #3f51b5;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .auth-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f0f0f0;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .auth-status.logged-in {
+      background-color: #e8f5e9;
+    }
+    .auth-warning {
+      background-color: #ffebee;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f44336;
+    }
+    button, .btn {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 5px;
+      transition: background-color 0.3s;
+    }
+    button:hover, .btn:hover {
+      background-color: #303f9f;
+    }
+    button.secondary {
+      background-color: #9e9e9e;
+    }
+    button.secondary:hover {
+      background-color: #757575;
+    }
+    button.danger {
+      background-color: #f44336;
+    }
+    button.danger:hover {
+      background-color: #d32f2f;
+    }
+    button.success {
+      background-color: #4caf50;
+    }
+    button.success:hover {
+      background-color: #388e3c;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .listing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .listing-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    .listing-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .listing-image {
+      height: 180px;
+      background-color: #eee;
+      background-size: cover;
+      background-position: center;
+    }
+    .listing-image.placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9e9e9e;
+      font-size: 14px;
+    }
+    .listing-content {
+      padding: 15px;
+    }
+    .listing-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .listing-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4caf50;
+      margin-bottom: 10px;
+    }
+    .listing-seller {
+      font-size: 14px;
+      color: #757575;
+      margin-bottom: 10px;
+    }
+    .listing-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-right: 5px;
+    }
+    .listing-type.product {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+    .listing-type.service {
+      background-color: #f3e5f5;
+      color: #7b1fa2;
+    }
+    .listing-type.course {
+      background-color: #e8f5e9;
+      color: #388e3c;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    .tab.active {
+      border-bottom-color: #3f51b5;
+      color: #3f51b5;
+      font-weight: 500;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .filter-item {
+      flex: 1;
+      min-width: 150px;
+    }
+    .filter-item label {
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+    .purchase-history {
+      margin-top: 20px;
+    }
+    .purchase-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+    }
+    .purchase-image {
+      width: 60px;
+      height: 60px;
+      border-radius: 4px;
+      background-color: #eee;
+      margin-right: 15px;
+      background-size: cover;
+      background-position: center;
+    }
+    .purchase-details {
+      flex-grow: 1;
+    }
+    .purchase-title {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    .purchase-meta {
+      font-size: 13px;
+      color: #666;
+    }
+    .purchase-price {
+      font-weight: 700;
+      color: #4caf50;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .pagination button {
+      background-color: #fff;
+      color: #333;
+      border: 1px solid #ddd;
+      min-width: 35px;
+      height: 35px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pagination button.active {
+      background-color: #3f51b5;
+      color: white;
+      border-color: #3f51b5;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #323232;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 4px;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+      transition: transform 0.2s, opacity 0.2s;
+      transform: translateY(100px);
+      opacity: 0;
+      z-index: 1000;
+    }
+    .toast.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast.success {
+      background-color: #43a047;
+    }
+    .toast.error {
+      background-color: #e53935;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: white;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 500px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-close {
+      cursor: pointer;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .hidden {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .listing-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-bar {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RoadBook API - Test Marketplace</h1>
+    <p>Interface de test pour le module Marketplace</p>
+  </header>
+
+  <div class="container">
+    <div class="auth-status" id="auth-status">
+      <div>
+        <span id="status-text">Non connecté</span>
+      </div>
+      <div id="auth-buttons">
+        <button id="login-btn">Se connecter</button>
+        <button id="register-btn" class="secondary">S'inscrire</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="browse">Parcourir</div>
+      <div class="tab" data-tab="my-listings">Mes Annonces</div>
+      <div class="tab" data-tab="purchases">Mes Achats</div>
+      <div class="tab" data-tab="create">Créer une Annonce</div>
+    </div>
+
+    <div class="tab-content active" id="browse-tab">
+      <div class="card">
+        <h2>Parcourir les annonces</h2>
+        
+        <div class="filter-bar">
+          <div class="filter-item">
+            <label for="search-input">Rechercher</label>
+            <input type="text" id="search-input" placeholder="Mot-clé...">
+          </div>
+          <div class="filter-item">
+            <label for="type-filter">Type</label>
+            <select id="type-filter">
+              <option value="">Tous les types</option>
+              <option value="PRODUCT">Produit</option>
+              <option value="SERVICE">Service</option>
+              <option value="COURSE">Formation</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label for="min-price">Prix min.</label>
+            <input type="number" id="min-price" min="0" placeholder="0 €">
+          </div>
+          <div class="filter-item">
+            <label for="max-price">Prix max.</label>
+            <input type="number" id="max-price" min="0" placeholder="Max €">
+          </div>
+          <div class="filter-item">
+            <label>&nbsp;</label>
+            <button id="apply-filters">Appliquer</button>
+          </div>
+        </div>
+
+        <div id="listings-container" class="listing-grid">
+          <!-- Listings will be loaded here -->
+          <div class="auth-warning">
+            Connectez-vous pour voir les annonces
+          </div>
+        </div>
+
+        <div class="pagination" id="listings-pagination">
+          <!-- Pagination will be added here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="my-listings-tab">
+      <div class="card">
+        <h2>Mes Annonces</h2>
+        
+        <div id="seller-listings-container">
+          <!-- Seller listings will be loaded here -->
+          <div class="auth-warning">
+            Connectez-vous pour voir vos annonces
+          </div>
+        </div>
+
+        <div class="pagination" id="seller-listings-pagination">
+          <!-- Pagination will be added here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="purchases-tab">
+      <div class="card">
+        <h2>Mes Achats</h2>
+        
+        <div id="purchases-container" class="purchase-history">
+          <!-- Purchases will be loaded here -->
+          <div class="auth-warning">
+            Connectez-vous pour voir vos achats
+          </div>
+        </div>
+
+        <div class="pagination" id="purchases-pagination">
+          <!-- Pagination will be added here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="create-tab">
+      <div class="card">
+        <h2>Créer une nouvelle annonce</h2>
+        
+        <div id="create-listing-form">
+          <div class="auth-warning" id="create-auth-warning">
+            Connectez-vous en tant qu'instructeur ou administrateur pour créer des annonces
+          </div>
+
+          <div id="listing-form" class="hidden">
+            <div class="form-group">
+              <label for="listing-title">Titre</label>
+              <input type="text" id="listing-title" placeholder="Titre de l'annonce">
+            </div>
+
+            <div class="form-group">
+              <label for="listing-description">Description</label>
+              <textarea id="listing-description" rows="4" placeholder="Description détaillée"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="listing-price">Prix (€)</label>
+              <input type="number" id="listing-price" min="0" step="0.01" placeholder="Prix en euros">
+            </div>
+
+            <div class="form-group">
+              <label for="listing-type">Type d'annonce</label>
+              <select id="listing-type">
+                <option value="PRODUCT">Produit</option>
+                <option value="SERVICE">Service</option>
+                <option value="COURSE">Formation</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="listing-image">URL de l'image</label>
+              <input type="text" id="listing-image" placeholder="https://example.com/image.jpg">
+              <button id="add-image" class="secondary">Ajouter une image</button>
+            </div>
+
+            <div id="images-preview">
+              <!-- Image previews will be shown here -->
+            </div>
+
+            <div class="form-group">
+              <button id="create-listing-btn" class="success">Créer l'annonce</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal" id="login-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Connexion</h3>
+        <span class="modal-close" id="close-login">&times;</span>
+      </div>
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Mot de passe</label>
+        <input type="password" id="login-password" placeholder="Mot de passe">
+      </div>
+      <button id="do-login" class="success">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal" id="register-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Inscription</h3>
+        <span class="modal-close" id="close-register">&times;</span>
+      </div>
+      <div class="form-group">
+        <label for="register-email">Email</label>
+        <input type="email" id="register-email" placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label for="register-display-name">Nom d'utilisateur</label>
+        <input type="text" id="register-display-name" placeholder="Nom affiché">
+      </div>
+      <div class="form-group">
+        <label for="register-password">Mot de passe</label>
+        <input type="password" id="register-password" placeholder="Mot de passe">
+      </div>
+      <div class="form-group">
+        <label for="register-role">Rôle</label>
+        <select id="register-role">
+          <option value="APPRENTICE">Apprenti</option>
+          <option value="INSTRUCTOR">Instructeur</option>
+          <option value="GUIDE">Guide</option>
+        </select>
+      </div>
+      <button id="do-register" class="success">S'inscrire</button>
+    </div>
+  </div>
+
+  <!-- Listing Detail Modal -->
+  <div class="modal" id="listing-detail-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="detail-title">Détails de l'annonce</h3>
+        <span class="modal-close" id="close-detail">&times;</span>
+      </div>
+      <div id="listing-detail-content">
+        <!-- Listing details will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // API Configuration
+    const API_URL = '/api';
+    
+    // State variables
+    let currentUser = null;
+    let currentListingsPage = 1;
+    let totalListingsPages = 1;
+    let currentSellerListingsPage = 1;
+    let totalSellerListingsPages = 1;
+    let currentPurchasesPage = 1;
+    let totalPurchasesPages = 1;
+    let imageUrls = [];
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const statusText = document.getElementById('status-text');
+    const authButtons = document.getElementById('auth-buttons');
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const loginModal = document.getElementById('login-modal');
+    const registerModal = document.getElementById('register-modal');
+    const closeLogin = document.getElementById('close-login');
+    const closeRegister = document.getElementById('close-register');
+    const doLogin = document.getElementById('do-login');
+    const doRegister = document.getElementById('do-register');
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const registerEmail = document.getElementById('register-email');
+    const registerDisplayName = document.getElementById('register-display-name');
+    const registerPassword = document.getElementById('register-password');
+    const registerRole = document.getElementById('register-role');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const listingsContainer = document.getElementById('listings-container');
+    const listingsPagination = document.getElementById('listings-pagination');
+    const sellerListingsContainer = document.getElementById('seller-listings-container');
+    const sellerListingsPagination = document.getElementById('seller-listings-pagination');
+    const purchasesContainer = document.getElementById('purchases-container');
+    const purchasesPagination = document.getElementById('purchases-pagination');
+    const searchInput = document.getElementById('search-input');
+    const typeFilter = document.getElementById('type-filter');
+    const minPrice = document.getElementById('min-price');
+    const maxPrice = document.getElementById('max-price');
+    const applyFiltersBtn = document.getElementById('apply-filters');
+    const createAuthWarning = document.getElementById('create-auth-warning');
+    const listingForm = document.getElementById('listing-form');
+    const listingTitle = document.getElementById('listing-title');
+    const listingDescription = document.getElementById('listing-description');
+    const listingPrice = document.getElementById('listing-price');
+    const listingType = document.getElementById('listing-type');
+    const listingImage = document.getElementById('listing-image');
+    const addImageBtn = document.getElementById('add-image');
+    const imagesPreview = document.getElementById('images-preview');
+    const createListingBtn = document.getElementById('create-listing-btn');
+    const listingDetailModal = document.getElementById('listing-detail-modal');
+    const closeDetail = document.getElementById('close-detail');
+    const listingDetailContent = document.getElementById('listing-detail-content');
+    const toast = document.getElementById('toast');
+
+    // Check authentication status on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      setupEventListeners();
+    });
+
+    // Setup all event listeners
+    function setupEventListeners() {
+      // Tab navigation
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(tc => tc.classList.remove('active'));
+          
+          tab.classList.add('active');
+          document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+          
+          // Load content based on tab
+          if (tab.dataset.tab === 'browse') {
+            loadListings();
+          } else if (tab.dataset.tab === 'my-listings') {
+            loadSellerListings();
+          } else if (tab.dataset.tab === 'purchases') {
+            loadPurchases();
+          }
+        });
+      });
+
+      // Auth buttons
+      loginBtn.addEventListener('click', () => showModal(loginModal));
+      registerBtn.addEventListener('click', () => showModal(registerModal));
+      closeLogin.addEventListener('click', () => hideModal(loginModal));
+      closeRegister.addEventListener('click', () => hideModal(registerModal));
+      closeDetail.addEventListener('click', () => hideModal(listingDetailModal));
+      
+      doLogin.addEventListener('click', handleLogin);
+      doRegister.addEventListener('click', handleRegister);
+      
+      // Filters
+      applyFiltersBtn.addEventListener('click', () => {
+        currentListingsPage = 1;
+        loadListings();
+      });
+      
+      // Create listing form
+      addImageBtn.addEventListener('click', () => {
+        const imageUrl = listingImage.value.trim();
+        if (imageUrl) {
+          imageUrls.push(imageUrl);
+          updateImagePreviews();
+          listingImage.value = '';
+        } else {
+          showToast('Veuillez entrer une URL d\'image valide', 'error');
+        }
+      });
+      
+      createListingBtn.addEventListener('click', createListing);
+
+      // Handle Enter key in search
+      searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          applyFiltersBtn.click();
+        }
+      });
+    }
+
+    // Authentication Functions
+    async function checkAuth() {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          handleNotAuthenticated();
+          return;
+        }
+        
+        const response = await fetch(`${API_URL}/auth/verify`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          currentUser = userData.user;
+          handleAuthenticated();
+          loadListings();
+        } else {
+          // Token invalid or expired
+          localStorage.removeItem('token');
+          handleNotAuthenticated();
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        handleNotAuthenticated();
+      }
+    }
+
+    function handleAuthenticated() {
+      statusText.textContent = `Connecté en tant que ${currentUser.displayName} (${currentUser.role})`;
+      authStatus.classList.add('logged-in');
+      
+      authButtons.innerHTML = `
+        <button id="logout-btn" class="danger">Se déconnecter</button>
+      `;
+      
+      document.getElementById('logout-btn').addEventListener('click', handleLogout);
+      
+      // Show/hide relevant elements based on role
+      if (currentUser.role === 'INSTRUCTOR' || currentUser.role === 'ADMIN') {
+        createAuthWarning.classList.add('hidden');
+        listingForm.classList.remove('hidden');
+      } else {
+        createAuthWarning.classList.remove('hidden');
+        listingForm.classList.add('hidden');
+      }
+    }
+
+    function handleNotAuthenticated() {
+      statusText.textContent = 'Non connecté';
+      authStatus.classList.remove('logged-in');
+      
+      authButtons.innerHTML = `
+        <button id="login-btn">Se connecter</button>
+        <button id="register-btn" class="secondary">S'inscrire</button>
+      `;
+      
+      document.getElementById('login-btn').addEventListener('click', () => showModal(loginModal));
+      document.getElementById('register-btn').addEventListener('click', () => showModal(registerModal));
+      
+      // Show auth warnings
+      createAuthWarning.classList.remove('hidden');
+      listingForm.classList.add('hidden');
+      
+      // Update listings UI
+      listingsContainer.innerHTML = `
+        <div class="auth-warning">
+          Connectez-vous pour voir les annonces
+        </div>
+      `;
+      
+      sellerListingsContainer.innerHTML = `
+        <div class="auth-warning">
+          Connectez-vous pour voir vos annonces
+        </div>
+      `;
+      
+      purchasesContainer.innerHTML = `
+        <div class="auth-warning">
+          Connectez-vous pour voir vos achats
+        </div>
+      `;
+    }
+
+    async function handleLogin() {
+      try {
+        const email = loginEmail.value;
+        const password = loginPassword.value;
+        
+        if (!email || !password) {
+          showToast('Veuillez remplir tous les champs', 'error');
+          return;
+        }
+        
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          localStorage.setItem('token', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
+          currentUser = data.user;
+          
+          hideModal(loginModal);
+          loginEmail.value = '';
+          loginPassword.value = '';
+          
+          handleAuthenticated();
+          loadListings();
+          showToast('Connexion réussie', 'success');
+        } else {
+          showToast(data.message || 'Erreur de connexion', 'error');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        showToast('Erreur de connexion', 'error');
+      }
+    }
+
+    async function handleRegister() {
+      try {
+        const email = registerEmail.value;
+        const displayName = registerDisplayName.value;
+        const password = registerPassword.value;
+        const role = registerRole.value;
+        
+        if (!email || !displayName || !password) {
+          showToast('Veuillez remplir tous les champs', 'error');
+          return;
+        }
+        
+        const response = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            displayName,
+            password,
+            role
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          hideModal(registerModal);
+          registerEmail.value = '';
+          registerDisplayName.value = '';
+          registerPassword.value = '';
+          
+          showToast('Inscription réussie, vous pouvez vous connecter', 'success');
+          showModal(loginModal);
+        } else {
+          showToast(data.message || 'Erreur d\'inscription', 'error');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        showToast('Erreur d\'inscription', 'error');
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      currentUser = null;
+      handleNotAuthenticated();
+      showToast('Vous avez été déconnecté', 'success');
+    }
+
+    // Marketplace API Functions
+    async function loadListings() {
+      if (!currentUser) {
+        listingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Connectez-vous pour voir les annonces
+          </div>
+        `;
+        return;
+      }
+      
+      try {
+        // Build query params
+        let queryParams = `page=${currentListingsPage}&limit=8`;
+        
+        // Add filters if any
+        const search = searchInput.value.trim();
+        const type = typeFilter.value;
+        const min = minPrice.value;
+        const max = maxPrice.value;
+        
+        if (search) queryParams += `&search=${encodeURIComponent(search)}`;
+        if (type) queryParams += `&type=${type}`;
+        if (min) queryParams += `&minPrice=${min}`;
+        if (max) queryParams += `&maxPrice=${max}`;
+        
+        const response = await fetch(`${API_URL}/marketplace?${queryParams}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          renderListings(data.listings);
+          totalListingsPages = data.pages;
+          updatePagination(currentListingsPage, totalListingsPages, listingsPagination, 'loadListingsPage');
+        } else {
+          throw new Error('Failed to load listings');
+        }
+      } catch (error) {
+        console.error('Error loading listings:', error);
+        listingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Erreur lors du chargement des annonces: ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    function loadListingsPage(page) {
+      currentListingsPage = page;
+      loadListings();
+    }
+
+    async function loadSellerListings() {
+      if (!currentUser) {
+        sellerListingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Connectez-vous pour voir vos annonces
+          </div>
+        `;
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/marketplace/seller?page=${currentSellerListingsPage}&limit=5`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          renderSellerListings(data.listings);
+          totalSellerListingsPages = data.pages;
+          updatePagination(currentSellerListingsPage, totalSellerListingsPages, sellerListingsPagination, 'loadSellerListingsPage');
+        } else {
+          throw new Error('Failed to load your listings');
+        }
+      } catch (error) {
+        console.error('Error loading seller listings:', error);
+        sellerListingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Erreur lors du chargement de vos annonces: ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    function loadSellerListingsPage(page) {
+      currentSellerListingsPage = page;
+      loadSellerListings();
+    }
+
+    async function loadPurchases() {
+      if (!currentUser) {
+        purchasesContainer.innerHTML = `
+          <div class="auth-warning">
+            Connectez-vous pour voir vos achats
+          </div>
+        `;
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/marketplace/purchases?page=${currentPurchasesPage}&limit=10`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          renderPurchases(data.purchases);
+          totalPurchasesPages = data.pages;
+          updatePagination(currentPurchasesPage, totalPurchasesPages, purchasesPagination, 'loadPurchasesPage');
+        } else {
+          throw new Error('Failed to load purchases');
+        }
+      } catch (error) {
+        console.error('Error loading purchases:', error);
+        purchasesContainer.innerHTML = `
+          <div class="auth-warning">
+            Erreur lors du chargement de vos achats: ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    function loadPurchasesPage(page) {
+      currentPurchasesPage = page;
+      loadPurchases();
+    }
+
+    async function createListing() {
+      if (!currentUser || (currentUser.role !== 'INSTRUCTOR' && currentUser.role !== 'ADMIN')) {
+        showToast('Vous devez être connecté en tant qu\'instructeur ou administrateur', 'error');
+        return;
+      }
+      
+      try {
+        const title = listingTitle.value.trim();
+        const description = listingDescription.value.trim();
+        const price = parseFloat(listingPrice.value);
+        const type = listingType.value;
+        
+        if (!title || !description || isNaN(price)) {
+          showToast('Veuillez remplir tous les champs requis', 'error');
+          return;
+        }
+        
+        const listingData = {
+          title,
+          description,
+          price,
+          type,
+          imageUrls
+        };
+        
+        const response = await fetch(`${API_URL}/marketplace`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(listingData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showToast('Annonce créée avec succès', 'success');
+          
+          // Clear form
+          listingTitle.value = '';
+          listingDescription.value = '';
+          listingPrice.value = '';
+          listingType.value = 'PRODUCT';
+          imageUrls = [];
+          updateImagePreviews();
+          
+          // Switch to my listings tab
+          document.querySelector('.tab[data-tab="my-listings"]').click();
+        } else {
+          showToast(data.message || 'Erreur lors de la création de l\'annonce', 'error');
+        }
+      } catch (error) {
+        console.error('Error creating listing:', error);
+        showToast('Erreur lors de la création de l\'annonce', 'error');
+      }
+    }
+
+    async function updateListingStatus(listingId, status) {
+      try {
+        const response = await fetch(`${API_URL}/marketplace/${listingId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ status })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showToast(`Statut de l'annonce modifié avec succès`, 'success');
+          loadSellerListings();
+        } else {
+          showToast(data.message || 'Erreur lors de la mise à jour du statut', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating listing status:', error);
+        showToast('Erreur lors de la mise à jour du statut', 'error');
+      }
+    }
+
+    async function deleteListing(listingId) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?')) {
+        try {
+          const response = await fetch(`${API_URL}/marketplace/${listingId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (response.ok) {
+            showToast('Annonce supprimée avec succès', 'success');
+            loadSellerListings();
+          } else {
+            const data = await response.json();
+            showToast(data.message || 'Erreur lors de la suppression', 'error');
+          }
+        } catch (error) {
+          console.error('Error deleting listing:', error);
+          showToast('Erreur lors de la suppression', 'error');
+        }
+      }
+    }
+
+    async function purchaseListing(listingId) {
+      try {
+        const response = await fetch(`${API_URL}/marketplace/purchase`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            listingId,
+            quantity: 1
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showToast('Achat effectué avec succès', 'success');
+          hideModal(listingDetailModal);
+          
+          // Switch to purchases tab
+          document.querySelector('.tab[data-tab="purchases"]').click();
+        } else {
+          showToast(data.message || 'Erreur lors de l\'achat', 'error');
+        }
+      } catch (error) {
+        console.error('Error purchasing listing:', error);
+        showToast('Erreur lors de l\'achat', 'error');
+      }
+    }
+
+    async function viewListingDetails(listingId) {
+      try {
+        const response = await fetch(`${API_URL}/marketplace/${listingId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const listing = await response.json();
+          showListingDetailModal(listing);
+        } else {
+          throw new Error('Failed to load listing details');
+        }
+      } catch (error) {
+        console.error('Error loading listing details:', error);
+        showToast('Erreur lors du chargement des détails', 'error');
+      }
+    }
+
+    async function viewPurchaseDetails(purchaseId) {
+      try {
+        const response = await fetch(`${API_URL}/marketplace/purchases/${purchaseId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const purchase = await response.json();
+          showPurchaseDetailModal(purchase);
+        } else {
+          throw new Error('Failed to load purchase details');
+        }
+      } catch (error) {
+        console.error('Error loading purchase details:', error);
+        showToast('Erreur lors du chargement des détails', 'error');
+      }
+    }
+
+    // UI Rendering Functions
+    function renderListings(listings) {
+      if (!listings || listings.length === 0) {
+        listingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Aucune annonce trouvée
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      
+      listings.forEach(listing => {
+        const imageUrl = listing.imageUrls && listing.imageUrls.length > 0 
+          ? listing.imageUrls[0] 
+          : null;
+        
+        let typeClass = '';
+        let typeLabel = '';
+        
+        switch (listing.type) {
+          case 'PRODUCT':
+            typeClass = 'product';
+            typeLabel = 'Produit';
+            break;
+          case 'SERVICE':
+            typeClass = 'service';
+            typeLabel = 'Service';
+            break;
+          case 'COURSE':
+            typeClass = 'course';
+            typeLabel = 'Formation';
+            break;
+        }
+        
+        html += `
+          <div class="listing-card">
+            <div class="listing-image ${!imageUrl ? 'placeholder' : ''}" 
+                 style="${imageUrl ? `background-image: url('${imageUrl}')` : ''}">
+              ${!imageUrl ? 'Pas d\'image' : ''}
+            </div>
+            <div class="listing-content">
+              <div class="listing-title">${listing.title}</div>
+              <div class="listing-price">${listing.price.toFixed(2)} €</div>
+              <div class="listing-seller">Par ${listing.seller.displayName}</div>
+              <span class="listing-type ${typeClass}">${typeLabel}</span>
+              <div style="margin-top: 15px;">
+                <button onclick="viewListingDetails('${listing.id}')">Voir détails</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      listingsContainer.innerHTML = html;
+    }
+
+    function renderSellerListings(listings) {
+      if (!listings || listings.length === 0) {
+        sellerListingsContainer.innerHTML = `
+          <div class="auth-warning">
+            Vous n'avez pas encore d'annonces
+          </div>
+        `;
+        return;
+      }
+      
+      let html = `
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f5f5f5; text-align: left;">
+              <th style="padding: 10px;">Titre</th>
+              <th style="padding: 10px;">Type</th>
+              <th style="padding: 10px;">Prix</th>
+              <th style="padding: 10px;">Statut</th>
+              <th style="padding: 10px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      listings.forEach(listing => {
+        let statusClass = '';
+        let statusLabel = '';
+        
+        switch (listing.status) {
+          case 'DRAFT':
+            statusClass = 'secondary';
+            statusLabel = 'Brouillon';
+            break;
+          case 'ACTIVE':
+            statusClass = 'success';
+            statusLabel = 'Actif';
+            break;
+          case 'SOLD':
+            statusClass = 'secondary';
+            statusLabel = 'Vendu';
+            break;
+          case 'ARCHIVED':
+            statusClass = 'danger';
+            statusLabel = 'Archivé';
+            break;
+        }
+        
+        let typeLabel = '';
+        switch (listing.type) {
+          case 'PRODUCT':
+            typeLabel = 'Produit';
+            break;
+          case 'SERVICE':
+            typeLabel = 'Service';
+            break;
+          case 'COURSE':
+            typeLabel = 'Formation';
+            break;
+        }
+        
+        html += `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px;">${listing.title}</td>
+            <td style="padding: 10px;">${typeLabel}</td>
+            <td style="padding: 10px;">${listing.price.toFixed(2)} €</td>
+            <td style="padding: 10px;">
+              <span class="btn ${statusClass}" style="font-size: 12px; padding: 3px 8px;">
+                ${statusLabel}
+              </span>
+            </td>
+            <td style="padding: 10px;">
+              <button onclick="viewListingDetails('${listing.id}')" style="padding: 5px 8px; margin-right: 5px;">
+                Détails
+              </button>
+              
+              ${listing.status === 'DRAFT' ? `
+                <button class="success" onclick="updateListingStatus('${listing.id}', 'ACTIVE')" style="padding: 5px 8px; margin-right: 5px;">
+                  Publier
+                </button>
+              ` : ''}
+              
+              ${listing.status === 'ACTIVE' ? `
+                <button class="secondary" onclick="updateListingStatus('${listing.id}', 'ARCHIVED')" style="padding: 5px 8px; margin-right: 5px;">
+                  Archiver
+                </button>
+              ` : ''}
+              
+              ${listing.status === 'ARCHIVED' ? `
+                <button class="success" onclick="updateListingStatus('${listing.id}', 'ACTIVE')" style="padding: 5px 8px; margin-right: 5px;">
+                  Réactiver
+                </button>
+              ` : ''}
+              
+              <button class="danger" onclick="deleteListing('${listing.id}')" style="padding: 5px 8px;">
+                Supprimer
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+        </table>
+      `;
+      
+      sellerListingsContainer.innerHTML = html;
+    }
+
+    function renderPurchases(purchases) {
+      if (!purchases || purchases.length === 0) {
+        purchasesContainer.innerHTML = `
+          <div class="auth-warning">
+            Vous n'avez pas encore d'achats
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      
+      purchases.forEach(purchase => {
+        const listing = purchase.listing;
+        const imageUrl = listing.imageUrls && listing.imageUrls.length > 0 
+          ? listing.imageUrls[0] 
+          : null;
+        
+        const purchaseDate = new Date(purchase.purchaseDate);
+        const formattedDate = purchaseDate.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        
+        html += `
+          <div class="purchase-item" onclick="viewPurchaseDetails('${purchase.id}')">
+            <div class="purchase-image" style="${imageUrl ? `background-image: url('${imageUrl}')` : 'background-color: #eee;'}"></div>
+            <div class="purchase-details">
+              <div class="purchase-title">${listing.title}</div>
+              <div class="purchase-meta">
+                Acheté le ${formattedDate} • Vendeur: ${listing.seller.displayName}
+              </div>
+            </div>
+            <div class="purchase-price">
+              ${purchase.totalPrice.toFixed(2)} €
+            </div>
+          </div>
+        `;
+      });
+      
+      purchasesContainer.innerHTML = html;
+    }
+
+    function updateImagePreviews() {
+      if (imageUrls.length === 0) {
+        imagesPreview.innerHTML = '<p>Aucune image ajoutée</p>';
+        return;
+      }
+      
+      let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">';
+      
+      imageUrls.forEach((url, index) => {
+        html += `
+          <div style="position: relative; width: 100px; height: 100px; border-radius: 4px; overflow: hidden;">
+            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+            <button 
+              style="position: absolute; top: 5px; right: 5px; background: rgba(244, 67, 54, 0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; cursor: pointer;"
+              onclick="removeImage(${index})"
+            >×</button>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      imagesPreview.innerHTML = html;
+    }
+
+    function removeImage(index) {
+      imageUrls.splice(index, 1);
+      updateImagePreviews();
+    }
+
+    function updatePagination(currentPage, totalPages, container, callbackName) {
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+      
+      let html = '';
+      
+      // Previous button
+      html += `
+        <button ${currentPage === 1 ? 'disabled' : `onclick="${callbackName}(${currentPage - 1})"`}>
+          &laquo;
+        </button>
+      `;
+      
+      // Page buttons
+      const maxButtons = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+      let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+      
+      if (endPage - startPage + 1 < maxButtons && startPage > 1) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        html += `
+          <button class="${i === currentPage ? 'active' : ''}" onclick="${callbackName}(${i})">
+            ${i}
+          </button>
+        `;
+      }
+      
+      // Next button
+      html += `
+        <button ${currentPage === totalPages ? 'disabled' : `onclick="${callbackName}(${currentPage + 1})"`}>
+          &raquo;
+        </button>
+      `;
+      
+      container.innerHTML = html;
+    }
+
+    function showListingDetailModal(listing) {
+      const imageUrl = listing.imageUrls && listing.imageUrls.length > 0 
+        ? listing.imageUrls[0] 
+        : null;
+      
+      let typeLabel = '';
+      switch (listing.type) {
+        case 'PRODUCT':
+          typeLabel = 'Produit';
+          break;
+        case 'SERVICE':
+          typeLabel = 'Service';
+          break;
+        case 'COURSE':
+          typeLabel = 'Formation';
+          break;
+      }
+      
+      document.getElementById('detail-title').textContent = listing.title;
+      
+      let html = `
+        <div style="${imageUrl ? 'height: 200px; background-image: url(\'' + imageUrl + '\'); background-size: cover; background-position: center; margin: -20px -20px 20px -20px;' : ''}"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <div>
+            <span class="listing-type ${listing.type.toLowerCase()}">${typeLabel}</span>
+          </div>
+          <div class="listing-price" style="font-size: 24px;">${listing.price.toFixed(2)} €</div>
+        </div>
+        
+        <p style="margin-top: 0; margin-bottom: 20px; white-space: pre-line;">${listing.description}</p>
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+          <h4 style="margin-top: 0;">Vendeur</h4>
+          <p>${listing.seller.displayName}</p>
+          
+          ${(listing.seller.id !== currentUser.id) ? `
+            <button class="success" style="width: 100%;" onclick="purchaseListing('${listing.id}')">
+              Acheter maintenant
+            </button>
+          ` : ''}
+        </div>
+      `;
+      
+      listingDetailContent.innerHTML = html;
+      showModal(listingDetailModal);
+    }
+
+    function showPurchaseDetailModal(purchase) {
+      const listing = purchase.listing;
+      const imageUrl = listing.imageUrls && listing.imageUrls.length > 0 
+        ? listing.imageUrls[0] 
+        : null;
+      
+      const purchaseDate = new Date(purchase.purchaseDate);
+      const formattedDate = purchaseDate.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      document.getElementById('detail-title').textContent = 'Détails de la commande';
+      
+      let html = `
+        <div style="${imageUrl ? 'height: 200px; background-image: url(\'' + imageUrl + '\'); background-size: cover; background-position: center; margin: -20px -20px 20px -20px;' : ''}"></div>
+        
+        <h3 style="margin-top: 0;">${listing.title}</h3>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+          <div>Quantité: ${purchase.quantity}</div>
+          <div class="listing-price" style="font-size: 20px;">${purchase.totalPrice.toFixed(2)} €</div>
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
+          <div style="margin-bottom: 10px;"><strong>Date d'achat:</strong> ${formattedDate}</div>
+          <div style="margin-bottom: 10px;"><strong>Statut:</strong> ${purchase.status}</div>
+          <div><strong>Vendeur:</strong> ${listing.seller.displayName}</div>
+        </div>
+        
+        <h4>Description de l'article</h4>
+        <p style="white-space: pre-line;">${listing.description}</p>
+        
+        ${listing.type === 'SERVICE' || listing.type === 'COURSE' ? `
+          <div style="margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px;">
+            <h4 style="margin-top: 0;">Informations de contact du vendeur</h4>
+            <p style="margin-bottom: 5px;"><strong>Email:</strong> ${listing.seller.email}</p>
+            ${listing.seller.phoneNumber ? `<p style="margin-bottom: 0;"><strong>Téléphone:</strong> ${listing.seller.phoneNumber}</p>` : ''}
+          </div>
+        ` : ''}
+      `;
+      
+      listingDetailContent.innerHTML = html;
+      showModal(listingDetailModal);
+    }
+
+    function showToast(message, type = '') {
+      toast.textContent = message;
+      toast.className = 'toast';
+      
+      if (type) {
+        toast.classList.add(type);
+      }
+      
+      toast.classList.add('visible');
+      
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 3000);
+    }
+
+    function showModal(modal) {
+      modal.style.display = 'flex';
+    }
+
+    function hideModal(modal) {
+      modal.style.display = 'none';
+    }
+
+    // Expose functions for inline event handlers
+    window.viewListingDetails = viewListingDetails;
+    window.viewPurchaseDetails = viewPurchaseDetails;
+    window.updateListingStatus = updateListingStatus;
+    window.deleteListing = deleteListing;
+    window.purchaseListing = purchaseListing;
+    window.removeImage = removeImage;
+    window.loadListingsPage = loadListingsPage;
+    window.loadSellerListingsPage = loadSellerListingsPage;
+    window.loadPurchasesPage = loadPurchasesPage;
+  </script>
+</body>
+</html>

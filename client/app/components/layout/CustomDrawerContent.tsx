@@ -1,192 +1,358 @@
-// app/components/layout/CustomDrawerContent.tsx
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useTheme, ThemeColors } from '../../constants/theme';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, usePathname } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../constants/theme';
+import SyncBadge from '../ui/SyncBadge';
+import { MaterialIcons } from '@expo/vector-icons';
+import { CopyToClipboard } from '../common/ClipBoardCopy';
 
-const CustomDrawerContent = (props) => {
+const DrawerItem = ({
+  label,
+  onPress,
+  active = false,
+  theme,
+  iconName,
+}: {
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+  theme: Theme;
+  iconName?: string;
+}) => (
+  <TouchableOpacity
+    style={[
+      styles.drawerItem,
+      active && { backgroundColor: theme.colors.ui.button.primary + '20' },
+    ]}
+    onPress={onPress}
+  >
+    <View style={styles.itemContent}>
+      {iconName && (
+        <MaterialIcons
+          name={iconName}
+          size={theme.typography.subtitle.fontSize}
+          color={active ? theme.colors.ui.button.primary : theme.colors.backgroundText}
+          style={styles.icon}
+        />
+      )}
+      <Text
+        style={[
+          styles.drawerItemText(theme),
+          active && { color: theme.colors.ui.button.primary, fontWeight: '600' },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  </TouchableOpacity>
+);
+
+export default function CustomDrawerContent(props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  
+  const theme = useTheme();
+  const { user, logout } = useAuth();
+  const currentRoute = props.state?.routes[props.state.index]?.name || '';
 
-  // Helper to check active route
-  const isActive = (path) => pathname === path;
-
-  // Group drawer items for better organization
-  const mainItems = [
-    { name: 'Dashboard', icon: 'grid-outline', route: '/DashboardScreen' },
-    { name: 'My Roadbook', icon: 'book-outline', route: '/MyRoadbookScreen' },
-    { name: 'My Routes', icon: 'map-outline', route: '/MyRoutesScreen' },
-  ];
-
-  const communityItems = [
-    { name: 'Community', icon: 'people-outline', route: '/CommunityScreen' },
-    { name: 'Mentors', icon: 'person-add-outline', route: '/MentorsScreen' },
-    { name: 'Skills', icon: 'ribbon-outline', route: '/SkillsScreen' },
-    { name: 'Marketplace', icon: 'cart-outline', route: '/MarketplaceScreen' },
-  ];
-
-  const settingsItems = [
-    { name: 'Paramètres', icon: 'settings-outline', route: '/SettingsScreen' },
-    { name: 'Confidentialité', icon: 'shield-outline', route: '/PrivacyScreen' },
-    { name: 'Partager', icon: 'share-social-outline', route: '/ShareScreen' },
-    { name: 'Aide', icon: 'help-circle-outline', route: '/HelpScreen' },
-  ];
-
-  const handleLogout = () => {
-    // Add logout logic here
-    console.log('Logging out...');
-    router.replace('/login');
+  const navigateTo = (route: string) => {
+    props.navigation.closeDrawer();
+    router.push(route);
   };
 
-  const renderDrawerItem = (item) => (
-    <TouchableOpacity
-      key={item.route}
-      style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
-      onPress={() => router.push(item.route)}
-    >
-      <Ionicons name={item.icon} size={22} color={isActive(item.route) ? colors.activeItem : colors.inactiveItem} />
-      <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{ flex: 1, paddingLeft: 0 }}
+      style={styles.container(theme)}
+    >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.menuText}>RoadBook Tracker</Text>
+      <View style={styles.drawerHeader(theme)}>
+        <View style={styles.userInfoContainer}>
+          <Image
+            source={{ uri: user?.profilePicture || 'https://via.placeholder.com/200' }}
+            style={styles.userAvatar(theme)}
+          />
+          <View>
+            <Text style={styles.userName(theme)}>{user?.displayName || 'Utilisateur : N/A'}</Text>
+            <CopyToClipboard
+              text={user?.email || 'email@example.com'}
+              showText={true}
+              iconSize={14}
+              containerStyle={{ marginTop: 4 }}
+            />
+          </View>
+        </View>
       </View>
 
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
-        {/* Main Items Section */}
-        <View style={styles.section}>{mainItems.map(renderDrawerItem)}</View>
+      {/* Menu items */}
+      <ScrollView style={styles.drawerContent}>
+        <DrawerItem
+          label="Accueil"
+          onPress={() => navigateTo('/(tabs)')}
+          active={currentRoute === '(tabs)'}
+          theme={theme}
+          iconName="home"
+        />
+        <DrawerItem
+          label="Dashboard"
+          onPress={() => navigateTo('/DashboardScreen')}
+          active={currentRoute === 'DashboardScreen'}
+          theme={theme}
+          iconName="dashboard"
+        />
+        <DrawerItem
+          label="Mon Carnet"
+          onPress={() => navigateTo('/MyRoadbookScreen')}
+          active={currentRoute === 'MyRoadbookScreen'}
+          theme={theme}
+          iconName="book"
+        />
+        <DrawerItem
+          label="Mes trajets"
+          onPress={() => navigateTo('/(tabs)/my-routes')}
+          active={currentRoute === 'MyRoutesScreen'}
+          theme={theme}
+          iconName="directions"
+        />
 
-        {/* Community Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>Communauté</Text>
+        <View style={styles.divider(theme)} />
+
+        <Text style={styles.sectionTitle(theme)}>Communauté</Text>
+        <DrawerItem
+          label="Communauté"
+          onPress={() => navigateTo('/CommunityScreen')}
+          active={currentRoute === 'CommunityScreen'}
+          theme={theme}
+          iconName="people"
+        />
+        <DrawerItem
+          label="Mentors"
+          onPress={() => navigateTo('/MentorsScreen')}
+          active={currentRoute === 'MentorsScreen'}
+          theme={theme}
+          iconName="school"
+        />
+        <DrawerItem
+          label="Compétences"
+          onPress={() => navigateTo('/SkillsScreen')}
+          active={currentRoute === 'SkillsScreen'}
+          theme={theme}
+          iconName="star"
+        />
+        <DrawerItem
+          label="Marketplace"
+          onPress={() => navigateTo('/MarketplaceScreen')}
+          active={currentRoute === 'MarketplaceScreen'}
+          theme={theme}
+          iconName="shopping-cart"
+        />
+
+        <View style={styles.divider(theme)} />
+
+        <Text style={styles.sectionTitle(theme)}>Paramètres</Text>
+        <DrawerItem
+          label="Profil"
+          onPress={() => navigateTo('/ProfileScreen')}
+          active={currentRoute === 'ProfileScreen'}
+          theme={theme}
+          iconName="person"
+        />
+        <TouchableOpacity
+          style={[
+            styles.drawerItem,
+            currentRoute === 'OfflineSyncScreen' && {
+              backgroundColor: theme.colors.ui.button.primary + '20',
+            },
+          ]}
+          onPress={() => navigateTo('/OfflineSyncScreen')}
+        >
+          <View style={styles.itemWithBadge}>
+            <View style={styles.itemContent}>
+              <MaterialIcons
+                name="sync"
+                size={theme.typography.subtitle.fontSize}
+                color={
+                  currentRoute === 'OfflineSyncScreen'
+                    ? theme.colors.ui.button.primary
+                    : theme.colors.backgroundText
+                }
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  styles.drawerItemText(theme),
+                  currentRoute === 'OfflineSyncScreen' && {
+                    color: theme.colors.ui.button.primary,
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                Synchronisation Offline
+              </Text>
+            </View>
+            <SyncBadge />
           </View>
-          {communityItems.map(renderDrawerItem)}
-        </View>
-
-        {/* Settings Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>Réglages</Text>
-          </View>
-          {settingsItems.map(renderDrawerItem)}
-        </View>
-
-        {/* Logout option */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color={colors.red} />
-          <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
-      </DrawerContentScrollView>
+        <DrawerItem
+          label="Paramètres"
+          onPress={() => navigateTo('/SettingsScreen')}
+          active={currentRoute === 'SettingsScreen'}
+          theme={theme}
+          iconName="settings"
+        />
+        <DrawerItem
+          label="Aide"
+          onPress={() => navigateTo('/HelpScreen')}
+          active={currentRoute === 'HelpScreen'}
+          theme={theme}
+          iconName="help"
+        />
+        <DrawerItem
+          label="À propos"
+          onPress={() => navigateTo('/AboutUsScreen')}
+          active={currentRoute === 'AboutUsScreen'}
+          theme={theme}
+          iconName="info"
+        />
+      </ScrollView>
 
-      {/* Footer */}
-      <TouchableOpacity style={styles.aboutButton} onPress={() => router.push('/AboutUsScreen')}>
-        <Ionicons name="people" size={20} color={colors.primaryDarker} />
-        <Text style={styles.aboutText}>À propos de nous</Text>
-      </TouchableOpacity>
-    </View>
+      {/* Logout button */}
+      <View style={styles.logoutContainer(theme)}>
+        <TouchableOpacity style={styles.logoutButton(theme)} onPress={logout}>
+          <MaterialIcons
+            name="logout"
+            size={theme.typography.subtitle.fontSize}
+            color={theme.colors.ui.button.dangerText}
+            style={styles.icon}
+          />
+          <Text style={styles.logoutText(theme)}>Déconnexion</Text>
+        </TouchableOpacity>
+      </View>
+    </DrawerContentScrollView>
   );
-};
+}
 
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
+const styles = {
+  container: (theme: Theme) => ({
+    backgroundColor: theme.colors.background,
+    zIndex: 1000,
+    elevation: 1000,
+    borderTopRightRadius: theme.borderRadius.xlarge,
+    borderBottomRightRadius: theme.borderRadius.xlarge,
+    marginLeft: 0,
+    paddingLeft: 0,
+    borderWidth: 5,
+    borderColor: '#D8D8D0',
+  }),
+  drawerHeader: (theme: Theme) => ({
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    borderTopRightRadius: theme.borderRadius.xlarge,
+    borderBottomRightRadius: theme.borderRadius.xlarge,
+    padding: theme.spacing.xl,
+    marginLeft: -30, // React Navigation ajoute une marge au drawer donc on triche
+    borderWidth: 6,
+    borderTopColor: theme.colors.primary,
+    borderRightColor: theme.colors.secondary,
+    borderBottomColor: theme.colors.secondary,
+    ...theme.shadow.xl,
+  }),
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'top',
+    paddingBottom: 50,
   },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  menuText: {
-    color: colors.backgroundText,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
+  userAvatar: (theme: Theme) => ({
+    width: '35%',
+    height: ' 100%',
+    marginLeft: -11,
+    borderRadius: theme.borderRadius.xlarge,
+    marginRight: theme.spacing.sm,
+    backgroundColor: theme.colors.secondary,
+  }),
+  userName: (theme: Theme) => ({
+    fontSize: theme.typography.SuperTitle.fontSize,
+    fontWeight: theme.typography.title.fontWeight as 'bold',
+    color: theme.colors.primaryText,
+    marginBottom: theme.spacing.xs,
+  }),
+  userEmail: (theme: Theme) => ({
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.colors.primaryTextSoft,
+  }),
   drawerContent: {
-    paddingTop: 10,
-  },
-  section: {
-    marginBottom: 10,
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 10,
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
-  },
-  sectionHeaderText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    flex: 1,
+    paddingTop: 8,
   },
   drawerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
+    marginHorizontal: 8,
+    borderRadius: 8,
   },
-  activeItem: {
-    backgroundColor: colors.background,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.activeItem,
-  },
-  drawerItemLabel: {
-    color: colors.inactiveItem,
-    fontSize: 16,
-    marginLeft: 32,
-  },
-  activeItemLabel: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  logoutButton: {
+  itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    marginTop: 20,
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
   },
-  logoutText: {
-    color: colors.red,
-    marginLeft: 32,
-    fontSize: 16,
+  icon: {
+    marginRight: 8,
+    padding: 5,
+    fontSize: 22,
   },
-  aboutButton: {
-    flexDirection: 'row',
+  drawerItemText: (theme: Theme) => ({
+    fontSize: theme.typography.subtitle.fontSize,
+    color: theme.colors.backgroundText,
+    fontSize: theme.typography.subtitle.fontSize,
+  }),
+  divider: (theme: Theme) => ({
+    height: 2.3,
+    marginVertical: theme.spacing.sm,
+    marginHorizontal: theme.spacing.md,
+    marginLeft: -500,
+    padding: 0,
+    backgroundColor: theme.colors.border,
+  }),
+  sectionTitle: (theme: Theme) => ({
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: theme.typography.caption.fontWeight as 'bold',
+    textTransform: 'uppercase',
+    marginLeft: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    color: theme.colors.backgroundTextSoft,
+    letterSpacing: 1,
+  }),
+  logoutContainer: (theme: Theme) => ({
+    paddingTop: 15,
+    paddingBottom: 10,
+    borderTopWidth: 7,
+    borderColor: theme.colors.secondary,
+    borderTop: 20,
+    borderRadius: 10,
+  }),
+  logoutButton: (theme: Theme) => ({
+    padding: theme.spacing.sm,
+    marginRight: '5%',
+    borderRadius: theme.borderRadius.xlarge,
     alignItems: 'center',
+    flexDirection: 'row',
     justifyContent: 'center',
-    padding: 16,
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
+    backgroundColor: theme.colors.ui.button.danger,
+    ...theme.shadow.sm,
+  }),
+  logoutText: (theme: Theme) => ({
+    fontSize: theme.typography.button.fontSize,
+    fontWeight: theme.typography.button.fontWeight as 'bold',
+    color: theme.colors.ui.button.dangerText,
+    marginLeft: theme.spacing.sm,
+  }),
+  itemWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  aboutText: {
-    color: colors.inactiveItem,
-    fontSize: 14,
-    textAlign: 'center',
-    marginLeft: 8,
-  },
-});
+};
 
-export default CustomDrawerContent;
+type Theme = ReturnType<typeof useTheme>;

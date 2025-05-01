@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  postgres-dev:
+    image: postgres:14
+    container_name: postgres-dev
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=roadbook_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["postgres", "-c", "log_statement=all"]
+    networks:
+      - roadbook-dev-network
+
+  server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: server-dev
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-dev:5432/roadbook_dev
+      - NODE_ENV=development
+      - DB_HOST=postgres-dev
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=roadbook_dev
+      - PORT=4000
+      - JWT_SECRET=your-very-secure-jwt-secret-for-development
+      - JWT_REFRESH_SECRET=your-very-secure-refresh-token-secret-for-development
+      - CORS_ORIGINS=http://localhost:19000,http://localhost:19006,http://localhost:3000,exp://localhost:19000,https://haep9vw-anonymous-8081.exp.direct,https://*.exp.direct,exp://*-*.exp.direct,exp://*
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    restart: always
+    # Active le mode développement avec hot reload
+    command: ["npm", "run", "dev"]
+    networks:
+      - roadbook-dev-network
+
+  # Interface de test API
+  test-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: test-api
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-dev:5432/roadbook_dev
+      - NODE_ENV=development
+      - DB_HOST=postgres-dev
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=roadbook_dev
+      - PORT=4001
+      - TEST_API=true
+      - JWT_SECRET=your-very-secure-jwt-secret-for-development
+      - JWT_REFRESH_SECRET=your-very-secure-refresh-token-secret-for-development
+      - CORS_ORIGINS=http://localhost:19000,http://localhost:19006,http://localhost:3000,exp://localhost:19000
+      - NODE_OPTIONS=--max-old-space-size=512
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    restart: on-failure:3
+    # Lance le serveur de test API
+    command: ["node", "--max-old-space-size=512", "test-server.js"]
+    networks:
+      - roadbook-dev-network
+
+  # Prisma Studio pour explorer la base de données
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: prisma-studio
+    ports:
+      - "5555:5555"
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-dev:5432/roadbook_dev
+      - NODE_ENV=development
+      - PRISMA_STUDIO=true
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    restart: always
+    command: ["npx", "prisma", "studio", "--port", "5555", "--hostname", "0.0.0.0"]
+    networks:
+      - roadbook-dev-network
+
+networks:
+  roadbook-dev-network:
+    name: roadbook-dev-network
+
+volumes:
+  postgres_dev_data:
+    name: roadbook-postgres-dev-data

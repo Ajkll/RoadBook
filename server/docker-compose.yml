@@ -1,58 +1,62 @@
+version: '3.8'
+
 services:
-  # Base de données principale (développement)
   postgres:
     image: postgres:14
+    container_name: postgres-prod
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=roadbook
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
       timeout: 5s
       retries: 5
+    command: ["postgres", "-c", "log_statement=all"]
+    networks:
+      - roadbook-network
 
-  # Base de données pour les tests
-  postgres_test:
-    image: postgres:14
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}_test
-    ports:
-      - "5433:5432"  # Port différent pour éviter les conflits
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}_test"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Serveur backend
   server:
     build:
       context: .
       dockerfile: Dockerfile.server
+    container_name: server-prod
     ports:
       - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-      - TEST_DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres_test:5432/${DB_NAME}_test
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/roadbook
+      - JWT_SECRET=${JWT_SECRET:-your-very-secure-jwt-secret-for-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-very-secure-refresh-token-secret-for-production}
       - PORT=4000
-      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=${POSTGRES_PASSWORD:-postgres}
+      - DB_NAME=roadbook
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:19000,http://localhost:19006,http://localhost:3000,exp://localhost:19000}
     volumes:
-      - .:/src
-      - /src/node_modules
+      - server_logs:/app/logs
+    restart: always
+    networks:
+      - roadbook-network
+    command: ["npm", "run", "start"]
+
+networks:
+  roadbook-network:
+    name: roadbook-network
 
 volumes:
   postgres_data:
-  postgres_test_data:
+    name: roadbook-postgres-prod-data
+  server_logs:
+    name: roadbook-server-logs
