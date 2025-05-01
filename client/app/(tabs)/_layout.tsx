@@ -1,4 +1,3 @@
-// app/(tabs)/_layout.tsx
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
@@ -16,13 +15,12 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         header: () => <Header title="RoadBook Tracker" onMenuPress={openDrawer} />,
-        tabBarStyle: { display: 'none' }, // Cache la tab bar par défaut
+        tabBarStyle: { display: 'none' },
       }}
       tabBar={(props) => <BottomNavigation {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />
       <Tabs.Screen name="explorer" options={{ title: 'Explorer' }} />
-      <Tabs.Screen name="start-drive" options={{ title: 'Démarrer' }} />
       <Tabs.Screen name="my-routes" options={{ title: 'Mes trajets' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
       <Tabs.Screen

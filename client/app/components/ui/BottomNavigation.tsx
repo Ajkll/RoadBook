@@ -5,17 +5,13 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../constants/theme';
 import { useDispatch, useSelector } from 'react-redux';
-import { stopTracking, resetLocation } from '../../store/slices/locationSlice';
+import { stopTracking } from '../../store/slices/locationSlice';
 import {
   startChrono,
   finishChrono,
-  resetChrono,
   setShouldSave,
 } from '../../store/slices/chronoSlice';
 import SessionEndModal from '../modals/SessionEndModal';
-import Toast from 'react-native-toast-message';
-import { Modalize } from 'react-native-modalize';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNotifications } from '../NotificationHandler';
 
 const BottomNavigation = () => {
@@ -28,11 +24,11 @@ const BottomNavigation = () => {
   const { showError } = useNotifications();
   const [showModal, setShowModal] = useState(false);
   const isChronoRunning = useSelector((state: RootState) => state.chrono.isRunning);
+  const mapReady = useSelector((state: RootState) => state.location.mapReady);
 
   const normalizedPathname = pathname.startsWith('/') ? pathname.slice(1) : pathname;
   const isActive = (path: string) => normalizedPathname === path;
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
-  const mapReady = useSelector((state: RootState) => state.location.mapReady);
 
   const handleStartDrivePress = () => {
     if (isActive('start-drive')) {
@@ -53,9 +49,7 @@ const BottomNavigation = () => {
   };
 
   const handleLongPressStartDrive = () => {
-    if (isChronoRunning) {
-      setShowModal(true);
-    }
+    if (isChronoRunning) setShowModal(true);
   };
 
   const handleConfirmSave = () => {
@@ -72,41 +66,41 @@ const BottomNavigation = () => {
     }, 50);
   };
 
-  const handleCancel = () => {
-    setShowModal(false);
-  };
+  const handleCancel = () => setShowModal(false);
 
   return (
     <>
       <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/')}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/')}
+        >
           <Ionicons
             name={isActive('') ? 'home' : 'home-outline'}
             size={24}
             color={isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text
-            style={[
-              styles.navText,
-              { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem },
-            ]}
-          >
+          <Text style={[
+            styles.navText,
+            { color: isActive('') ? theme.colors.activeItem : theme.colors.inactiveItem }
+          ]}>
             Accueil
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/explorer')}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/explorer')}
+        >
           <Ionicons
             name={isActive('explorer') ? 'search' : 'search-outline'}
             size={24}
             color={isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text
-            style={[
-              styles.navText,
-              { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem },
-            ]}
-          >
+          <Text style={[
+            styles.navText,
+            { color: isActive('explorer') ? theme.colors.activeItem : theme.colors.inactiveItem }
+          ]}>
             Explorer
           </Text>
         </TouchableOpacity>
@@ -117,17 +111,15 @@ const BottomNavigation = () => {
           onLongPress={handleLongPressStartDrive}
           delayLongPress={1600}
         >
-          <View
-            style={[
-              styles.recordIcon,
-              {
-                backgroundColor: theme.colors.background,
-                borderColor: isActive('start-drive')
-                  ? theme.colors.activeItem
-                  : theme.colors.inactiveItem,
-              },
-            ]}
-          >
+          <View style={[
+            styles.recordIcon,
+            {
+              backgroundColor: theme.colors.background,
+              borderColor: isActive('start-drive')
+                ? theme.colors.activeItem
+                : theme.colors.inactiveItem,
+            }
+          ]}>
             <MaterialIcons
               name={isChronoRunning ? 'square' : 'circle'}
               size={isChronoRunning ? 30 : 40}
@@ -136,46 +128,39 @@ const BottomNavigation = () => {
           </View>
         </Pressable>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/my-routes')}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/my-routes')}
+        >
           <Ionicons
             name={isActive('my-routes') ? 'map' : 'map-outline'}
             size={24}
             color={isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text
-            style={[
-              styles.navText,
-              {
-                color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem,
-              },
-            ]}
-          >
+          <Text style={[
+            styles.navText,
+            { color: isActive('my-routes') ? theme.colors.activeItem : theme.colors.inactiveItem }
+          ]}>
             Mes trajets
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/profile')}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
           <Ionicons
             name={isActive('profile') ? 'person' : 'person-outline'}
             size={24}
             color={isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem}
           />
-          <Text
-            style={[
-              styles.navText,
-              { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem },
-            ]}
-          >
+          <Text style={[
+            styles.navText,
+            { color: isActive('profile') ? theme.colors.activeItem : theme.colors.inactiveItem }
+          ]}>
             Profile
           </Text>
         </TouchableOpacity>
-
-        {isActive('/(tabs)/api-test') && (
-          <TouchableOpacity style={styles.navItem} onPress={() => router.push('/(tabs)/api-test')}>
-            <Ionicons name="bug" size={24} color={theme.colors.primary} />
-            <Text style={[styles.navText, { color: theme.colors.primary }]}>API Test</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <SessionEndModal
@@ -188,53 +173,52 @@ const BottomNavigation = () => {
   );
 };
 
-const createStyles = (theme: any, insets: any) =>
-  StyleSheet.create({
-    container: {
-      flexDirection: 'row',
-      height: Platform.OS === 'ios' ? 85 : 65,
-      borderTopWidth: 1.6,
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      paddingTop: 6,
-      alignItems: 'center',
-      justifyContent: 'space-around',
-      zIndex: 1000,
-      backgroundColor: theme.colors.background,
-      borderTopColor: theme.colors.border,
-      ...theme.shadow.sm,
-    },
-    navItem: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: theme.spacing.xs,
-    },
-    navText: {
-      fontSize: theme.typography.caption.fontSize,
-      marginTop: theme.spacing.xs,
-      textAlign: 'center',
-      fontWeight: theme.typography.caption.fontWeight,
-    },
-    recordButton: {
-      width: 70,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: -20,
-      ...theme.shadow.md,
-    },
-    recordIcon: {
-      width: 56,
-      height: 56,
-      padding: 0,
-      borderRadius: 34,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 3,
-      ...theme.shadow.xl,
-    },
-  });
+const createStyles = (theme: any, insets: any) => StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    height: Platform.OS === 'ios' ? 85 : 65,
+    borderTopWidth: 1.6,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 6,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    zIndex: 1000,
+    backgroundColor: theme.colors.background,
+    borderTopColor: theme.colors.border,
+    ...theme.shadow.sm,
+  },
+  navItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xs,
+  },
+  navText: {
+    fontSize: theme.typography.caption.fontSize,
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
+    fontWeight: theme.typography.caption.fontWeight,
+  },
+  recordButton: {
+    width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -20,
+    ...theme.shadow.md,
+  },
+  recordIcon: {
+    width: 56,
+    height: 56,
+    padding: 0,
+    borderRadius: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    ...theme.shadow.xl,
+  },
+});
 
 export default BottomNavigation;

@@ -1,19 +1,76 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme, ThemeColors } from '../../constants/theme';
-import { MaterialCommunityIcons, Ionicons, MaterialIcons, Octicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import PropTypes from 'prop-types';
+import { db } from '../../services/firebase/firebaseConfig';
+import { collection, addDoc } from 'firebase/firestore';
+
+AddRouteForm.propTypes = {
+  visible: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+};
 
 export default function AddRouteForm({ visible, onClose, onSave }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [date, setDate] = useState(new Date());
-  const [departureTime, setDepartureTime] = useState(new Date());
-  const [arrivalTime, setArrivalTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDeparturePicker, setShowDeparturePicker] = useState(false);
   const [showArrivalPicker, setShowArrivalPicker] = useState(false);
+
+  const [roadName, setRoadName] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [departureTime, setDepartureTime] = useState(new Date());
+  const [arrivalTime, setArrivalTime] = useState(new Date());
+
+  const id = useRef<number>(2);
+
+  const sendRoadsData = async (id, roadName, date, duration, distance) => {
+    try {
+      await addDoc(collection(db, 'roads'), {
+        id: id,
+        name: roadName,
+        date: date,
+        duration: duration,
+        distance: distance,
+      });
+    } catch (e) {
+      console.error('Erreur lors de l ajout du document : ', e);
+    }
+  };
+
+  const handleSave = () => {
+    const formData = {
+      roadName,
+      date,
+      departureTime,
+      arrivalTime,
+    };
+
+    console.log('Données du trajet:', formData);
+    console.log(formData.date);
+
+    const durationMs = formData.arrivalTime.getTime() - formData.departureTime.getTime();
+    const durationMin = Math.floor(durationMs / (1000 * 60));
+    // const hours = Math.floor(durationMin / 60);
+    // const minutes = durationMin % 60;
+
+    const distance = 10;
+
+    sendRoadsData(id.current, formData.roadName, formData.date, durationMin, distance);
+    id.current += 1;
+
+    if (onSave) {
+      onSave(formData);
+    }
+
+    if (onClose) {
+      onClose();
+    }
+  };
 
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
@@ -35,11 +92,16 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>Ajouter un trajet</Text>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <Ionicons name="close-outline" size={20} color={colors.secondaryIcon} />
+          </TouchableOpacity>
 
           <TextInput
             style={[styles.fullWidthInput, { color: colors.secondaryText }]}
             placeholder="Trajet 3"
             placeholderTextColor="#999"
+            value={roadName}
+            onChangeText={setRoadName}
           />
 
           <View style={styles.groupForm}>
@@ -65,6 +127,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
           <View style={styles.timePickersContainer}>
             <Text style={styles.requiredStar}>*</Text>
+            <Text style={styles.inputText}>Début</Text>
             <TouchableOpacity
               onPress={() => setShowDeparturePicker(true)}
               style={styles.timePicker}
@@ -74,19 +137,17 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                   ? departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   : 'Départ'}
               </Text>
-              <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
             </TouchableOpacity>
 
             <Ionicons name="chevron-forward" size={30} color={colors.secondaryDarker} />
-
             <TouchableOpacity onPress={() => setShowArrivalPicker(true)} style={styles.timePicker}>
               <Text style={styles.inputText}>
                 {arrivalTime
                   ? arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   : 'Arrivée'}
               </Text>
-              <MaterialIcons name="access-time" size={30} color={colors.secondaryIcon} />
             </TouchableOpacity>
+            <Text style={styles.inputText}>Fin</Text>
           </View>
 
           <View style={styles.groupForm}>
@@ -110,12 +171,9 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.buttonText}>Annuler</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={onSave}>
+            <TouchableOpacity style={styles.addButton} onPress={handleSave}>
               <Text style={styles.buttonText}>Ajouter</Text>
-              <Octicons name="diff-added" size={26} color={colors.primaryText} />
+              <MaterialIcons name="add-box" size={35} color={colors.primaryText} />
             </TouchableOpacity>
           </View>
         </View>
@@ -172,24 +230,25 @@ const createStyles = (colors: ThemeColors) =>
     modalTitle: {
       fontSize: 20,
       fontWeight: 'bold',
-      marginBottom: 15,
+      marginBottom: 35,
       color: colors.primaryText,
     },
     fullWidthInput: {
       backgroundColor: colors.secondary,
       borderRadius: 10,
-      height: 55,
+      height: 60,
       width: '100%',
-      marginBottom: 15,
+      marginBottom: 25,
       paddingHorizontal: 10,
       color: colors.primaryText,
     },
     halfWidthInput: {
       backgroundColor: colors.secondary,
       borderRadius: 10,
-      height: 55,
-      width: '48%',
-      marginBottom: 15,
+      height: 60,
+      width: '45%',
+      paddingLeft: 20,
+      marginBottom: 25,
       paddingHorizontal: 10,
       flexDirection: 'row',
       alignItems: 'center',
@@ -202,8 +261,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     inputText: {
       color: colors.secondaryText,
-      fontSize: 14,
-      marginLeft: 10,
+      fontSize: 13,
     },
     iconContainer: {
       backgroundColor: colors.secondaryDark,
@@ -223,16 +281,20 @@ const createStyles = (colors: ThemeColors) =>
     },
     buttonContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       width: '100%',
-      height: 55,
+      height: 60,
       marginTop: 10,
     },
     cancelButton: {
+      position: 'absolute',
+      top: 15,
+      right: 20,
       backgroundColor: colors.primaryDarker,
       borderRadius: 10,
       padding: 10,
-      width: '40%',
+      width: 40,
+      height: 40,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -240,9 +302,9 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.primaryDarker,
       borderRadius: 10,
       padding: 10,
-      paddingLeft: 20,
-      paddingRight: 20,
-      width: '40%',
+      paddingLeft: 40,
+      paddingRight: 40,
+      width: '60%',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -256,9 +318,9 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.secondary,
       color: colors.primaryText,
       borderRadius: 10,
-      height: 55,
+      height: 60,
       width: '100%',
-      marginBottom: 15,
+      marginBottom: 25,
       paddingHorizontal: 20,
       flexDirection: 'row',
       alignItems: 'center',
@@ -268,11 +330,11 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.secondaryDark,
       borderRadius: 10,
       height: 45,
-      width: '40%',
+      width: '25%',
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingRight: 10,
+      justifyContent: 'center',
+      paddingRight: 5,
       paddingLeft: 5,
     },
   });

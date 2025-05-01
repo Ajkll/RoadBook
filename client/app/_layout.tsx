@@ -121,7 +121,7 @@ function RootNavigator() {
           options={{ title: 'Mon Carnet', drawerLabel: 'Mon Carnet' }}
         />
         <Drawer.Screen
-          name="MyRoutesScreen"
+          name="my-routes"
           options={{ title: 'Mes trajets', drawerLabel: 'Mes trajets' }}
         />
         <Drawer.Screen

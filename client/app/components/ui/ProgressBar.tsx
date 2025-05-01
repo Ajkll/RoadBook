@@ -40,13 +40,13 @@ const createStyles = (colors: ThemeColors) =>
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
-      height: 110,
+      height: 135,
     },
     cardTitle: {
       fontSize: 18,
       color: colors.primaryText,
       fontWeight: '500',
-      marginBottom: 15,
+      marginBottom: 25,
       textAlign: 'center',
     },
     progressContainer: {
@@ -54,7 +54,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     progressBackground: {
       width: '100%',
-      height: 20,
+      height: 25,
       backgroundColor: colors.secondary,
       borderRadius: 10,
       overflow: 'hidden',

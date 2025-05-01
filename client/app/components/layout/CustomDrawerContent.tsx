@@ -110,7 +110,7 @@ export default function CustomDrawerContent(props) {
         />
         <DrawerItem
           label="Mes trajets"
-          onPress={() => navigateTo('/MyRoutesScreen')}
+          onPress={() => navigateTo('/(tabs)/my-routes')}
           active={currentRoute === 'MyRoutesScreen'}
           theme={theme}
           iconName="directions"
