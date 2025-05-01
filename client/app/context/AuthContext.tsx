@@ -42,13 +42,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+<<<<<<< HEAD
   // Flag to bypass login for development purposes
   const bypassLogin = process.env.NODE_ENV === 'development'; // Bypass login only in development mode
 
+=======
+>>>>>>> main
   // Effet pour charger l'utilisateur depuis le stockage sécurisé au démarrage
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
+<<<<<<< HEAD
         if (bypassLogin) {
           console.log('Bypassing login for development...');
           const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -57,11 +61,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
+=======
+>>>>>>> main
         console.log('Loading user data from secure storage...');
         const { user, accessToken } = await getAuthData();
 
         if (user && accessToken) {
           console.log('Found stored user data:', user.email);
+<<<<<<< HEAD
+=======
+
+          // Simply set the user - we're not checking token expiration for now
+          // This ensures redirection works correctly
+>>>>>>> main
           console.log('Setting user state without token validation');
           setUser(user);
         } else {
@@ -75,6 +87,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+<<<<<<< HEAD
+=======
+    // This function is removed as we'll simply trust the token and set authentication to true
+    // This ensures we redirect properly to the tabs
+
+>>>>>>> main
     loadUserFromStorage();
   }, []);
 
@@ -87,6 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
+<<<<<<< HEAD
       if (bypassLogin) {
         console.log('Bypassing login for development...');
         const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -95,6 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
+=======
+>>>>>>> main
       console.log('Sending login request:', credentials.email);
 
       // Valider les identifiants basiques
@@ -113,10 +134,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Mettre à jour l'état d'authentification
       setUser(response.user);
 
+<<<<<<< HEAD
+=======
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
+
+>>>>>>> main
       return response;
     } catch (err) {
       console.error('Login error:', err);
 
+<<<<<<< HEAD
+=======
+      // Extraire le message d'erreur
+>>>>>>> main
       const errorMessage = err.response?.data?.message || err.message || 'Échec de connexion';
       setError(errorMessage);
       throw err;
@@ -136,6 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('Sending registration data to server:', userData);
 
+<<<<<<< HEAD
       const response = await authApi.register(userData);
       console.log('Registration successful:', response);
 
@@ -143,10 +175,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(response.user);
 
+=======
+      // Appel à l'API d'inscription
+      const response = await authApi.register(userData);
+      console.log('Registration successful:', response);
+
+      // Stocker les données d'authentification
+      await saveAuthData(response.accessToken, response.refreshToken, response.user);
+
+      // Mettre à jour l'état d'authentification
+      setUser(response.user);
+
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
+
+>>>>>>> main
       return response;
     } catch (err) {
       console.error('Registration error:', err);
 
+<<<<<<< HEAD
+=======
+      // Extraire le message d'erreur
+>>>>>>> main
       const errorMessage = err.response?.data?.message || err.message || "Échec d'inscription";
       setError(errorMessage);
       throw err;
@@ -157,14 +208,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /**
    * Handles user logout
+<<<<<<< HEAD
    * Clears authentication session data and redirects to login
+=======
+   *
+   * Clears authentication session data and redirects to login
+   * - Always attempts to invalidate tokens on the server first
+   * - Clears local authentication state regardless of server response
+   * - Redirects to login screen
+>>>>>>> main
    */
   const logout = async () => {
     try {
       setIsLoading(true);
       console.log('==== LOGOUT ATTEMPT ====');
 
+<<<<<<< HEAD
       try {
+=======
+      // Always try to logout on server first, regardless of account type
+      try {
+        // Get refresh token to send to server
+>>>>>>> main
         const refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
         if (refreshToken) {
           console.log('Attempting to invalidate session on server');
@@ -178,6 +243,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Continuing with client-side logout despite server error');
       }
 
+<<<<<<< HEAD
+=======
+      // Always clear authentication data from storage
+>>>>>>> main
       try {
         console.log('Clearing authentication data from secure storage');
         await clearAuthData();
@@ -186,6 +255,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error clearing auth data from storage:', storageError);
       }
 
+<<<<<<< HEAD
       console.log('Resetting user state');
       setUser(null);
 
@@ -197,6 +267,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch {}
 
       setUser(null);
+=======
+      // Reset authentication state
+      console.log('Resetting user state');
+      setUser(null);
+
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
+    } catch (err) {
+      console.error('==== LOGOUT ERROR ====', err);
+
+      // Ensure state is cleared even during errors
+      try {
+        await clearAuthData();
+      } catch {
+        // Silently continue on storage errors
+      }
+
+      setUser(null);
+
+      // Ne pas rediriger immédiatement, laisser le composant root le faire
+      // La navigation sera gérée par le RootNavigator quand isAuthenticated change
+>>>>>>> main
     } finally {
       setIsLoading(false);
     }
@@ -217,6 +309,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+<<<<<<< HEAD
+=======
+  // Function to proactively refresh the access token
+>>>>>>> main
   const refreshToken = async (): Promise<boolean> => {
     try {
       console.log('Attempting to refresh access token');
@@ -252,4 +348,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+<<<<<<< HEAD
 };
+=======
+};
+
+// Créer un objet pour l'export par défaut
+const authContextExport = {
+  AuthContext,
+  AuthProvider,
+  useAuth
+};
+
+export default authContextExport;
+>>>>>>> main
