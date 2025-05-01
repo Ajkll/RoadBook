@@ -17,7 +17,7 @@ const OfflineToast = () => {
   useEffect(() => {
     if (prevConnectedRef.current === true && isOffline === true) {
       showError('⛔ Vous êtes hors ligne', "Les données seront synchronisées lorsque la connexion sera rétablie.", {
-        position: 'bottom',
+        position: 'top',
         visibilityTime: 3000,
       });
     } else if (prevConnectedRef.current === false && isOffline === false) {

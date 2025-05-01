@@ -102,6 +102,13 @@ export default function CustomDrawerContent(props) {
           iconName="dashboard"
         />
         <DrawerItem
+          label="Payment"
+          onPress={() => navigateTo('/PaymentScreen')}
+          active={currentRoute === 'PaymentScreen'}
+          theme={theme}
+          iconName="credit-card"
+        />
+        <DrawerItem
           label="Mon Carnet"
           onPress={() => navigateTo('/MyRoadbookScreen')}
           active={currentRoute === 'MyRoadbookScreen'}
@@ -209,9 +216,9 @@ export default function CustomDrawerContent(props) {
           iconName="help"
         />
         <DrawerItem
-          label="À propos"
-          onPress={() => navigateTo('/AboutUsScreen')}
-          active={currentRoute === 'AboutUsScreen'}
+          label="Privacy"
+          onPress={() => navigateTo('/PrivacyScreen')}
+          active={currentRoute === 'PrivacyScreen'}
           theme={theme}
           iconName="info"
         />
