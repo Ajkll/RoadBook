@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';  // Importation du hook de navigation
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from './constants/theme';
 
 interface ContactProps {
   name: string;
@@ -9,19 +10,30 @@ interface ContactProps {
   onPress: () => void;
 }
 
-const ContactItem: React.FC<ContactProps> = ({ name, message, onPress }) => (
-  <TouchableOpacity style={styles.contact} onPress={onPress}>
-    <Icon name="account-circle" size={50} color="#FFF" />
-    <View style={styles.textContainer}>
-      <Text style={styles.text}>{name}</Text>
-      <Text style={styles.dernier_message}>{message}</Text>
-    </View>
-  </TouchableOpacity>
-);
+const ContactItem: React.FC<ContactProps> = ({ name, message, onPress }) => {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+
+  return (
+    <TouchableOpacity style={styles.contact} onPress={onPress}>
+      <Icon
+        name="account-circle"
+        size={theme.typography.header.fontSize * 1.8}
+        color={theme.colors.primaryText}
+      />
+      <View style={styles.textContainer}>
+        <Text style={styles.text}>{name}</Text>
+        <Text style={styles.dernier_message}>{message}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const BlackScreen: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>('');  // État pour le texte de recherche
-  const navigation = useNavigation();  // Hook pour la navigation
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const navigation = useNavigation();
 
   const contacts = [
     { name: 'Guillaume', message: 'Bonjour' },
@@ -32,37 +44,34 @@ const BlackScreen: React.FC = () => {
     { name: 'Lucas', message: 'D accord on fait ça' },
   ];
 
-  // Filtrage des contacts selon le texte de recherche
   const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase())  // Recherche par nom
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Fonction pour gérer le clic sur un contact
-  const handleContactPress = (contact: {name : string; message : string}) => {
+  const handleContactPress = (contact: {name: string; message: string}) => {
     navigation.navigate('ConversationScreen', {
-        contactName: contact.name,
-        contactMessage: contact.message,
+      contactName: contact.name,
+      contactMessage: contact.message,
     });
   };
 
   return (
     <View style={styles.container}>
-      {/* Barre de recherche */}
       <TextInput
         style={styles.searchBar}
         placeholder="Rechercher..."
+        placeholderTextColor={theme.colors.backgroundTextSoft}
         value={searchQuery}
-        onChangeText={setSearchQuery}  // Met à jour la recherche
+        onChangeText={setSearchQuery}
       />
 
-      {/* Liste des contacts filtrée */}
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView style={styles.scrollView}>
         {filteredContacts.map((contact, index) => (
           <ContactItem
             key={index}
             name={contact.name}
             message={contact.message}
-            onPress={() => handleContactPress(contact)}  // Passer le contact sélectionné à la fonction
+            onPress={() => handleContactPress(contact)}
           />
         ))}
       </ScrollView>
@@ -70,37 +79,46 @@ const BlackScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#212121',
-    paddingTop: 30,
-    paddingHorizontal: 20,
+    backgroundColor: theme.colors.background,
+    paddingTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   searchBar: {
     height: 40,
-    borderRadius: 8,
-    paddingLeft: 10,
-    marginBottom: 20,
-    color: 'white',
-    backgroundColor: "#303030",
+    borderRadius: theme.borderRadius.medium,
+    paddingLeft: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    color: theme.colors.backgroundText,
+    backgroundColor: theme.colors.secondary,
+    ...theme.shadow.sm,
   },
   contact: {
     flexDirection: 'row',
-    marginTop: 15,
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   textContainer: {
-    marginLeft: 10,
+    marginLeft: theme.spacing.md,
     justifyContent: 'center',
+    flex: 1,
   },
   text: {
-    color: 'white',
-    fontSize: 18,
+    color: theme.colors.backgroundText,
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: theme.typography.title.fontWeight,
   },
   dernier_message: {
-    color: 'white',
-    fontSize: 14,
-    marginTop: 5,
+    color: theme.colors.backgroundTextSoft,
+    fontSize: theme.typography.body.fontSize,
+    marginTop: theme.spacing.xs,
+  },
+  scrollView: {
+    flex: 1,
   },
 });
 
