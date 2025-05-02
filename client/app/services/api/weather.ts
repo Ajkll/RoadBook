@@ -27,7 +27,7 @@ interface WeatherCacheItem {
 }
 
 // pour nettoyer la cache
-async function cleanCache() {
+export async function cleanCache() {
   try {
     const keysString = await AsyncStorage.getItem(CACHE_KEYS_KEY);
     if (!keysString) return;
@@ -59,7 +59,7 @@ async function cleanCache() {
 }
 
 // pour trouver dans la cache
-async function findInCache(
+export async function findInCache(
   latitude: number,
   longitude: number,
   timestamp: number,
@@ -99,7 +99,7 @@ async function findInCache(
 }
 
 // pour ajouter à la cache
-async function addToCache(item: WeatherCacheItem): Promise<void> {
+export async function addToCache(item: WeatherCacheItem): Promise<void> {
   try {
     await cleanCache();
 

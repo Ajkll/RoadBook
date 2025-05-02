@@ -6,10 +6,39 @@ export default {
   ],
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
-    './jest.setup.js' // Optionnel pour les configurations supplémentaires
+    './jest.setup.js'
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testEnvironment: 'jsdom',
+  verbose: false,
+  reporters: [
+    'default',
+    ['jest-summary-reporter', {
+      failuresOnly: false,
+      includeConsoleLog: false, // Ne pas afficher les logs console
+    }]
+  ],
+  setupFiles: [
+    './jest.setup.js'
+  ],
+  collectCoverage: true,
+  collectCoverageFrom: [
+    '**/*.{js,jsx,ts,tsx}',
+    '!**/node_modules/**',
+    '!**/__tests__/**',
+    '!**/__mocks__/**',
+    '!**/index.js',
+    '!**/app.config.js',
+  ],
+  coverageReporters: ['text', 'lcov', 'html'],
+  coverageThreshold: {
+    global: {
+      statements: 80,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+    },
+  },
 }
