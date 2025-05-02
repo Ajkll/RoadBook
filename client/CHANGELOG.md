@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.11.0](https://github.com/Yanstart/RoadBook/compare/v1.10.0...v1.11.0) (2025-05-02)
+
 ## [1.10.0](https://github.com/Yanstart/RoadBook/compare/v1.9.0...v1.10.0) (2025-05-02)
 
 ## [1.9.0](https://github.com/Yanstart/RoadBook/compare/v1.8.0...v1.9.0) (2025-05-02)
