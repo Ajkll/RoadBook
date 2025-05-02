@@ -10,7 +10,7 @@
     "test": "jest --config=jest.config.mjs",
     "lint": "eslint --fix .",
     "test:coverage": "jest --config=jest.config.mjs --coverage",
-    "release": "standard-version && git push --follow-tags origin main"
+    "release": "standard-version --release-as && git push --follow-tags origin main"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
