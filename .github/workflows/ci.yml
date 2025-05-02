@@ -20,19 +20,17 @@ jobs:
         run: |
           cd client
           npm ci
-      - name: Run linting
+      - name: Run linting and generate report
         run: |
           cd client
-          npm run lint || echo "::warning::Linting failed"
           mkdir -p lint-results
-          eslint --format json --output-file lint-results/eslint-report.json . || true
+          eslint --format json --output-file lint-results/report.json . || true
       - name: Upload lint results
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lint-results
           path: client/lint-results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
   test:
     runs-on: ubuntu-latest
