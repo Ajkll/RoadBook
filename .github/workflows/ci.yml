@@ -20,24 +20,26 @@ jobs:
         run: |
           cd client
           npm ci
-      - name: Create lint directory
-        run: mkdir -p client/lint-results
-      - name: Run ESLint with full debug
+      - name: Install HTML formatter
         run: |
           cd client
-          ESLINT_DEBUG=true npx eslint --no-error-on-unmatched-pattern \
-            --format json \
-            --output-file ./lint-results/report.json \
-            "**/*.{js,jsx,ts,tsx}" || echo "ESLint completed with status $?"
+          npm install eslint-formatter-html --no-save
+      - name: Create lint directory
+        run: mkdir -p client/lint-results
+      - name: Run ESLint and generate HTML report
+        run: |
+          cd client
+          eslint --format html --output-file ./lint-results/report.html . || echo "ESLint completed with errors"
+          eslint --format stylish . # Affiche un résumé dans les logs
       - name: Verify report exists
         run: |
           ls -la client/lint-results/
-          [ -f client/lint-results/report.json ] || exit 1
-      - name: Upload lint results
+          [ -f client/lint-results/report.html ] || exit 1
+      - name: Upload lint report
         uses: actions/upload-artifact@v4
         with:
           name: lint-report
-          path: client/lint-results/report.json
+          path: client/lint-results/report.html
           if-no-files-found: error
 
   test:
