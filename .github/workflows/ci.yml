@@ -20,11 +20,14 @@ jobs:
         run: |
           cd client
           npm ci
-      - name: Run linting and generate report
+      - name: Create lint results directory
+        run: mkdir -p client/lint-results
+      - name: Run ESLint and generate report
         run: |
           cd client
-          mkdir -p lint-results
-          eslint --format json --output-file lint-results/report.json . || true
+          eslint --format json --output-file ./lint-results/report.json . || echo "ESLint finished with errors"
+      - name: List generated files (debug)
+        run: ls -la client/lint-results/
       - name: Upload lint results
         uses: actions/upload-artifact@v4
         with:
