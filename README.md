@@ -88,14 +88,16 @@ npm run dev         # Start development server
 - GET /api/users - Get all users (admin only)
 
 
+
 # RoadBook - Testing Client
 
-![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/main.yml/badge.svg)
+![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 
 ## Architecture de Tests
 
 Emplacement des tests: `client/__tests__/
+
 Notre suite de tests suit une approche multi-niveaux :
 
 ### Tests Unitaires
@@ -118,3 +120,45 @@ Notre suite de tests suit une approche multi-niveaux :
 - Testent la robustesse face aux entrées invalides
 
 [Voir les derniers résultats de tests](https://github.com/Yanstart/RoadBook/actions)
+
+## Commandes de Test
+
+Les tests sont intégrés directement dans le pipeline CI/CD. Vous pouvez exécuter certains tests localement en utilisant les commandes suivantes :
+
+
+
+### Tests Unitaires
+```bash
+npm test -- --t "Unitaire"
+```
+
+### Tests d'Intégration
+```bash
+npm test -- --t "Integration"
+```
+
+### Tests de Performance
+```bash
+npm test -- --t "Performance"
+```
+
+### Tests de Sécurité
+```bash
+npm test -- --t "Security"
+```
+
+### Exécution de tous les tests
+```bash
+npm test
+```
+
+## CI/CD Pipeline Features
+
+Le pipeline CI/CD est configuré pour exécuter des tests lors des pushes sur les branches `develop` et `main`, ainsi que lors des pull requests. Il vérifie notamment :
+
+- **Linting** : Exécution d'ESLint pour analyser le code et générer des rapports.
+- **Tests unitaires et d'intégration** : Tests couvrant les fonctionnalités principales du projet.
+- **Tests de couverture** : Vérification de la couverture des tests.
+
+Les résultats des tests sont disponibles dans le rapport de la suite CI/CD.
+
