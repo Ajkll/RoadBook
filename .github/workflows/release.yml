@@ -1,14 +1,15 @@
-name: Release
+name: Test Env Release
 
 on:
   push:
     tags:
       - 'v*'
     branches:
-      - test-env  # Déclenché aussi sur push direct vers test-env
+      - test-env
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/test-env' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: test-env  # Checkout spécifique de test-env
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       - name: Setup Node
@@ -54,12 +55,13 @@ jobs:
           prerelease: true  # Marqué comme pré-release
 
       - name: Create PR to main
-        if: github.ref == 'refs/heads/test-env' && !startsWith(github.ref, 'refs/tags/')
+        if: github.ref == 'refs/heads/test-env'
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          base: main  # CIBLE
+          head: test-env  # SOURCE
           delete-branch: false
-          title: "Merge test-env to main (v${{ steps.version.outputs.TAG_VERSION }})"
-          body: "Auto-generated PR from test-env branch"
-          labels: "automated-pr,test-release"
+          title: "Merge test-env → main (v${{ steps.version.outputs.TAG_VERSION }})"
+          body: "Ne pas merger avant validation complète"
+          labels: "automated-pr,needs-review"
