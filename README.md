@@ -92,7 +92,6 @@ npm run dev         # Start development server
 # RoadBook - Testing Client
 
 ![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
 
 ## Architecture de Tests
 
