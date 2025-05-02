@@ -40,9 +40,17 @@ jobs:
           npm ci
           cd ../server
           npm ci
-      - name: Run tests
+      - name: Run client tests with coverage
         run: |
           cd client
-          npm test
-          cd ../server
+          npm run test:coverage
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: client/coverage/lcov-report/
+          if-no-files-found: error
+      - name: Run server tests
+        run: |
+          cd server
           npm test

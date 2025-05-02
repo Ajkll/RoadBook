@@ -86,3 +86,35 @@ npm run dev         # Start development server
 - GET /api/users/me - Get current user profile
 - PUT /api/users/me - Update current user profile
 - GET /api/users - Get all users (admin only)
+
+
+# RoadBook - Testing Client
+
+![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/main.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-80%25-yellow)
+
+## Architecture de Tests
+
+Emplacement des tests: `client/__tests__/
+Notre suite de tests suit une approche multi-niveaux :
+
+### Tests Unitaires
+- Testent les fonctions individuelles de manière isolée
+- Mockent toutes les dépendances externes
+- Couvrent la logique métier pure
+
+### Tests d'Intégration
+- Vérifient les interactions entre modules
+- Testent le comportement du système en conditions réelles
+- Utilisent des mocks partiels pour les dépendances externes
+
+### Tests de Performance
+- Mesurent les temps de réponse
+- Vérifient l'efficacité du cache
+- Garantissent des performances minimales
+
+### Tests de Sécurité
+- Vérifient la protection des données sensibles
+- Testent la robustesse face aux entrées invalides
+
+[Voir les derniers résultats de tests](https://github.com/Yanstart/RoadBook/actions)
