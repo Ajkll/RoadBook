@@ -20,17 +20,13 @@ jobs:
         run: |
           cd client
           npm ci
-      - name: Install HTML formatter
-        run: |
-          cd client
-          npm install eslint-formatter-html --no-save
       - name: Create lint directory
         run: mkdir -p client/lint-results
-      - name: Run ESLint and generate HTML report
+      - name: Run ESLint and generate reports
         run: |
           cd client
-          eslint --format html --output-file ./lint-results/report.html . || echo "ESLint completed with errors"
-          eslint --format stylish . # Affiche un résumé dans les logs
+          npx eslint --format html --output-file ./lint-results/report.html . || echo "ESLint completed with errors"
+          npx eslint --format stylish .
       - name: Verify report exists
         run: |
           ls -la client/lint-results/
