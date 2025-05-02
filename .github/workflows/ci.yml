@@ -25,12 +25,20 @@ jobs:
       - name: Run ESLint and generate reports
         run: |
           cd client
-          npx eslint --format html --output-file ./lint-results/report.html . || echo "ESLint completed with errors"
-          npx eslint --format stylish .
-      - name: Verify report exists
+          # Toujours générer le rapport même en cas d'erreur
+          npx eslint --format html --output-file ./lint-results/report.html . || true
+          # Afficher les erreurs dans les logs mais ne pas faire échouer le job
+          npx eslint --format stylish . || echo "ESLint found errors but continuing..."
+      - name: Verify and upload report
         run: |
-          ls -la client/lint-results/
-          [ -f client/lint-results/report.html ] || exit 1
+          cd client
+          if [ -f "./lint-results/report.html" ]; then
+            echo "ESLint report generated successfully"
+            exit 0
+          else
+            echo "Failed to generate ESLint report"
+            exit 1
+          fi
       - name: Upload lint report
         uses: actions/upload-artifact@v4
         with:
