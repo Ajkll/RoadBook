@@ -2,6 +2,10 @@
   "bumpFiles": [
     "package.json",
     "package-lock.json",
-    "app.json"
+    {
+      "filename": "app.json",
+      "type": "json",
+      "jsonpath": "$.expo.version"
+    }
   ]
 }

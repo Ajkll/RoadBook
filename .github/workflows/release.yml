@@ -3,13 +3,18 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # Déclenché par les tags v1.0.0, v1.1.0, etc.
+      - 'v*'
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Nécessaire pour créer des releases
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important pour récupérer les tags
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -18,12 +23,19 @@ jobs:
 
       - run: npm ci
 
+      - name: Extract Tag Version
+        id: extract_version
+        run: |
+          echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v2  # Version mise à jour
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ steps.extract_version.outputs.TAG_VERSION }}
+          release_name: Release ${{ steps.extract_version.outputs.TAG_VERSION }}
+          body: "Automated release for version ${{ steps.extract_version.outputs.TAG_VERSION }}"
           draft: false
           prerelease: false
