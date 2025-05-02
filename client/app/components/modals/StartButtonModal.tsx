@@ -11,6 +11,7 @@ import { useTheme } from '../../constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import ActionSheet from 'react-native-actions-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 interface StartButtonModalProps {
   actionSheetRef: React.RefObject<ActionSheet>;
@@ -26,10 +27,15 @@ const StartButtonModal = ({
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
 
-  const SNAP_POINTS = [160, 230];
+  const handleManualTravel = () => {
+    router.push('/(tabs)/my-routes');
+  };
+
+  const SNAP_POINTS = [100, 200];
 
   return (
     <>
@@ -99,10 +105,23 @@ const StartButtonModal = ({
               styles.startButton,
               !isMapReady && styles.disabledButton
             ]}
-            onPress={onStartPress}
+            onPress={() => {
+              onStartPress();
+              setOverlayVisible(false);
+            }}
             disabled={!isMapReady}
           >
             <Text style={styles.buttonText}>Commencer le trajet</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.manualButton,
+              !isMapReady && styles.disabledButton
+            ]}
+            onPress={handleManualTravel}
+            disabled={!isMapReady}
+          >
+            <Text style={styles.buttonText}>Trajet Manuel</Text>
           </TouchableOpacity>
 
           {!isMapReady && (
@@ -152,6 +171,15 @@ const createStyles = (theme: any) =>
       marginTop: -10,
     },
     startButton: {
+      backgroundColor: theme.colors.primary,
+      alignSelf: 'center',
+      width: '80%',
+      borderRadius: theme.borderRadius.xlarge,
+      padding: 15,
+      marginBottom:20,
+      ...theme.shadow.md,
+    },
+    manualButton: {
       backgroundColor: theme.colors.primary,
       alignSelf: 'center',
       width: '80%',

@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../constants/theme';
 import { Theme } from '../../constants/theme';
+import { useNotifications } from '../NotificationHandler';
 
 interface CopyToClipboardProps {
   text: string;
@@ -26,18 +27,34 @@ export const CopyToClipboard: React.FC<CopyToClipboardProps> = ({
 }) => {
   const theme = useTheme();
   const [copied, setCopied] = useState(false);
+  const { showSuccess, showError } = useNotifications();
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await Clipboard.setStringAsync(text);
+      setCopied(true);
+      showSuccess('✓ Copié', 'Le texte a été copié dans le presse-papiers', {
+        position: 'top',
+      });
+
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      showError('⛔ Erreur', "Échec de la copie dans le presse-papiers", {
+        position: 'top',
+      });
+      console.error('Erreur lors de la copie:', error);
+    }
   };
 
   return (
     <View style={[styles.container, containerStyle]}>
       {showText && <Text style={[styles.text(theme), textStyle]}>{displayText || text}</Text>}
 
-      <TouchableOpacity onPress={handleCopy} style={[styles.iconContainer, iconStyle]}>
+      <TouchableOpacity
+        onPress={handleCopy}
+        style={[styles.iconContainer, iconStyle]}
+        accessibilityLabel="Copier dans le presse-papiers"
+      >
         <MaterialIcons
           name={copied ? 'check' : 'content-copy'}
           size={iconSize}
