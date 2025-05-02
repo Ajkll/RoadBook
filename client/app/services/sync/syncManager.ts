@@ -18,9 +18,9 @@ import {
   clearSyncError,
 } from '../../store/slices/syncSlice';
 import { selectIsInternetReachable } from '../../store/slices/networkSlice';
-import Toast from 'react-native-toast-message';
 import { getGeoapifyRouteInfo } from '../api/getRouteInfo';
 import { getWeather } from '../api/weather';
+import { useNotifications } from '../../components/NotificationHandler';
 
 interface DriveSessionData {
   elapsedTime: number;
@@ -112,14 +112,10 @@ async function saveOnlineSession(data: DriveSessionData): Promise<string> {
 async function saveOfflineSession(data: DriveSessionData, timestamp: number): Promise<string> {
   console.log('Hors ligne: stockage local de la session');
   const sessionPackage = await createPendingSessionPackage(data, timestamp);
+  const { showInfo } = useNotifications();
   await saveSessionPackage(sessionPackage);
 
-  Toast.show({
-    type: 'info',
-    text1: '📴 Mode hors ligne',
-    text2: 'Trajet sauvegardé localement. Synchronisation automatique à la reconnexion.',
-    position: 'bottom',
-  });
+  showInfo('📴 Mode hors ligne', 'Trajet sauvegardé localement. Synchronisation automatique à la reconnexion.');
 
   console.log('Session sauvegardée localement avec ID:', sessionPackage.session.id);
   return sessionPackage.session.id;
@@ -296,12 +292,11 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
 
     if (successCount > 0) {
       await saveLastSyncDate();
-      Toast.show({
-        type: 'success',
-        text1: '🔄 Synchronisation terminée',
-        text2: `${successCount} trajet${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''}`,
-        position: 'bottom',
-      });
+      const { showSuccess } = useNotifications();
+      showSuccess(
+        '🔄 Synchronisation terminée',
+        `${successCount} trajet${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''}`
+      );
     }
 
     return { success: successCount, failed: failedCount };

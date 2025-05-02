@@ -5,9 +5,13 @@ import { FontAwesome, MaterialCommunityIcons, Feather } from '@expo/vector-icons
 import Header from './components/layout/Header';
 import BottomNavigation from './components/ui/BottomNavigation';
 import { useTheme } from './constants/theme';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from './store/slices/networkSlice';
+import OfflineContent from './components/ui/OfflineContent';
 
 const ShareScreen = () => {
   const theme = useTheme();
+  const isConnected = useSelector(selectIsInternetReachable);
   const message = encodeURIComponent('📲 Essaie cette super app ! Elle est top 👉 lien.exemple');
 
   const openURL = async (url: string) => {
@@ -24,6 +28,17 @@ const ShareScreen = () => {
   const shareToEmail = () => openURL(`mailto:?subject=Découvre cette app&body=${message}`);
   const shareToReddit = () =>
     openURL(`https://www.reddit.com/submit?url=${message}&title=Découvre%20cette%20app`);
+
+  if (!isConnected) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar style={theme.dark ? 'light' : 'dark'} />
+        <Header title="Partager l'application" />
+        <OfflineContent message="Impossible de partager. Vérifiez votre connexion internet." />
+        <BottomNavigation />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

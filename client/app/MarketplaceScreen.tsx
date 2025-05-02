@@ -7,6 +7,8 @@ import {
   Image,
   TouchableOpacity,
   Modal,
+  SafeAreaView,
+  ScrollView,
   TextInput,
   ActivityIndicator,
   Dimensions,
@@ -22,6 +24,10 @@ import { useTheme } from './constants/theme';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import GoBackHomeButton from './components/common/GoBackHomeButton';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from './store/slices/networkSlice';
+import OfflineContent from './components/ui/OfflineContent';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 32) / 2 - 8; // 2 colonnes avec marges
@@ -40,6 +46,23 @@ const MarketplaceScreen = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const isConnected = useSelector(selectIsInternetReachable);
+
+  if (!isConnected) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Paiement</Text>
+          <OfflineContent message="Impossible de procéder au paiement. Vérifiez votre connexion internet." />
+          <GoBackHomeButton
+            containerStyle={{
+              alignSelf: 'flex-start'
+            }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -358,6 +381,12 @@ const MarketplaceScreen = () => {
           </View>
         </View>
       </Modal>
+      <GoBackHomeButton
+        containerStyle={{
+          marginBottom: 10,
+          marginTop: 20,
+        }}
+      />
     </View>
   );
 };

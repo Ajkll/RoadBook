@@ -117,6 +117,10 @@ function RootNavigator() {
           options={{ title: 'Dashboard', drawerLabel: 'Dashboard' }}
         />
         <Drawer.Screen
+          name="PaymentScreen"
+          options={{ title: 'Payment', drawerLabel: 'Payment' }}
+        />
+        <Drawer.Screen
           name="MyRoadbookScreen"
           options={{ title: 'Mon Carnet', drawerLabel: 'Mon Carnet' }}
         />

@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from './constants/theme';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from './store/slices/networkSlice';
+import OfflineContent from './components/ui/OfflineContent';
+import GoBackHomeButton from './components/common/GoBackHomeButton';
 
 interface ContactProps {
   name: string;
@@ -34,7 +38,25 @@ const BlackScreen: React.FC = () => {
   const styles = makeStyles(theme);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const navigation = useNavigation();
+  const isConnected = useSelector(selectIsInternetReachable);
 
+  if (!isConnected) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Paiement</Text>
+          <OfflineContent message="Impossible de procéder au paiement. Vérifiez votre connexion internet." />
+          <GoBackHomeButton
+            containerStyle={{
+              marginBottom: theme.spacing.md,
+              marginTop: theme.spacing.xxl,
+              alignSelf: 'flex-start'
+            }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   const contacts = [
     { name: 'Guillaume', message: 'Bonjour' },
     { name: 'Julien', message: 'On peut se voir quand ?' },
