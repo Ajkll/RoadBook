@@ -86,3 +86,78 @@ npm run dev         # Start development server
 - GET /api/users/me - Get current user profile
 - PUT /api/users/me - Update current user profile
 - GET /api/users - Get all users (admin only)
+
+
+
+# RoadBook - Testing Client
+
+![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/ci.yml/badge.svg)
+
+## Architecture de Tests
+
+Emplacement des tests: `client/__tests__/
+
+Notre suite de tests suit une approche multi-niveaux :
+
+### Tests Unitaires
+- Testent les fonctions individuelles de manière isolée
+- Mockent toutes les dépendances externes
+- Couvrent la logique métier pure
+
+### Tests d'Intégration
+- Vérifient les interactions entre modules
+- Testent le comportement du système en conditions réelles
+- Utilisent des mocks partiels pour les dépendances externes
+
+### Tests de Performance
+- Mesurent les temps de réponse
+- Vérifient l'efficacité du cache
+- Garantissent des performances minimales
+
+### Tests de Sécurité
+- Vérifient la protection des données sensibles
+- Testent la robustesse face aux entrées invalides
+
+[Voir les derniers résultats de tests](https://github.com/Yanstart/RoadBook/actions)
+
+## Commandes de Test
+
+Les tests sont intégrés directement dans le pipeline CI/CD. Vous pouvez exécuter certains tests localement en utilisant les commandes suivantes :
+
+
+
+### Tests Unitaires
+```bash
+npm test -- --t "Unitaire"
+```
+
+### Tests d'Intégration
+```bash
+npm test -- --t "Integration"
+```
+
+### Tests de Performance
+```bash
+npm test -- --t "Performance"
+```
+
+### Tests de Sécurité
+```bash
+npm test -- --t "Security"
+```
+
+### Exécution de tous les tests
+```bash
+npm test
+```
+
+## CI/CD Pipeline Features
+
+Le pipeline CI/CD est configuré pour exécuter des tests lors des pushes sur les branches `develop` et `main`, ainsi que lors des pull requests. Il vérifie notamment :
+
+- **Linting** : Exécution d'ESLint pour analyser le code et générer des rapports.
+- **Tests unitaires et d'intégration** : Tests couvrant les fonctionnalités principales du projet.
+- **Tests de couverture** : Vérification de la couverture des tests.
+
+Les résultats des tests sont disponibles dans le rapport de la suite CI/CD.
+
