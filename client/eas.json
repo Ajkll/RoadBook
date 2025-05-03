@@ -10,18 +10,7 @@
       },
       "ios": {
         "simulator": true
-      },
-      "channel": "production"
-    },
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development"
+      }
     }
-  },
-  "cli": {
-    "version": ">= 5.9.1",
-    "requireCommit": true,
-    "appVersionSource": "remote"
   }
 }
