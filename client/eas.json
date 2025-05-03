@@ -1,16 +1,25 @@
 {
+  "cli": {
+    "version": ">= 5.9.1",
+    "appVersionSource": "remote"
+  },
   "build": {
-    "preview": {
+    "development": {
       "developmentClient": true,
       "distribution": "internal"
     },
+    "preview": {
+      "distribution": "internal"
+    },
     "production": {
+      "autoIncrement": true,
       "android": {
         "buildType": "apk",
-        "image": "latest",
-        "gradleCommand": ":app:assembleRelease",
+        "credentialsSource": "remote",
+        "gradleCommand": ":app:bundleRelease",
+        "withoutCredentials": false,
         "env": {
-          "EXPO_NO_BUNDLE_COMPRESSION": "1"
+          "EXPO_DEBUG": "true"
         }
       },
       "ios": {
