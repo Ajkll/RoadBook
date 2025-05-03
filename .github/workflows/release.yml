@@ -27,21 +27,26 @@ jobs:
 
       - run: npm ci
 
-      - name: Extract latest changelog entry
+      - name: Extract changelog entry
         id: changelog
         run: |
-          # Get current tag version (without 'v' prefix)
-          CURRENT_VERSION=${GITHUB_REF#refs/tags/v}
+          # Get current tag version (with 'v' prefix)
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
           
           # Extract the corresponding changelog section
-          SECTION=$(awk -v version="$CURRENT_VERSION" '
-            BEGIN {print = 0}
+          SECTION=$(awk -v tag="$CURRENT_TAG" '
+            BEGIN {found=0}
             /^## / {
-              if ($2 == "["version"]") {print = 1; next}
-              else if ($2 ~ /^\[[0-9]+\.[0-9]+\.[0-9]+\]/) {print = 0}
+              if ($0 ~ "\\["tag"\\]") {found=1; next}
+              else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
             }
-            print && !/^## / {print $0}
+            found {print}
           ' client/CHANGELOG.md)
+          
+          # If empty, get the whole file
+          if [ -z "$SECTION" ]; then
+            SECTION=$(cat client/CHANGELOG.md)
+          fi
           
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$SECTION" >> $GITHUB_OUTPUT
@@ -67,7 +72,7 @@ jobs:
             
             </details>
             
-            [ Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
             
             ---
             *Release automatique générée le ${{ github.event.head_commit.timestamp }}*
