@@ -1,6 +1,0 @@
-{
-  "android": {
-    "usesCleartextTraffic": true,
-    "enableBundleCompression": false
-  }
-}

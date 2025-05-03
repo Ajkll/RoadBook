@@ -6,11 +6,19 @@
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "latest",
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "EXPO_NO_BUNDLE_COMPRESSION": "1"
+        }
       },
       "ios": {
         "simulator": true
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
