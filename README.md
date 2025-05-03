@@ -161,3 +161,13 @@ Le pipeline CI/CD est configuré pour exécuter des tests lors des pushes sur le
 
 Les résultats des tests sont disponibles dans le rapport de la suite CI/CD.
 
+## Gestionnaire de paquets
+
+Ce projet utilise **Yarn** pour gérer les dépendances.  
+Merci de **ne pas utiliser `npm install`**, car cela peut créer des conflits avec `yarn.lock`.
+
+### Installer les dépendances
+
+```bash
+yarn install
+

@@ -1,11 +1,21 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Exécuter lint-staged dans le dossier client
-cd client && npx lint-staged
-
-# Revenir à la racine
-cd ..
-
-# Exécuter lint-staged pour les fichiers serveur si nécessaire
-cd server && npx lint-staged
+# Bloque le commit si package-lock.json est détecté
+if [ -f "package-lock.json" ]; then
+  echo "❌ ERREUR : package-lock.json détecté dans le commit !"
+  echo ""
+  echo "Ce projet utilise Yarn comme gestionnaire de paquets."
+  echo "Pour corriger :"
+  echo ""
+  echo "1. Supprimez le fichier package-lock.json :"
+  echo "   rm package-lock.json"
+  echo ""
+  echo "2. Utilisez Yarn pour installer les dépendances :"
+  echo "   yarn install"
+  echo ""
+  echo "3. Recommencez votre commit :"
+  echo "   git add . && git commit -m 'votre message'"
+  echo ""
+  exit 1
+fi
