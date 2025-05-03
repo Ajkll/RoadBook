@@ -48,8 +48,11 @@ jobs:
             SECTION=$(cat client/CHANGELOG.md)
           fi
           
+          # Clean up the markdown content
+          CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
+          
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "$SECTION" >> $GITHUB_OUTPUT
+          echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
@@ -66,9 +69,7 @@ jobs:
             <details>
             <summary>Dernières modifications (cliquez pour déplier)</summary>
             
-            ```markdown
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-            ```
             
             </details>
             
@@ -96,9 +97,7 @@ jobs:
             <details>
             <summary>Dernières modifications</summary>
             
-            ```markdown
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-            ```
             
             </details>
             
