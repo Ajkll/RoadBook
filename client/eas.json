@@ -1,17 +1,27 @@
 {
   "build": {
     "preview": {
-      "android": {
-        "buildType": "apk"
-      }
+      "developmentClient": true,
+      "distribution": "internal"
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"  // Pour un .aab (Google Play)
+        "buildType": "apk"
       },
       "ios": {
-        "distribution": "store"  // Pour l'App Store
-      }
+        "simulator": true
+      },
+      "channel": "production"
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
     }
+  },
+  "cli": {
+    "version": ">= 5.9.1",
+    "requireCommit": true,
+    "appVersionSource": "remote"
   }
 }
