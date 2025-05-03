@@ -2,10 +2,10 @@ name: Test Env Release
 
 on:
   push:
-    branches:
-      - test-env  # Déclenché sur push direct vers test-env (sans tag)
     tags:
-      - 'v*'      # Déclenché sur création de tag
+      - 'v*'
+    branches:
+      - test-env
 
 jobs:
   release:
@@ -27,29 +27,32 @@ jobs:
 
       - run: npm ci
 
-      - name: Extract Version
-        id: version
+      - name: Get Changelog Content
+        id: changelog
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            echo "TAG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "TAG_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-          fi
+          # Récupère tout le contenu du CHANGELOG.md
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      # Étape Release (seulement pour les tags)
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.version.outputs.TAG_VERSION }}
-          release_name: "v${{ steps.version.outputs.TAG_VERSION }} (Test Env)"
-          body: "Pré-release depuis test-env. Changelog: ./CHANGELOG.md"
+          tag_name: ${{ github.ref_name }}
+          release_name: "v${{ github.ref_name }} (Test Env)"
+          body: |
+            ### Version: ${{ github.ref_name }}
+            ### Branch: test-env
+            
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            **Automatiquement généré depuis test-env**
           draft: false
           prerelease: true
 
-      # Étape PR (seulement pour les pushes directs sur test-env SANS tag)
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
         uses: peter-evans/create-pull-request@v5
@@ -58,9 +61,5 @@ jobs:
           base: main
           head: test-env
           title: "Merge test-env → main (v${{ steps.version.outputs.TAG_VERSION }})"
-          body: |
-            **Ne pas merger avant validation complète**
-            - [ ] Tests validés
-            - [ ] Revue UX nécessaire
+          body: "Ne pas merger avant validation complète"
           labels: "automated-pr,needs-review"
-          assignees: "Ajkll"
