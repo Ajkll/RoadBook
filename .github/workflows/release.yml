@@ -30,9 +30,8 @@ jobs:
       - name: Get Changelog Content
         id: changelog
         run: |
-          # Récupère tout le contenu du CHANGELOG.md
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          cat client/CHANGELOG.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
