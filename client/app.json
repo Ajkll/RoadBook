@@ -34,6 +34,15 @@
         "RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.roadbook.tracker"
@@ -66,6 +75,12 @@
         "projectId": "0bac486a-cff3-4d2d-a925-f202fc65f851"
       }
     },
-    "owner": "ajkll"
+    "owner": "ajkll",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0bac486a-cff3-4d2d-a925-f202fc65f851"
+    }
   }
 }
