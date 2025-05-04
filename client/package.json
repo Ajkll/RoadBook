@@ -1,7 +1,7 @@
 {
   "name": "client",
   "main": "expo-router/entry",
-  "version": "1.22.0",
+  "version": "1.23.0",
   "scripts": {
     "start": "expo start --dev-client",
     "start:expo": "expo start",
@@ -11,15 +11,13 @@
     "test": "jest --config=jest.config.mjs",
     "lint": "eslint --fix .",
     "test:coverage": "jest --config=jest.config.mjs --coverage",
+    "preversion": "node update-app-config.js",
     "release": "standard-version",
-    "release:minor": "standard-version --release-as minor --skip.tag",
-    "release:patch": "standard-version --release-as patch --skip.tag",
-    "release:major": "standard-version --release-as major --skip.tag",
+    "release:minor": "standard-version --release-as minor",
+    "release:patch": "standard-version --release-as patch",
+    "release:major": "standard-version --release-as major",
     "push-release": "git push --follow-tags origin test-env",
-    "full-release:minor": "yarn release:minor && yarn push-release",
-    "full-release:patch": "yarn release:patch && yarn push-release",
-    "full-release:major": "yarn release:major && yarn push-release",
-    "preversion": "node update-app-config.js"
+    "full-release": "yarn release && yarn push-release"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
