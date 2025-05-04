@@ -41,7 +41,10 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas build --platform android --profile production --non-interactive --no-wait
+          eas build --platform android --profile production \
+            --non-interactive \
+            --no-wait \
+            --skip-credentials-check
 
       - name: Wait for build completion
         env:
