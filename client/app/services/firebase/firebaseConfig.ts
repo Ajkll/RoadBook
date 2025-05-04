@@ -1,8 +1,7 @@
 // app/services/firebase/firebaseConfig.ts
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-
-console.log('✅ Initialisation de Firebase - Début');
+import { initializeApp } from 'firebase/app';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBWN9S1okxnIkxAmmqiu5LmkKsX6956lDs',
@@ -14,11 +13,16 @@ const firebaseConfig = {
   measurementId: 'G-TPBQCVKT71',
 };
 
-// Initialise Firebase si pas encore fait
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-const db = getFirestore(app);
+// Initialize Firestore with settings for Expo Go compatibility
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false,
+});
 
-console.log('✅ Firestore initialisé avec succès');
+// Initialize Storage
+const storage = getStorage(app);
 
-export { db };
+export { app, db, storage };

@@ -90,6 +90,26 @@ npm run dev         # Start development server
 
 # Mises en Prod
 
+Assurez vous d'utilisé expo go pour le dev en local
+
+› Using Expo Go
+› Press s │ switch to development build
+
+pour la production nous avons la possibilité de construire nos .apk ou .aab ou autres avec les commandes suivantes (exemples):
+
+- apk
+```bash
+eas build --platform android --profile preview
+```
+
+- aab
+
+```bash
+npx eas build --platform android
+```
+
+Note : beaucoup d'autres option sont ouvert , notre code etant clean sur l'utilisation de ses librairie.
+
 # RoadBook - Testing Client
 
 ![CI Status](https://github.com/Yanstart/RoadBook/actions/workflows/ci.yml/badge.svg)

@@ -1,4 +1,8 @@
 // client/app/_layout.tsx
+import 'react-native-get-random-values';
+import '@react-native-async-storage/async-storage';
+import { enableLegacyWebImplementation } from 'react-native-gesture-handler';
+enableLegacyWebImplementation(true);
 import React, { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'expo-router/drawer';
 import { Platform, View, ActivityIndicator, Alert } from 'react-native';
