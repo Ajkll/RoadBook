@@ -35,12 +35,15 @@ jobs:
       - name: Configure Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo "Expo token configured"
+        run: |
+          echo $EXPO_TOKEN | eas credentials
+          echo "Expo token configured"
 
       - name: Build Android App Bundle
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          mkdir -p build
           eas build --platform android --profile production \
             --non-interactive \
             --no-wait \
@@ -50,11 +53,30 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          BUILD_ID=$(eas build:list --platform android --profile production --json | jq -r '.[0].id')
-          eas build:wait --id $BUILD_ID
-          eas build:download --platform android --id $BUILD_ID --output ./build/app.aab
+          echo "Waiting for build to complete..."
+          # Attendre un peu pour que la build commence
+          sleep 10
+          
+          # Récupérer le dernier ID de build
+          BUILD_ID=$(eas build:list --platform android --status in-queue,in-progress --non-interactive --json | jq -r '.[0].id')
+          
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" == "null" ]; then
+            echo "No active build found, trying to get the latest build"
+            BUILD_ID=$(eas build:list --platform android --limit 1 --non-interactive --json | jq -r '.[0].id')
+          fi
+          
+          echo "Found build ID: $BUILD_ID"
+          
+          # Attendre la fin du build
+          eas build:wait --id $BUILD_ID --non-interactive
+          
+          # Télécharger les artifacts
+          echo "Downloading build artifacts..."
+          mkdir -p build
+          eas build:download --platform android --id $BUILD_ID --output ./build/app.aab --non-interactive
           
           # Convertir AAB en APK (via bundletool)
+          echo "Converting AAB to APK..."
           wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
           java -jar bundletool-all-1.15.6.jar build-apks \
             --bundle=./build/app.aab \

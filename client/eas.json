@@ -17,13 +17,16 @@
         "buildType": "app-bundle",
         "credentialsSource": "remote",
         "gradleCommand": ":app:bundleRelease",
-        "withoutCredentials": false,
-        "env": {
-          "EXPO_DEBUG": "true"
-        }
+        "withoutCredentials": false
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "EXPO_DEBUG": "true"
+      },
+      "cache": {
+        "key": "production-v1"
       }
     }
   },
