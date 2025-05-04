@@ -32,9 +32,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Prebuild Android
-        run: npx expo prebuild --platform android --non-interactive
-
       - name: Configure Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
