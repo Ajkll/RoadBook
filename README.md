@@ -104,6 +104,7 @@ yarn full-release:minor - Release minor + push automatique
    yarn check-version
    git pull origin main
 
+
    Lancer un release :
    yarn release:minor (ou patch/major)
 
