@@ -40,7 +40,8 @@ jobs:
       - name: Build Android App Bundle
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile production --no-wait
+        run: |
+          echo "y" | eas build --platform android --profile production --no-wait
 
       - name: Wait for build completion
         env:
