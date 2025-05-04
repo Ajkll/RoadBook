@@ -8,19 +8,24 @@ import SoundCardParameters from './components/parameters/soundCardParameters';
 import { useTheme } from './constants/theme';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import {
   registerForPushNotificationsAsync,
   scheduleMotivationalNotification,
+  scheduleLocalNotification,
 } from './utils/notifications';
 
 const SettingsScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation();
-  
+
   // États des fonctionnalités
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [useMiles, setUseMiles] = useState(false);
+
+  // Déterminer si nous sommes dans Expo Go
+  const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
   // Gestion des notifications
   useEffect(() => {
@@ -32,12 +37,40 @@ const SettingsScreen = () => {
   }, [notificationsEnabled]);
 
   const setupNotifications = async () => {
-    const token = await registerForPushNotificationsAsync();
-    if (!token) {
+    try {
+      // Si nous sommes dans Expo Go, afficher un message informatif
+      if (isExpoGo && Platform.OS !== 'web') {
+        // Enregistrement des notifications locales
+        const token = await registerForPushNotificationsAsync();
+
+        if (token === undefined && Platform.OS !== 'web') {
+          // Créer une notification locale de test pour montrer que les notifications fonctionnent toujours
+          await scheduleLocalNotification(
+            "Test de notification",
+            "Les notifications locales fonctionnent dans Expo Go!",
+            3
+          );
+
+          // Optionnel: Informer l'utilisateur de la limitation
+          Alert.alert(
+            "Mode développement",
+            "Dans Expo Go, seules les notifications locales sont disponibles. Pour tester les notifications push, utilisez un build de développement.",
+            [{ text: "OK" }]
+          );
+        }
+      } else {
+        // Comportement normal pour les builds de développement
+        const token = await registerForPushNotificationsAsync();
+        if (!token && Platform.OS !== 'web') {
+          setNotificationsEnabled(false);
+          return;
+        }
+        await scheduleMotivationalNotification(25, 'daily');
+      }
+    } catch (error) {
+      console.error("Erreur lors de la configuration des notifications:", error);
       setNotificationsEnabled(false);
-      return;
     }
-    await scheduleMotivationalNotification(25, 'daily');
   };
 
   const cancelAllNotifications = async () => {
@@ -61,9 +94,9 @@ const SettingsScreen = () => {
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left']}>
       <StatusBar style={darkModeEnabled ? 'light' : 'dark'} />
-      <Header 
-        title="Paramètres" 
-        onMenuPress={openDrawer} 
+      <Header
+        title="Paramètres"
+        onMenuPress={openDrawer}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -72,9 +105,12 @@ const SettingsScreen = () => {
 
         {/* Notifications */}
         <View style={styles.settingItem}>
-          <Text style={styles.label}>Activer les notifications</Text>
-          <Switch 
-            value={notificationsEnabled} 
+          <Text style={styles.label}>
+            Activer les notifications
+            {isExpoGo && Platform.OS !== 'web' ? ' (locales uniquement)' : ''}
+          </Text>
+          <Switch
+            value={notificationsEnabled}
             onValueChange={toggleNotifications}
             trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
           />
@@ -83,8 +119,8 @@ const SettingsScreen = () => {
         {/* Mode sombre */}
         <View style={styles.settingItem}>
           <Text style={styles.label}>Mode sombre</Text>
-          <Switch 
-            value={darkModeEnabled} 
+          <Switch
+            value={darkModeEnabled}
             onValueChange={toggleDarkMode}
             trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
           />
@@ -95,8 +131,8 @@ const SettingsScreen = () => {
           <Text style={styles.label}>
             Unité de mesure : {useMiles ? 'Miles' : 'Kilomètres'}
           </Text>
-          <Switch 
-            value={useMiles} 
+          <Switch
+            value={useMiles}
             onValueChange={toggleUnits}
             trackColor={{ false: theme.colors.secondary, true: theme.colors.primary }}
           />
