@@ -17,7 +17,7 @@
         "buildType": "app-bundle",
         "credentialsSource": "remote",
         "gradleCommand": ":app:bundleRelease",
-        "withoutCredentials": true,
+        "withoutCredentials": false,
         "env": {
           "EXPO_DEBUG": "true"
         }
