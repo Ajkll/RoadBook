@@ -32,13 +32,19 @@ jobs:
 
       - run: npm ci
 
-      - name: Login to Expo
-        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+      - name: Configure Expo token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: echo "Expo token configured"
 
       - name: Build Android App Bundle
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --profile production --no-wait
 
       - name: Wait for build completion
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           BUILD_ID=$(eas build:list --platform android --profile production --json | jq -r '.[0].id')
           eas build:wait --id $BUILD_ID
