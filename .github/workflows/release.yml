@@ -36,8 +36,8 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo $EXPO_TOKEN | eas credentials
-          echo "Expo token configured"
+          echo "EXPO_TOKEN configured as environment variable"
+          eas whoami
 
       - name: Build Android App Bundle
         env:
@@ -47,7 +47,8 @@ jobs:
           eas build --platform android --profile production \
             --non-interactive \
             --no-wait \
-            --clear-cache
+            --clear-cache \
+            --skip-credentials-check
 
       - name: Wait for build completion
         env:
