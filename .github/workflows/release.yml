@@ -17,12 +17,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup environment
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-          npm install -g eas-cli
+          npm install -g eas-cli@5.9.1
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -39,51 +44,76 @@ jobs:
           echo "EXPO_TOKEN configured as environment variable"
           eas whoami
 
-      # Vérifier l'existence des fichiers app.json ou app.config.js
-      - name: Check app config
+      # Générer un keystore pour le build local
+      - name: Generate Keystore
         run: |
-          if [ -f "app.json" ]; then
-            echo "app.json exists"
-            cat app.json
-          elif [ -f "app.config.js" ]; then
-            echo "app.config.js exists"
-            cat app.config.js
-          else
-            echo "No app configuration found!"
-            ls -la
-          fi
+          mkdir -p android/app
+          keytool -genkeypair -v \
+            -keystore keystore.jks \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Upload Key, OU=Development, O=YourOrganization, L=City, ST=State, C=Country" \
+            -storepass android \
+            -keypass android
 
-      # Utiliser directement l'API EAS submit pour déclencher un build
-      - name: Submit build directly to EAS
+      # Création du fichier de config eas.json temporaire pour le build local
+      - name: Create temporary eas.json config
+        run: |
+          cat > eas.local.json << EOF
+          {
+            "cli": {
+              "version": ">= 5.9.1",
+              "appVersionSource": "remote"
+            },
+            "build": {
+              "local": {
+                "android": {
+                  "buildType": "apk",
+                  "gradleCommand": ":app:assembleRelease",
+                  "env": {
+                    "ANDROID_SDK_ROOT": "$ANDROID_SDK_ROOT"
+                  }
+                }
+              }
+            }
+          }
+          EOF
+          
+          cat eas.local.json
+
+      # Exécuter un build local avec EAS
+      - name: Local build with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           mkdir -p build
           
-          # Créer un fichier temporaire de keystore vide pour satisfaire la vérification
-          mkdir -p android/keystores
-          touch android/keystores/release.keystore
+          # Configurer le keystore temporaire
+          mkdir -p android/app
+          cp keystore.jks android/app/
           
-          echo '{"android":{"keystore":{"keystorePath":"android/keystores/release.keystore","keystorePassword":"placeholder","keyAlias":"placeholder","keyPassword":"placeholder"}}}' > ./android-credentials.json
+          # Créer le fichier de configuration gradle.properties
+          mkdir -p android
+          echo 'MYAPP_UPLOAD_STORE_FILE=keystore.jks' > android/gradle.properties
+          echo 'MYAPP_UPLOAD_KEY_ALIAS=upload' >> android/gradle.properties
+          echo 'MYAPP_UPLOAD_STORE_PASSWORD=android' >> android/gradle.properties
+          echo 'MYAPP_UPLOAD_KEY_PASSWORD=android' >> android/gradle.properties
           
-          eas build --platform android --profile production \
-            --non-interactive \
-            --no-wait \
-            --skip-credentials-check \
-            --local-build-artifact-path "./build/app.aab" \
-            --output-file "./build/app.aab"
+          # Exécuter le build local (avec le fichier eas.json modifié)
+          eas build:configure
+          eas build --platform android --profile local --local --output=build/app.apk --config=eas.local.json
 
-      # Continuer avec le reste du workflow
-      - name: Convert AAB to APK
+      # Si le build local échoue, essayer la méthode de fallback
+      - name: Fallback - use prebuild and Gradle directly
+        if: failure()
         run: |
-          echo "Converting AAB to APK..."
-          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
-          java -jar bundletool-all-1.15.6.jar build-apks \
-            --bundle=./build/app.aab \
-            --output=./build/app.apks \
-            --mode=universal
-          unzip ./build/app.apks -d ./build
-          mv ./build/universal.apk ./build/app.apk
+          npx expo prebuild --platform android
+          cd android
+          ./gradlew assembleRelease
+          mkdir -p ../build
+          cp app/build/outputs/apk/release/app-release.apk ../build/app.apk
 
       - name: Extract changelog entry
         id: changelog
@@ -128,13 +158,11 @@ jobs:
             
             **Artifacts disponibles:**
             - Roadbook.apk (Android Package)
-            - Roadbook.aab (Android App Bundle)
             
             [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
-            build/app.aab
 
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
