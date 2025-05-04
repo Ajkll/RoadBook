@@ -13,11 +13,16 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          npm install -g eas-cli
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -27,13 +32,31 @@ jobs:
 
       - run: npm ci
 
+      - name: Login to Expo
+        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android App Bundle
+        run: eas build --platform android --profile production --no-wait
+
+      - name: Wait for build completion
+        run: |
+          BUILD_ID=$(eas build:list --platform android --profile production --json | jq -r '.[0].id')
+          eas build:wait --id $BUILD_ID
+          eas build:download --platform android --id $BUILD_ID --output ./build/app.aab
+          
+          # Convertir AAB en APK (via bundletool)
+          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+          java -jar bundletool-all-1.15.6.jar build-apks \
+            --bundle=./build/app.aab \
+            --output=./build/app.apks \
+            --mode=universal
+          unzip ./build/app.apks -d ./build
+          mv ./build/universal.apk ./build/app.apk
+
       - name: Extract changelog entry
         id: changelog
         run: |
-          # Get current tag version (with 'v' prefix)
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          
-          # Extract the corresponding changelog section
           SECTION=$(awk -v tag="$CURRENT_TAG" '
             BEGIN {found=0}
             /^## / {
@@ -43,42 +66,43 @@ jobs:
             found {print}
           ' client/CHANGELOG.md)
           
-          # If empty, get the whole file
           if [ -z "$SECTION" ]; then
             SECTION=$(cat client/CHANGELOG.md)
           fi
           
-          # Clean up the markdown content
           CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
           
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Create Release with Artifacts
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: "v${{ github.ref_name }} (Test Env)"
+          name: "v${{ github.ref_name }} (Test Env)"
           body: |
             ### Version ${{ github.ref_name }} (Test Environment)
             
             <details>
-            <summary>Dernières modifications (cliquez pour déplier)</summary>
+            <summary>Dernières modifications</summary>
             
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
             
             </details>
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+            **Artifacts disponibles:**
+            - Roadbook.apk (Android Package)
+            - Roadbook.aab (Android App Bundle)
             
-            ---
-            *Release automatique générée le ${{ github.event.head_commit.timestamp }}*
-          draft: false
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
           prerelease: true
+          files: |
+            build/app.apk
+            build/app.aab
 
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
@@ -92,7 +116,7 @@ jobs:
             ### Nouvelles modifications dans test-env
             
             **Version:** ${{ github.ref_name }}
-            **Statut:** Pré-release
+            **Artifacts:** [Voir la release](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }})
             
             <details>
             <summary>Dernières modifications</summary>
@@ -100,9 +124,4 @@ jobs:
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
             
             </details>
-            
-            [Voir le diff complet](https://github.com/${{ github.repository }}/compare/main...test-env)
-            
-            ---
-            *Ne pas merger avant validation complète*
           labels: "automated-pr,needs-review"
