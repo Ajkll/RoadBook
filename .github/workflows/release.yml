@@ -41,7 +41,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          echo "y" | eas build --platform android --profile production
+          eas build --platform android --profile production --non-interactive --no-wait
 
       - name: Wait for build completion
         env:
