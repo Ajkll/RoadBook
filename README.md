@@ -87,6 +87,46 @@ npm run dev         # Start development server
 - PUT /api/users/me - Update current user profile
 - GET /api/users - Get all users (admin only)
 
+# Gestion des versions - Workflow
+ - Commandes disponibles
+```bash
+yarn check-version - Affiche la version actuelle (tag et package.json)
+yarn release:patch - Crée un release patch (1.0.0 → 1.0.1)
+yarn release:minor - Crée un release minor (1.0.0 → 1.1.0)
+yarn release:major - Crée un release major (1.0.0 → 2.0.0)
+yarn push-release - Push les changements + tags
+yarn full-release:minor - Release minor + push automatique
+```
+
+- Workflow standard
+
+   Avant de commencer :
+   yarn check-version
+   git pull origin main
+
+   Lancer un release :
+   yarn release:minor (ou patch/major)
+
+   Vérifier les changements :
+   git status
+   cat CHANGELOG.md
+
+   Publier :
+   yarn push-release
+   (ou yarn full-release:minor pour tout faire en une commande)
+
+- Fichiers modifiés
+
+    - package.json (version)
+
+    - package-lock.json (version)
+
+    - app.config.js (version Expo)
+
+    - CHANGELOG.md (notes de version)
+
+Les tags Git sont créés automatiquement avec le format vX.Y.Z
+
 
 # Mises en Prod
 
