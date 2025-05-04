@@ -24,7 +24,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-          npm install -g eas-cli@5.9.1
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -33,9 +32,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'yarn'
 
-      - run: npm ci
+      - name: Install dependencies with Yarn
+        run: |
+          yarn global add eas-cli@16.4.0
+          yarn install --frozen-lockfile
+
+      - name: Verify EAS CLI version
+        run: |
+          eas --version
+          echo "EAS CLI installed successfully"
 
       - name: Configure Expo token
         env:
@@ -64,7 +71,7 @@ jobs:
           cat > eas.local.json << EOF
           {
             "cli": {
-              "version": ">= 5.9.1",
+              "version": ">= 16.4.0",
               "appVersionSource": "remote"
             },
             "build": {
@@ -83,56 +90,90 @@ jobs:
           
           cat eas.local.json
 
-      # Exécuter un build local avec EAS
-      - name: Local build with EAS
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Configuration pour le build local
+      - name: Prepare for local build
         run: |
           mkdir -p build
           
           # Configurer le keystore temporaire
-          mkdir -p android/app
           cp keystore.jks android/app/
           
           # Créer le fichier de configuration gradle.properties
-          mkdir -p android
+          mkdir -p ~/.gradle
           echo 'MYAPP_UPLOAD_STORE_FILE=keystore.jks' > android/gradle.properties
           echo 'MYAPP_UPLOAD_KEY_ALIAS=upload' >> android/gradle.properties
           echo 'MYAPP_UPLOAD_STORE_PASSWORD=android' >> android/gradle.properties
           echo 'MYAPP_UPLOAD_KEY_PASSWORD=android' >> android/gradle.properties
-          
-          # Exécuter le build local (avec le fichier eas.json modifié)
-          eas build:configure
-          eas build --platform android --profile local --local --output=build/app.apk --config=eas.local.json
+          echo 'org.gradle.daemon=true' >> ~/.gradle/gradle.properties
+          echo 'org.gradle.jvmargs=-Xmx4608m' >> ~/.gradle/gradle.properties
 
-      # Si le build local échoue, essayer la méthode de fallback
-      - name: Fallback - use prebuild and Gradle directly
-        if: failure()
+      # Méthode 1: Utiliser eas build en local
+      - name: Build with EAS local
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx expo prebuild --platform android
+          # Configurer le projet pour Android
+          eas build:configure --platform android
+          
+          # Exécuter le build local
+          eas build --platform android --profile local --local --output=build/app.apk --config=eas.local.json
+        continue-on-error: true
+
+      # Méthode 2: Si le build EAS échoue, utiliser expo directement
+      - name: Fallback - use expo directly
+        if: ${{ failure() }}
+        run: |
+          echo "EAS build failed, attempting direct build with expo..."
+          yarn global add expo-cli
+          npx expo prebuild --platform android --clean
           cd android
-          ./gradlew assembleRelease
+          JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 ./gradlew assembleRelease
           mkdir -p ../build
           cp app/build/outputs/apk/release/app-release.apk ../build/app.apk
+
+      # Vérifier que le build a bien généré un APK
+      - name: Verify APK exists
+        run: |
+          if [ ! -f build/app.apk ]; then
+            echo "Build failed - no APK was generated"
+            exit 1
+          else
+            ls -la build/
+            echo "APK generated successfully"
+          fi
 
       - name: Extract changelog entry
         id: changelog
         run: |
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          SECTION=$(awk -v tag="$CURRENT_TAG" '
-            BEGIN {found=0}
-            /^## / {
-              if ($0 ~ "\\["tag"\\]") {found=1; next}
-              else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
-            }
-            found {print}
-          ' client/CHANGELOG.md)
           
-          if [ -z "$SECTION" ]; then
-            SECTION=$(cat client/CHANGELOG.md)
+          if [ -f "client/CHANGELOG.md" ]; then
+            CHANGELOG_PATH="client/CHANGELOG.md"
+          elif [ -f "CHANGELOG.md" ]; then
+            CHANGELOG_PATH="CHANGELOG.md"
+          else
+            echo "CHANGELOG not found"
+            CHANGELOG_PATH=""
           fi
           
-          CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
+          if [ -n "$CHANGELOG_PATH" ]; then
+            SECTION=$(awk -v tag="$CURRENT_TAG" '
+              BEGIN {found=0}
+              /^## / {
+                if ($0 ~ "\\["tag"\\]") {found=1; next}
+                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
+              }
+              found {print}
+            ' $CHANGELOG_PATH)
+          
+            if [ -z "$SECTION" ]; then
+              SECTION=$(cat $CHANGELOG_PATH)
+            fi
+          
+            CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
+          else
+            CLEAN_SECTION="No changelog available"
+          fi
           
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
@@ -159,7 +200,7 @@ jobs:
             **Artifacts disponibles:**
             - Roadbook.apk (Android Package)
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/test-env/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
