@@ -44,7 +44,7 @@ jobs:
           eas build --platform android --profile production \
             --non-interactive \
             --no-wait \
-            --skip-credentials-check
+            --freeze-credentials
 
       - name: Wait for build completion
         env:
