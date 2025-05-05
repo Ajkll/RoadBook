@@ -29,12 +29,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
 
-      - run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: |
+          cd client
+          yarn install
 
       # Étape critique: créer les credentials dans le bon répertoire
       - name: Create keystore credentials in the correct directory
         run: |
+          cd client
+          
           # Créer le répertoire pour les credentials
           mkdir -p ./credentials/android
           
@@ -58,38 +64,22 @@ jobs:
           # Vérifier que le fichier existe
           ls -la ./credentials/android/keystore.jks
 
-      - name: Modify eas.json for local build
-        run: |
-          # Vérifier si eas.json contient déjà une configuration local-production
-          if jq -e '.build."local-production"' eas.json > /dev/null; then
-            # Mettre à jour la configuration existante
-            TMP_EAS_JSON=$(mktemp)
-            jq '.build."local-production".android.buildType = "app-bundle" | .build."local-production".android.gradleCommand = ":app:bundleRelease" | .build."local-production".android.withoutCredentials = true' eas.json > "$TMP_EAS_JSON"
-            mv "$TMP_EAS_JSON" eas.json
-          else
-            # Créer une nouvelle configuration local-production
-            TMP_EAS_JSON=$(mktemp)
-            jq '.build."local-production" = {"android": {"buildType": "app-bundle", "gradleCommand": ":app:bundleRelease", "withoutCredentials": true}}' eas.json > "$TMP_EAS_JSON"
-            mv "$TMP_EAS_JSON" eas.json
-          fi
-          
-          # Afficher le eas.json mis à jour
-          cat eas.json
-
       - name: Build Android App Bundle
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          cd client
+          
           # Forcer la déconnexion pour éviter l'utilisation des credentials distants
           eas logout || true
           
           # Vérifier si le dossier android existe déjà
           if [ ! -d "./android" ]; then
             # Générer le projet natif Android si nécessaire
-            npx expo prebuild --platform android --clean
+            yarn expo prebuild --platform android --clean
           fi
           
-          # Utiliser eas build:configure pour générer la config correcte
+          # Utiliser eas build:configure pour générer la config correcte si nécessaire
           yarn eas build:configure --platform android
           
           # Utiliser la commande directe avec Gradle pour construire l'AAB
@@ -97,13 +87,14 @@ jobs:
           ./gradlew bundleRelease
           
           # Vérifier si le AAB a été correctement généré
-          mkdir -p ../build
+          mkdir -p ../../build
           AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
           if [ -n "$AAB_PATH" ]; then
             echo "Found AAB at: $AAB_PATH"
-            cp "$AAB_PATH" ../build/app.aab
+            cp "$AAB_PATH" ../../build/app.aab
           else
-            echo "No AAB file found!"
+            echo "No AAB file found in $(pwd)!"
+            find . -name "*.aab" -type f
             exit 1
           fi
 
@@ -133,18 +124,24 @@ jobs:
       - name: Extract changelog entry
         id: changelog
         run: |
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
-          SECTION=$(awk -v tag="$CURRENT_TAG" '
-            BEGIN {found=0}
-            /^## / {
-              if ($0 ~ "\\["tag"\\]") {found=1; next}
-              else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
-            }
-            found {print}
-          ' CHANGELOG.md)
+          cd client
           
-          if [ -z "$SECTION" ]; then
-            SECTION=$(cat CHANGELOG.md)
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          if [ -f "CHANGELOG.md" ]; then
+            SECTION=$(awk -v tag="$CURRENT_TAG" '
+              BEGIN {found=0}
+              /^## / {
+                if ($0 ~ "\\["tag"\\]") {found=1; next}
+                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
+              }
+              found {print}
+            ' CHANGELOG.md)
+          
+            if [ -z "$SECTION" ]; then
+              SECTION=$(cat CHANGELOG.md)
+            fi
+          else
+            SECTION="Pas de CHANGELOG.md trouvé pour cette version."
           fi
           
           CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
@@ -175,7 +172,7 @@ jobs:
             - Roadbook.apk (Android Package)
             - Roadbook.aab (Android App Bundle)
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
