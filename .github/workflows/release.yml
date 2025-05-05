@@ -1,4 +1,4 @@
-name: Test Release and PR Workflow
+name: Test Release and PR Jobs
 
 on:
   push:
@@ -6,7 +6,147 @@ on:
       - test-env
 
 jobs:
+  mock_build_package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create mock build artifacts
+        run: |
+          mkdir -p build
+          # Créer des fichiers factices pour simuler les artefacts du build
+          dd if=/dev/zero of=build/app.aab bs=1M count=10
+          dd if=/dev/zero of=build/app.apk bs=1M count=10
+
+      - name: Upload mock artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: |
+            build/app.aab
+            build/app.apk
+
+  # Test du job release
+  test_release:
+    needs: mock_build_package
+    runs-on: ubuntu-latest
+    # Simuler un tag pour tester le job release
+    env:
+      MOCK_TAG: v1.0.0-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download mock artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: build
+
+      - name: Create example CHANGELOG.md
+        run: |
+          mkdir -p client
+          cat > client/CHANGELOG.md << EOF
+          # Changelog
+          
+          ## [1.0.0-test] - 2025-05-05
+          
+          ### Added
+          - Fonctionnalité de test 1
+          - Fonctionnalité de test 2
+          
+          ### Fixed
+          - Correction de bug test 1
+          - Correction de bug test 2
+          
+          ## [0.9.0] - 2025-04-01
+          
+          ### Added
+          - Ancienne fonctionnalité
+          EOF
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          cd client
+          CURRENT_TAG=${{ env.MOCK_TAG }}
+          
+          if [ -f "CHANGELOG.md" ]; then
+            SECTION=$(awk -v tag="${CURRENT_TAG#v}" '
+              BEGIN {found=0}
+              /^## / {
+                if ($0 ~ "\\["tag"\\]") {found=1; next}
+                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+.*\]/) {found=0}
+              }
+              found {print}
+            ' CHANGELOG.md)
+            [ -z "$SECTION" ] && SECTION=$(cat CHANGELOG.md)
+          else
+            SECTION="Pas de CHANGELOG.md trouvé pour cette version."
+          fi
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Extracted changelog content:"
+          echo "$SECTION"
+
+      - name: Simulate Release Creation (Debug Only)
+        run: |
+          echo "Simulating GitHub Release"
+          echo "Tag name: ${{ env.MOCK_TAG }}"
+          echo "Release name: v${{ env.MOCK_TAG }} (Test Env)"
+          echo "Body:"
+          echo "### Version ${{ env.MOCK_TAG }} (Test Environment)"
+          echo ""
+          echo "<details>"
+          echo "<summary>Dernières modifications</summary>"
+          echo ""
+          echo "${{ steps.changelog.outputs.CHANGELOG_CONTENT }}"
+          echo ""
+          echo "</details>"
+          echo ""
+          echo "**Artifacts disponibles:**"
+          echo "- Roadbook.apk (Android Package)"
+          echo "- Roadbook.aab (Android App Bundle)"
+          echo ""
+          echo "Files to upload:"
+          ls -la build/
+          
+          # Cette étape serait le release réel, mais nous la commentons pour éviter les créations
+          # de release pendant les tests
+          # Décommentez cette section lors de vos tests finaux si vous voulez tester la création réelle
+          # de la release
+          : '
+          uses: softprops/action-gh-release@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: ${{ env.MOCK_TAG }}
+            name: "v${{ env.MOCK_TAG }} (Test Env)"
+            body: |
+              ### Version ${{ env.MOCK_TAG }} (Test Environment)
+          
+              <details>
+              <summary>Dernières modifications</summary>
+          
+              ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+          
+              </details>
+          
+              **Artifacts disponibles:**
+              - Roadbook.apk (Android Package)
+              - Roadbook.aab (Android App Bundle)
+          
+            prerelease: true
+            files: |
+              build/app.apk
+              build/app.aab
+          '
+
+  # Test du job create_pr
   test_create_pr:
+    needs: mock_build_package
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,94 +161,75 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Simulate sensitive files cleanup
+      - name: Create example client structure
         run: |
-          echo "Creating test files to clean..."
-          mkdir -p client/credentials/android
-          echo "{}" > client/credentials.json
-          touch client/credentials/android/keystore.jks
+          mkdir -p client/credentials
+          echo "Exemple de fichier sensible" > client/credentials.json
+          echo "Autre fichier sensible" > client/credentials/test.key
           
-          echo "Cleaning sensitive files..."
-          rm -f client/credentials.json
-          rm -rf client/credentials
-          git add .
-          git diff --staged --quiet || git commit -m "Remove sensitive files before PR"
+          # Créer un CHANGELOG factice
+          mkdir -p client
+          cat > client/CHANGELOG.md << EOF
+          # Changelog
+          
+          ## [1.0.0-test] - 2025-05-05
+          
+          ### Added
+          - Fonctionnalité de test 1
+          - Fonctionnalité de test 2
+          
+          ### Fixed
+          - Correction de bug test 1
+          - Correction de bug test 2
+          
+          ## [0.9.0] - 2025-04-01
+          
+          ### Added
+          - Ancienne fonctionnalité
+          EOF
 
-      - name: Extract test changelog
+      - name: Clean sensitive files before PR
+        run: |
+          cd client
+          rm -f credentials.json
+          rm -rf credentials
+          git add .
+          git diff --staged --quiet || git commit -m "Remove sensitive files before PR test"
+
+      - name: Extract changelog for PR
         id: changelog
         run: |
-          mkdir -p client
-          # Crée un faux changelog si inexistant
-          if [ ! -f "client/CHANGELOG.md" ]; then
-            echo "## [Test Version]\n- Test feature\n- Test fix" > client/CHANGELOG.md
+          cd client
+          if [ -f "CHANGELOG.md" ]; then
+            SECTION=$(head -n 20 CHANGELOG.md)
+          else
+            SECTION="Pas de CHANGELOG.md trouvé pour cette version."
           fi
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          head -n 5 client/CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Changelog content for PR:"
+          echo "$SECTION"
 
-      - name: Create PR to main
+      - name: Create Test PR to main
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: "test-env-to-main-$(date +%Y%m%d%H%M%S)"
-          title: "TEST PR - Merge test-env → main"
+          branch: test-env-to-main-pretest
+          title: "[TEST] Pre-test PR from test-env → main"
           body: |
-            ### PR de Test
+            ### Test du workflow de PR
+            
+            Ceci est une PR de test pour vérifier le bon fonctionnement du job create_pr.
             
             <details>
-            <summary>Modifications simulées</summary>
+            <summary>Dernières modifications</summary>
             
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
             
             </details>
-            
-            **Ceci est un test automatisé**
-          labels: "automated-pr,test,needs-review"
-          commit-message: "chore: test merge from test-env [skip ci]"
-
-  test_release:
-    needs: test_create_pr
-    if: startsWith(github.ref, 'refs/heads/test-env')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create test artifacts
-        run: |
-          mkdir -p build
-          # Création de fichiers factices
-          echo "Test AAB" > build/app.aab
-          echo "Test APK" > build/app.apk
-
-      - name: Simulate changelog extraction
-        id: changelog
-        run: |
-          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "## [Test Version]" >> $GITHUB_OUTPUT
-          echo "- Feature 1" >> $GITHUB_OUTPUT
-          echo "- Fix 1" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Simulate Release Creation
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "test-release-$(date +%Y%m%d%H%M%S)"
-          name: "Test Release $(date +%F)"
-          body: |
-            ### Version de Test
-            
-            <details>
-            <summary>Modifications simulées</summary>
-            
-            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-            
-            </details>
-          draft: true
-          files: |
-            build/app.aab
-            build/app.apk
+          labels: "test-pr,automated-pr,needs-review"
+          commit-message: "test: pre-test PR workflow [skip ci]"
