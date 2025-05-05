@@ -57,43 +57,38 @@ jobs:
       - name: Build with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           cd client
-
-          # Clean install des dépendances
-          echo "Installing dependencies..."
-          yarn install --frozen-lockfile
-          yarn add expo@latest eas-cli@latest
-
-          # Setup Expo
-          echo "Expo authentication..."
+          
+          # Méthode officielle pour l'authentification en CI
+          echo "Setting up Expo token..."
+          export EXPO_CLI_PREVIEW_AUTH_TOKEN=$EXPO_TOKEN
+          
+          # Alternative plus récente (valeur identique)
           export EXPO_TOKEN=$EXPO_TOKEN
-
-          # Pré-build check
-          echo " Project verification..."
-          npx expo config --type prebuild || (echo " Project verification failed" && exit 1)
-
-          # EAS Build
+          
+          # Vérification de la connexion
+          echo "Verifying authentication..."
+          npx expo whoami || (echo " Expo authentication failed" && exit 1)
+          
+          # Configuration EAS
+          echo " Configuring EAS project..."
+          npx eas-cli build:configure --platform android
+          
+          # Build EAS
           echo " Starting EAS build..."
           npx eas-cli build \
             --platform android \
-            --profile production \
             --non-interactive \
             --no-wait \
-            --json > eas-build.log
-
-          # Process results
-          if [ $? -eq 0 ]; then
-            BUILD_ID=$(jq -r '.buildId' eas-build.log)
-            echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
-            echo " Build started successfully!"
-            echo "View at: https://expo.dev/accounts/ajkll/projects/Roadbook/builds/${BUILD_ID}"
-          else
-            echo " EAS build failed"
-            cat eas-build.log
-            exit 1
-          fi
+            --json | tee eas-build.log
+          
+          # Récupération de l'ID du build
+          BUILD_ID=$(jq -r '.buildId' eas-build.log)
+          echo "Build ID: ${BUILD_ID}"
+          echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
+          
+          echo "EAS build started successfully. Check progress at https://expo.dev/accounts/ajkll/projects/Roadbook/builds"
 
       - name: Local build for GitHub artifacts
         run: |
