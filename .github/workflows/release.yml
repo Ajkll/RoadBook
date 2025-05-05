@@ -7,6 +7,12 @@ on:
     branches:
       - test-env
 
+# Définir les permissions globales
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -267,6 +273,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -302,7 +309,8 @@ jobs:
       - name: Create PR to main
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Utiliser un PAT si disponible, sinon utiliser GITHUB_TOKEN avec permissions appropriées
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           base: main
           branch: test-env-to-main
           title: "Merge test-env → main"
