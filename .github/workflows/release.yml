@@ -1,12 +1,103 @@
-name: Test Package Only
+name: Test Env Release
 
 on:
   push:
+    tags:
+      - 'v*'
     branches:
       - test-env
 
 jobs:
-  package_only:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.eas-build.outputs.build_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          yarn global add eas-cli
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
+
+      - name: Install dependencies
+        run: |
+          cd client
+          yarn install
+
+      - name: Create keystore credentials
+        run: |
+          cd client
+          mkdir -p ./credentials/android
+          echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./credentials/android/keystore.jks
+          cat > ./credentials.json << EOF
+          {
+            "android": {
+              "keystore": {
+                "keystorePath": "./credentials/android/keystore.jks",
+                "keystorePassword": "${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }}",
+                "keyAlias": "${{ secrets.EXPO_ANDROID_KEY_ALIAS }}",
+                "keyPassword": "${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}"
+              }
+            }
+          }
+          EOF
+
+      - name: Build with EAS
+        id: eas-build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          cd client
+          
+          export EXPO_CLI_PREVIEW_AUTH_TOKEN=$EXPO_TOKEN
+          export EXPO_TOKEN=$EXPO_TOKEN
+          
+          npx expo whoami || (echo "Expo authentication failed" && exit 1)
+          npx eas-cli build:configure --platform android
+          
+          npx eas-cli build \
+            --platform android \
+            --non-interactive \
+            --no-wait \
+            --json | tee eas-build.log
+          
+          BUILD_ID=$(jq -r '.buildId' eas-build.log)
+          echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
+          echo "EAS build started successfully. ID: ${BUILD_ID}"
+
+      - name: Local build for GitHub artifacts
+        run: |
+          cd client
+          if [ ! -d "./android" ]; then
+            yarn expo prebuild --platform android --clean
+          fi
+          
+          cd android
+          ./gradlew bundleRelease
+          
+          mkdir -p ../../build
+          AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
+          [ -n "$AAB_PATH" ] && cp "$AAB_PATH" ../../build/app.aab || exit 1
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/app.aab
+            client/credentials/android/keystore.jks
+
+  package:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,23 +106,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-          mkdir -p build
           mkdir -p ./client/credentials/android
 
-      # Simulation de l'artefact du build
-      - name: Setup test artifacts
-        run: |
-          # Créer un fichier app.aab simulé si nécessaire pour les tests
-          echo "Creating test app.aab file"
-          dd if=/dev/zero of=./build/app.aab bs=1M count=10
-          
-          # Créer un keystore simulé pour les tests
-          echo "Creating test keystore.jks file"
-          dd if=/dev/zero of=./client/credentials/android/keystore.jks bs=1K count=2
-          
-          echo "Prepared test artifacts:"
-          ls -la build/
-          ls -la ./client/credentials/android/
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: build
 
       - name: Debug file structure
         run: |
@@ -40,7 +121,31 @@ jobs:
           ls -la
           echo "Files in build directory:"
           ls -la build
-          echo "Files in credentials directory:"
+          echo "Searching for key files:"
+          find . -name "app.aab" -type f || echo "app.aab not found"
+          find . -name "keystore.jks" -type f || echo "keystore.jks not found"
+
+      - name: Ensure keystore directory
+        run: |
+          mkdir -p ./client/credentials/android
+          
+          # Si le keystore est dans le répertoire build, le déplacer
+          if [ -f "./build/keystore.jks" ]; then
+            echo "Moving keystore from build directory"
+            mv ./build/keystore.jks ./client/credentials/android/keystore.jks
+          # Sinon, chercher ailleurs
+          else
+            KEYSTORE_PATH=$(find . -name "keystore.jks" -type f | head -n 1)
+            if [ -n "$KEYSTORE_PATH" ]; then
+              echo "Found keystore at $KEYSTORE_PATH"
+              cp "$KEYSTORE_PATH" ./client/credentials/android/keystore.jks
+            else
+              echo "ERROR: No keystore found!"
+              exit 1
+            fi
+          fi
+          
+          echo "Keystore directory content:"
           ls -la ./client/credentials/android/
 
       - name: Convert AAB to APK
@@ -57,22 +162,19 @@ jobs:
               exit 1
             fi
           
-            # Simuler la conversion pour les tests
-            # Dans un environnement réel, la commande suivante serait utilisée:
-            echo "Simulating APK conversion..."
-            # java -jar bundletool-all-1.15.6.jar build-apks \
-            #   --bundle=./build/app.aab \
-            #   --output=./build/app.apks \
-            #   --mode=universal \
-            #   --ks=./client/credentials/android/keystore.jks \
-            #   --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
-            #   --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
-            #   --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
+            # Convertir AAB en APK
+            java -jar bundletool-all-1.15.6.jar build-apks \
+              --bundle=./build/app.aab \
+              --output=./build/app.apks \
+              --mode=universal \
+              --ks=./client/credentials/android/keystore.jks \
+              --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
+              --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
+              --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
           
-            # Simuler la création d'un APK pour tests
-            echo "Creating test APK file"
-            dd if=/dev/zero of=./build/app.apk bs=1M count=8
-          
+            # Extraire et renommer l'APK
+            unzip ./build/app.apks -d ./build
+            mv ./build/universal.apk ./build/app.apk
             echo "APK conversion successful"
           else
             echo "ERROR: app.aab file not found in build directory!"
@@ -87,3 +189,128 @@ jobs:
           path: |
             build/app.aab
             build/app.apk
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: build
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          cd client
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          if [ -f "CHANGELOG.md" ]; then
+            SECTION=$(awk -v tag="$CURRENT_TAG" '
+              BEGIN {found=0}
+              /^## / {
+                if ($0 ~ "\\["tag"\\]") {found=1; next}
+                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
+              }
+              found {print}
+            ' CHANGELOG.md)
+            [ -z "$SECTION" ] && SECTION=$(cat CHANGELOG.md)
+          else
+            SECTION="Pas de CHANGELOG.md trouvé pour cette version."
+          fi
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Extracted changelog content:"
+          echo "$SECTION"
+
+      - name: Create Release with Artifacts
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "v${{ github.ref_name }} (Test Env)"
+          body: |
+            ### Version ${{ github.ref_name }} (Test Environment)
+            
+            <details>
+            <summary>Dernières modifications</summary>
+            
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            </details>
+            
+            **Artifacts disponibles:**
+            - Roadbook.apk (Android Package)
+            - Roadbook.aab (Android App Bundle)
+            
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+          prerelease: true
+          files: |
+            build/app.apk
+            build/app.aab
+
+  create_pr:
+    needs: package
+    if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git identity
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Clean sensitive files before PR
+        run: |
+          cd client
+          rm -f credentials.json
+          rm -rf credentials
+          git add .
+          git diff --staged --quiet || git commit -m "Remove sensitive files before PR"
+
+      - name: Extract changelog for PR
+        id: changelog
+        run: |
+          cd client
+          if [ -f "CHANGELOG.md" ]; then
+            SECTION=$(head -n 20 CHANGELOG.md)
+          else
+            SECTION="Pas de CHANGELOG.md trouvé pour cette version."
+          fi
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create PR to main
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: test-env-to-main
+          title: "Merge test-env → main"
+          body: |
+            ### Nouvelles modifications dans test-env
+            
+            <details>
+            <summary>Dernières modifications</summary>
+            
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            </details>
+          labels: "automated-pr,needs-review"
+          commit-message: "chore: merge test-env to main [skip ci]"
