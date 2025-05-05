@@ -95,7 +95,7 @@ npm run dev         # Start development server
 
 # Gestion des versions - Workflow
 
-![Version](https://img.shields.io/github/package-json/v/Ajkll/testingroad)
+![Version](https://img.shields.io/github/package-json/v/Yanstart/RoadBook)
 
  - Commandes disponibles
 ```bash
