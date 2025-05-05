@@ -1,30 +1,191 @@
-name: Test Release and PR Jobs
+name: Test Env Release
 
 on:
   push:
+    tags:
+      - 'v*'
     branches:
       - test-env
 
-# Définir les permissions au niveau du workflow (global)
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
-  mock_build_package:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.eas-build.outputs.build_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          yarn global add eas-cli
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
+
+      - name: Install dependencies
+        run: |
+          cd client
+          yarn install
+
+      - name: Create keystore credentials
+        run: |
+          cd client
+          mkdir -p ./credentials/android
+          echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./credentials/android/keystore.jks
+          cat > ./credentials.json << EOF
+          {
+            "android": {
+              "keystore": {
+                "keystorePath": "./credentials/android/keystore.jks",
+                "keystorePassword": "${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }}",
+                "keyAlias": "${{ secrets.EXPO_ANDROID_KEY_ALIAS }}",
+                "keyPassword": "${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}"
+              }
+            }
+          }
+          EOF
+
+      - name: Build with EAS
+        id: eas-build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          cd client
+          
+          export EXPO_CLI_PREVIEW_AUTH_TOKEN=$EXPO_TOKEN
+          export EXPO_TOKEN=$EXPO_TOKEN
+          
+          npx expo whoami || (echo "Expo authentication failed" && exit 1)
+          npx eas-cli build:configure --platform android
+          
+          npx eas-cli build \
+            --platform android \
+            --non-interactive \
+            --no-wait \
+            --json | tee eas-build.log
+          
+          BUILD_ID=$(jq -r '.buildId' eas-build.log)
+          echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
+          echo "EAS build started successfully. ID: ${BUILD_ID}"
+
+      - name: Local build for GitHub artifacts
+        run: |
+          cd client
+          if [ ! -d "./android" ]; then
+            yarn expo prebuild --platform android --clean
+          fi
+          
+          cd android
+          ./gradlew bundleRelease
+          
+          mkdir -p ../../build
+          AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
+          [ -n "$AAB_PATH" ] && cp "$AAB_PATH" ../../build/app.aab || exit 1
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/app.aab
+            client/credentials/android/keystore.jks
+
+  package:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create mock build artifacts
+      - name: Setup environment
         run: |
-          mkdir -p build
-          # Créer des fichiers factices pour simuler les artefacts du build
-          dd if=/dev/zero of=build/app.aab bs=1M count=10
-          dd if=/dev/zero of=build/app.apk bs=1M count=10
+          sudo apt-get update
+          sudo apt-get install -y jq
+          mkdir -p ./client/credentials/android
 
-      - name: Upload mock artifacts
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: build
+
+      - name: Debug file structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Files in build directory:"
+          ls -la build
+          echo "Searching for key files:"
+          find . -name "app.aab" -type f || echo "app.aab not found"
+          find . -name "keystore.jks" -type f || echo "keystore.jks not found"
+
+      - name: Ensure keystore directory
+        run: |
+          mkdir -p ./client/credentials/android
+          
+          # Si le keystore est dans le répertoire build, le déplacer
+          if [ -f "./build/keystore.jks" ]; then
+            echo "Moving keystore from build directory"
+            mv ./build/keystore.jks ./client/credentials/android/keystore.jks
+          # Sinon, chercher ailleurs
+          else
+            KEYSTORE_PATH=$(find . -name "keystore.jks" -type f | head -n 1)
+            if [ -n "$KEYSTORE_PATH" ]; then
+              echo "Found keystore at $KEYSTORE_PATH"
+              cp "$KEYSTORE_PATH" ./client/credentials/android/keystore.jks
+            else
+              echo "ERROR: No keystore found!"
+              exit 1
+            fi
+          fi
+          
+          echo "Keystore directory content:"
+          ls -la ./client/credentials/android/
+
+      - name: Convert AAB to APK
+        run: |
+          # Chemin corrigé avec le double build
+          AAB_PATH="./build/build/app.aab"
+
+          if [ -f "$AAB_PATH" ]; then
+            echo "Found app.aab file at $AAB_PATH, proceeding with conversion"
+
+            # Télécharger bundletool
+            wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+
+            # Vérifier que le keystore existe
+            if [ ! -f "./client/credentials/android/keystore.jks" ]; then
+              echo "ERROR: keystore.jks not found at expected path!"
+              exit 1
+            fi
+
+            # Convertir AAB en APK
+            java -jar bundletool-all-1.15.6.jar build-apks \
+              --bundle="$AAB_PATH" \
+              --output=./build/app.apks \
+              --mode=universal \
+              --ks=./client/credentials/android/keystore.jks \
+              --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
+              --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
+              --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
+
+            # Extraire et renommer l'APK
+            unzip ./build/app.apks -d ./build
+            mv ./build/universal.apk ./build/app.apk
+            echo "APK conversion successful"
+          else
+            echo "ERROR: app.aab file not found at $AAB_PATH!"
+            find . -name "app.aab" -type f
+            exit 1
+          fi
+
+      - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
         with:
           name: packaged-artifacts
@@ -32,56 +193,32 @@ jobs:
             build/app.aab
             build/app.apk
 
-  # Test du job release
-  test_release:
-    needs: mock_build_package
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
-    # Simuler un tag pour tester le job release
-    env:
-      MOCK_TAG: v1.0.0-test
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download mock artifacts
+      - name: Download packaged artifacts
         uses: actions/download-artifact@v4
         with:
           name: packaged-artifacts
           path: build
 
-      - name: Create example CHANGELOG.md
-        run: |
-          mkdir -p client
-          cat > client/CHANGELOG.md << EOF
-          # Changelog
-          
-          ## [1.0.0-test] - 2025-05-05
-          
-          ### Added
-          - Fonctionnalité de test 1
-          - Fonctionnalité de test 2
-          
-          ### Fixed
-          - Correction de bug test 1
-          - Correction de bug test 2
-          
-          ## [0.9.0] - 2025-04-01
-          
-          ### Added
-          - Ancienne fonctionnalité
-          EOF
-
       - name: Extract changelog entry
         id: changelog
         run: |
           cd client
-          CURRENT_TAG=${{ env.MOCK_TAG }}
-          
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
           if [ -f "CHANGELOG.md" ]; then
-            SECTION=$(awk -v tag="${CURRENT_TAG#v}" '
+            SECTION=$(awk -v tag="$CURRENT_TAG" '
               BEGIN {found=0}
               /^## / {
                 if ($0 ~ "\\["tag"\\]") {found=1; next}
-                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+.*\]/) {found=0}
+                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
               }
               found {print}
             ' CHANGELOG.md)
@@ -97,68 +234,40 @@ jobs:
           echo "Extracted changelog content:"
           echo "$SECTION"
 
-      - name: Simulate Release Creation (Debug Only)
-        run: |
-          echo "Simulating GitHub Release"
-          echo "Tag name: ${{ env.MOCK_TAG }}"
-          echo "Release name: v${{ env.MOCK_TAG }} (Test Env)"
-          echo "Body:"
-          echo "### Version ${{ env.MOCK_TAG }} (Test Environment)"
-          echo ""
-          echo "<details>"
-          echo "<summary>Dernières modifications</summary>"
-          echo ""
-          echo "${{ steps.changelog.outputs.CHANGELOG_CONTENT }}"
-          echo ""
-          echo "</details>"
-          echo ""
-          echo "**Artifacts disponibles:**"
-          echo "- Roadbook.apk (Android Package)"
-          echo "- Roadbook.aab (Android App Bundle)"
-          echo ""
-          echo "Files to upload:"
-          ls -la build/
-          
-          # Cette étape serait le release réel, mais nous la commentons pour éviter les créations
-          # de release pendant les tests
-          # Décommentez cette section lors de vos tests finaux si vous voulez tester la création réelle
-          # de la release
-          : '
-          uses: softprops/action-gh-release@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            tag_name: ${{ env.MOCK_TAG }}
-            name: "v${{ env.MOCK_TAG }} (Test Env)"
-            body: |
-              ### Version ${{ env.MOCK_TAG }} (Test Environment)
-          
-              <details>
-              <summary>Dernières modifications</summary>
-          
-              ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-          
-              </details>
-          
-              **Artifacts disponibles:**
-              - Roadbook.apk (Android Package)
-              - Roadbook.aab (Android App Bundle)
-          
-            prerelease: true
-            files: |
-              build/app.apk
-              build/app.aab
-          '
+      - name: Create Release with Artifacts
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "v${{ github.ref_name }} (Test Env)"
+          body: |
+            ### Version ${{ github.ref_name }} (Test Environment)
+            
+            <details>
+            <summary>Dernières modifications</summary>
+            
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            </details>
+            
+            **Artifacts disponibles:**
+            - Roadbook.apk (Android Package)
+            - Roadbook.aab (Android App Bundle)
+            
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+          prerelease: true
+          files: |
+            build/app.apk
+            build/app.aab
 
-  # Test du job create_pr
-  test_create_pr:
-    needs: mock_build_package
-    runs-on: ubuntu-latest
-    # Définir explicitement les permissions au niveau du job
+  create_pr:
+    needs: package
+    if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
     permissions:
       contents: write
       pull-requests: write
-      issues: write
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,40 +278,13 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Create example client structure
-        run: |
-          mkdir -p client/credentials
-          echo "Exemple de fichier sensible" > client/credentials.json
-          echo "Autre fichier sensible" > client/credentials/test.key
-          
-          # Créer un CHANGELOG factice
-          mkdir -p client
-          cat > client/CHANGELOG.md << EOF
-          # Changelog
-          
-          ## [1.0.0-test] - 2025-05-05
-          
-          ### Added
-          - Fonctionnalité de test 1
-          - Fonctionnalité de test 2
-          
-          ### Fixed
-          - Correction de bug test 1
-          - Correction de bug test 2
-          
-          ## [0.9.0] - 2025-04-01
-          
-          ### Added
-          - Ancienne fonctionnalité
-          EOF
-
       - name: Clean sensitive files before PR
         run: |
           cd client
           rm -f credentials.json
           rm -rf credentials
           git add .
-          git diff --staged --quiet || git commit -m "Remove sensitive files before PR test"
+          git diff --staged --quiet || git commit -m "Remove sensitive files before PR"
 
       - name: Extract changelog for PR
         id: changelog
@@ -216,23 +298,16 @@ jobs:
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
-          # Debug output
-          echo "Changelog content for PR:"
-          echo "$SECTION"
 
-      - name: Create Test PR to main
+      - name: Create PR to main
         uses: peter-evans/create-pull-request@v5
         with:
-          # Utilisez un token personnel si disponible, sinon utilisez GITHUB_TOKEN avec les bonnes permissions
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: test-env-to-main-pretest
-          title: "[TEST] Pre-test PR from test-env → main"
+          branch: test-env-to-main
+          title: "Merge test-env → main"
           body: |
-            ### Test du workflow de PR
-            
-            Ceci est une PR de test pour vérifier le bon fonctionnement du job create_pr.
+            ### Nouvelles modifications dans test-env
             
             <details>
             <summary>Dernières modifications</summary>
@@ -240,5 +315,5 @@ jobs:
             ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
             
             </details>
-          labels: "test-pr,automated-pr,needs-review"
-          commit-message: "test: pre-test PR workflow [skip ci]"
+          labels: "automated-pr,needs-review"
+          commit-message: "chore: merge test-env to main [skip ci]"
