@@ -36,18 +36,11 @@ jobs:
           cd client
           yarn install
 
-      # Étape critique: créer les credentials dans le bon répertoire
-      - name: Create keystore credentials in the correct directory
+      - name: Create keystore credentials
         run: |
           cd client
-          
-          # Créer le répertoire pour les credentials
           mkdir -p ./credentials/android
-          
-          # Décodage du keystore dans le bon emplacement
           echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./credentials/android/keystore.jks
-          
-          # Créer le fichier credentials.json
           cat > ./credentials.json << EOF
           {
             "android": {
@@ -60,64 +53,41 @@ jobs:
             }
           }
           EOF
-          
-          # Vérifier que le fichier existe
-          ls -la ./credentials/android/keystore.jks
 
-      - name: Build Android App Bundle
+      - name: Build with EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           cd client
-
-          # Forcer la déconnexion pour éviter l'utilisation des credentials distants
           eas logout || true
+          eas login --token $EXPO_TOKEN
+          eas build --platform android --non-interactive --no-wait
 
-          # Vérifier si le dossier android existe déjà
+      - name: Local build for GitHub artifacts
+        run: |
+          cd client
           if [ ! -d "./android" ]; then
-            # Générer le projet natif Android si nécessaire
             yarn expo prebuild --platform android --clean
           fi
-
-          # Utiliser eas build:configure pour générer la config correcte si nécessaire
-          npx eas-cli build:configure --platform android
-
-          # Utiliser la commande directe avec Gradle pour construire l'AAB
+          
           cd android
           ./gradlew bundleRelease
-
-          # Vérifier si le AAB a été correctement généré
+          
           mkdir -p ../../build
           AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
-          if [ -n "$AAB_PATH" ]; then
-            echo "Found AAB at: $AAB_PATH"
-            cp "$AAB_PATH" ../../build/app.aab
-          else
-            echo "No AAB file found in $(pwd)!"
-            find . -name "*.aab" -type f
-            exit 1
-          fi
+          [ -n "$AAB_PATH" ] && cp "$AAB_PATH" ../../build/app.aab || exit 1
 
       - name: Convert AAB to APK
         run: |
-          # Vérifier si le fichier AAB existe
           if [ -f "./build/app.aab" ]; then
-            # Télécharger bundletool
             wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
-          
-            # Convertir AAB en APK universel
             java -jar bundletool-all-1.15.6.jar build-apks \
               --bundle=./build/app.aab \
               --output=./build/app.apks \
               --mode=universal
-          
-            # Extraire l'APK universel
             unzip ./build/app.apks -d ./build
             mv ./build/universal.apk ./build/app.apk
-          
-            echo "Successfully converted AAB to APK"
           else
-            echo "ERROR: Cannot convert AAB to APK because AAB file is missing"
             exit 1
           fi
 
@@ -125,7 +95,6 @@ jobs:
         id: changelog
         run: |
           cd client
-          
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
           if [ -f "CHANGELOG.md" ]; then
             SECTION=$(awk -v tag="$CURRENT_TAG" '
@@ -136,18 +105,12 @@ jobs:
               }
               found {print}
             ' CHANGELOG.md)
-          
-            if [ -z "$SECTION" ]; then
-              SECTION=$(cat CHANGELOG.md)
-            fi
+            [ -z "$SECTION" ] && SECTION=$(cat CHANGELOG.md)
           else
             SECTION="Pas de CHANGELOG.md trouvé pour cette version."
           fi
-          
-          CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
-          
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
+          echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release with Artifacts
@@ -178,6 +141,15 @@ jobs:
             build/app.apk
             build/app.aab
 
+      - name: Clean sensitive files before PR
+        if: github.ref == 'refs/heads/test-env'
+        run: |
+          cd client
+          rm -f credentials.json
+          rm -rf credentials
+          git add .
+          git commit -m "Remove sensitive files before PR" || echo "No changes to commit"
+
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
         uses: peter-evans/create-pull-request@v5
@@ -199,3 +171,4 @@ jobs:
             
             </details>
           labels: "automated-pr,needs-review"
+          commit-message: "chore: merge test-env to main [skip ci]"
