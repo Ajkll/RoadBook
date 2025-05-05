@@ -138,7 +138,7 @@ Assurez vous d'utilisé expo go pour le dev en local
 › Using Expo Go
 › Press s │ switch to development build
 
-pour la production nous avons la possibilité de construire nos .apk ou .aab ou autres avec les commandes suivantes (exemples):
+- local : pour la production nous avons la possibilité de construire sur les serveurs de expo go nos .apk ou .aab ou autres avec les commandes suivantes (exemples):
 
 - apk
 ```bash
@@ -150,6 +150,8 @@ eas build --platform android --profile preview
 ```bash
 npx eas build --platform android
 ```
+
+- Automatisation Github workflow : Nous avons également la possibilites sur un push de version majeur d'enclancher le build du .apk .aab et sa mis en release ainsi que l'ouverture automatique d'une pr depuis la branche prevue pour cela a destination de main , cette pr dois etre accepter tout comme la prerelease par un humain ayant les droits de merge vers main.
 
 Note : beaucoup d'autres option sont ouvert , notre code etant clean sur l'utilisation de ses librairie.
 
