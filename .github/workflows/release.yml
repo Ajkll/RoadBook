@@ -32,10 +32,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Configure Expo token
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: echo $EXPO_TOKEN | npx eas-cli login
+      # On n'utilise pas la commande login explicitement car EXPO_TOKEN est déjà dans l'environnement
+      # et sera utilisé automatiquement par EAS
 
       # Étape critique: créer le keystore.json et la structure de répertoires
       - name: Create keystore.json credentials file
@@ -102,10 +100,10 @@ jobs:
               else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
             }
             found {print}
-          ' CHANGELOG.md)
+          ' client/CHANGELOG.md)
           
           if [ -z "$SECTION" ]; then
-            SECTION=$(cat CHANGELOG.md)
+            SECTION=$(cat client/CHANGELOG.md)
           fi
           
           CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
@@ -136,7 +134,7 @@ jobs:
             - Roadbook.apk (Android Package)
             - Roadbook.aab (Android App Bundle)
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
