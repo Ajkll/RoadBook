@@ -55,6 +55,7 @@ jobs:
           EOF
 
       - name: Build with EAS
+        id: eas-build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
@@ -108,13 +109,19 @@ jobs:
         run: |
           if [ -f "./build/app.aab" ]; then
             wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+            # Using keystore to sign the APK during conversion
             java -jar bundletool-all-1.15.6.jar build-apks \
               --bundle=./build/app.aab \
               --output=./build/app.apks \
-              --mode=universal
+              --mode=universal \
+              --ks=./client/credentials/android/keystore.jks \
+              --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
+              --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
+              --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
             unzip ./build/app.apks -d ./build
             mv ./build/universal.apk ./build/app.apk
           else
+            echo "ERROR: app.aab file not found!"
             exit 1
           fi
 
@@ -139,6 +146,9 @@ jobs:
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$SECTION" | sed '/^$/d' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          # Debug output
+          echo "Extracted changelog content:"
+          echo "$SECTION"
 
       - name: Create Release with Artifacts
         if: startsWith(github.ref, 'refs/tags/')
@@ -168,6 +178,12 @@ jobs:
             build/app.apk
             build/app.aab
 
+      - name: Setup Git identity
+        if: github.ref == 'refs/heads/test-env'
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
       - name: Clean sensitive files before PR
         if: github.ref == 'refs/heads/test-env'
         run: |
@@ -175,7 +191,7 @@ jobs:
           rm -f credentials.json
           rm -rf credentials
           git add .
-          git commit -m "Remove sensitive files before PR" || echo "No changes to commit"
+          git diff --staged --quiet || git commit -m "Remove sensitive files before PR"
 
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
@@ -183,7 +199,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          head: test-env
+          branch: test-env-to-main # This parameter was 'head' before, changed to 'branch'
           title: "Merge test-env → main (v${{ github.ref_name }})"
           body: |
             ### Nouvelles modifications dans test-env
