@@ -74,8 +74,8 @@ jobs:
           eas build --platform android --profile local-production \
           --non-interactive \
           --no-wait \
-          --clear-cache \
-          --local
+          --clear-cache
+
 
       - name: Wait for build completion and download artifacts
         run: |
