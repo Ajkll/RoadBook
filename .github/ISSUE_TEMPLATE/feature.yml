@@ -1,0 +1,77 @@
+name: "Feature"
+description: "A template for capturing user stories with detailed requirements and specifications."
+labels: "US"
+projects: "RoadBook"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Description
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: "Provide a detailed description of the user story, including context and any relevant background information."
+      placeholder: "Describe the user story in detail."
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ## User Story
+  - type: textarea
+    id: user_role
+    attributes:
+      label: User Role
+      description: "Specify the type of user."
+      placeholder: "As a..."
+    validations:
+      required: true
+  - type: textarea
+    id: desired_outcome
+    attributes:
+      label: Desired Outcome
+      description: "Describe what the user wants."
+      placeholder: "I want..."
+    validations:
+      required: true
+  - type: textarea
+    id: goal_or_purpose
+    attributes:
+      label: Goal or Purpose
+      description: "Explain the goal or purpose."
+      placeholder: "To..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "Specify the criteria for acceptance."
+      placeholder: "And I will be satisfied when..."
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## Technical Information
+  - type: textarea
+    id: mockup
+    attributes:
+      label: Mockup
+      description: "Upload any relevant mockup images."
+      placeholder: "Paste links to images or upload images here."
+  - type: textarea
+    id: subtasks_with_implementation
+    attributes:
+      label: Subtasks with Technical Implementation
+      description: "List the subtasks with detailed technical implementation explanations for each."
+      placeholder: "1. Subtask - Implementation details...\n2. Subtask - Implementation details..."
+  - type: textarea
+    id: useful_technical_info
+    attributes:
+      label: Useful Technical Information
+      description: "Add any additional technical notes, considerations, or nice-to-know details."
+      placeholder: "Useful technical info goes here."
+# template pour notre kanban pour les issues/features
