@@ -73,6 +73,7 @@ npm run migrate:dev  # Run Prisma migrations
 npm run dev         # Start development server
 ```
 
+
 ## API Routes
 
 ### Authentication
