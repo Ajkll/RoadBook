@@ -54,11 +54,12 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas build --platform android --profile production \
-            --non-interactive \
-            --no-wait \
-            --clear-cache \
-            --local
+          eas build --platform android --profile local-production \
+          --non-interactive \
+          --no-wait \
+          --clear-cache \
+          --local \
+          --local-build-options="--android-keystore-path=./credentials/android/keystore.jks"
 
       - name: Wait for build completion and download artifacts
         run: |
