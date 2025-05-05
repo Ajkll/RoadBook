@@ -6,105 +6,11 @@ on:
       - test-env
 
 jobs:
-  # Job simulé pour remplacer le package (pour les tests)
-  simulate_package:
-    runs-on: ubuntu-latest
-    outputs:
-      artifacts_exist: ${{ steps.check-artifacts.outputs.artifacts_exist }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create test artifacts
-        run: |
-          mkdir -p build
-          # Création de fichiers factices mais avec la bonne structure
-          dd if=/dev/zero of=build/app.aab bs=1 count=0 seek=1M
-          dd if=/dev/zero of=build/app.apk bs=1 count=0 seek=1M
-          echo "Test artifacts created"
-          ls -la build/
-
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: packaged-artifacts
-          path: build/*
-
-      - name: Check artifacts existence
-        id: check-artifacts
-        run: |
-          if [ -f "build/app.aab" ] && [ -f "build/app.apk" ]; then
-            echo "artifacts_exist=true" >> $GITHUB_OUTPUT
-          else
-            echo "artifacts_exist=false" >> $GITHUB_OUTPUT
-          fi
-
-  # Test du job release (version simplifiée mais fonctionnelle)
-  test_release:
-    needs: simulate_package
-    if: needs.simulate_package.outputs.artifacts_exist == 'true' && startsWith(github.ref, 'refs/heads/test-env')
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download test artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: packaged-artifacts
-          path: build
-
-      - name: Debug show artifacts
-        run: |
-          echo "Artifacts downloaded:"
-          ls -la build/
-          echo "---"
-          find . -name "*.aab" -o -name "*.apk"
-
-      - name: Simulate changelog extraction
-        id: changelog
-        run: |
-          echo "Simulating changelog extraction"
-          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "## [Test Version]" >> $GITHUB_OUTPUT
-          echo "- Feature 1" >> $GITHUB_OUTPUT
-          echo "- Fix 1" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Simulate Release Creation
-        if: github.repository == 'votre-compte/votre-repo-test'  # Changez ceci pour votre repo réel
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "test-release-$(date +%s)"
-          name: "Test Release $(date +%F)"
-          body: |
-            ### Version de Test
-            
-            <details>
-            <summary>Modifications simulées</summary>
-            
-            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-            
-            </details>
-            
-            **Artifacts disponibles:**
-            - Fichier de test AAB
-            - Fichier de test APK
-          draft: true  # Mettez à false pour créer des releases réelles
-          files: |
-            build/app.aab
-            build/app.apk
-
-  # Test du job create_pr (totalement fonctionnel)
   test_create_pr:
-    needs: simulate_package
-    if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,28 +23,35 @@ jobs:
 
       - name: Simulate sensitive files cleanup
         run: |
-          echo "Simulating sensitive files removal"
+          echo "Creating test files to clean..."
           mkdir -p client/credentials/android
-          touch client/credentials.json
+          echo "{}" > client/credentials.json
           touch client/credentials/android/keystore.jks
+          
+          echo "Cleaning sensitive files..."
           rm -f client/credentials.json
           rm -rf client/credentials
+          git add .
+          git diff --staged --quiet || git commit -m "Remove sensitive files before PR"
 
       - name: Extract test changelog
         id: changelog
         run: |
           mkdir -p client
-          echo "## [Test Version]\n- Test feature\n- Test fix" > client/CHANGELOG.md
+          # Crée un faux changelog si inexistant
+          if [ ! -f "client/CHANGELOG.md" ]; then
+            echo "## [Test Version]\n- Test feature\n- Test fix" > client/CHANGELOG.md
+          fi
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           head -n 5 client/CHANGELOG.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Real PR to main
+      - name: Create PR to main
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: "test-env-to-main-$(date +%s)"
+          branch: "test-env-to-main-$(date +%Y%m%d%H%M%S)"
           title: "TEST PR - Merge test-env → main"
           body: |
             ### PR de Test
@@ -153,3 +66,49 @@ jobs:
             **Ceci est un test automatisé**
           labels: "automated-pr,test,needs-review"
           commit-message: "chore: test merge from test-env [skip ci]"
+
+  test_release:
+    needs: test_create_pr
+    if: startsWith(github.ref, 'refs/heads/test-env')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test artifacts
+        run: |
+          mkdir -p build
+          # Création de fichiers factices
+          echo "Test AAB" > build/app.aab
+          echo "Test APK" > build/app.apk
+
+      - name: Simulate changelog extraction
+        id: changelog
+        run: |
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "## [Test Version]" >> $GITHUB_OUTPUT
+          echo "- Feature 1" >> $GITHUB_OUTPUT
+          echo "- Fix 1" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Simulate Release Creation
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "test-release-$(date +%Y%m%d%H%M%S)"
+          name: "Test Release $(date +%F)"
+          body: |
+            ### Version de Test
+            
+            <details>
+            <summary>Modifications simulées</summary>
+            
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            </details>
+          draft: true
+          files: |
+            build/app.aab
+            build/app.apk
