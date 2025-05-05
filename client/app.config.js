@@ -3,7 +3,7 @@ module.exports = {
   expo: {
     name: "Roadbook",
     slug: "Roadbook",
-    version: "2.3.0",
+    version: "3.0.0",
     orientation: "portrait",
     icon: "app/assets/images/icon.png",
     scheme: "myapp",
