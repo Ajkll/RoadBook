@@ -1,110 +1,121 @@
-name: Fix Package Test
+name: Test Package Only
 
 on:
-  workflow_dispatch:
-    inputs:
-      artifact_url:
-        description: 'URL de l''artifact à télécharger'
-        required: true
-        default: 'https://github.com/Ajkll/testingroad/actions/runs/14832439690/artifacts/3060736967'
+  push:
+    branches:
+      - test-env
 
 jobs:
-  test_package:
+  package_only:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup environnement
+      - name: Download already built artifact
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip wget
+          mkdir -p build
+          # Téléchargement de l'artefact depuis l'URL GitHub
+          ARTIFACT_URL="https://github.com/Ajkll/testingroad/actions/runs/14832439690/artifacts/3060736967"
+          
+          # Utiliser le token GitHub pour télécharger l'artifact
+          echo "Downloading artifact from $ARTIFACT_URL"
+          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "$ARTIFACT_URL/zip" -o artifact.zip
+          
+          # Décompresser l'artifact
+          unzip -o artifact.zip -d ./build_downloaded
+          echo "Contents of downloaded artifact:"
+          find ./build_downloaded -type f | sort
+          
+          # Copier les fichiers nécessaires
+          cp -r ./build_downloaded/* ./build/
+          echo "Files in build directory after copy:"
+          find ./build -type f | sort
 
-      - name: Téléchargement manuel de l'artifact
+      # Alternative si le téléchargement direct ne fonctionne pas
+      - name: Alternative - Use artifact from previous run
+        if: ${{ failure() }}
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: Test Env Release
+          workflow_conclusion: success
+          name: build-artifacts
+          path: ./build
+          skip_unpack: false
+
+      - name: Debug file structure
         run: |
-          echo "Création du répertoire de travail"
-          mkdir -p build_artifacts
-          
-          echo "Téléchargement de l'artifact depuis l'URL fournie"
-          # Note: GitHub nécessite un token pour télécharger les artifacts
-          # On utilise le token GITHUB_TOKEN fourni par Actions
-          curl -L -o artifacts.zip "${{ github.event.inputs.artifact_url }}/zip" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}"
-          
-          echo "Extraction de l'artifact téléchargé"
-          unzip -o artifacts.zip -d build_artifacts
-          
-          echo "Contenu du répertoire d'artifacts:"
-          find build_artifacts -type f | sort
-          echo "Taille des fichiers:"
-          du -h build_artifacts/*
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Files in build directory:"
+          ls -la build || echo "Build directory not found"
+          find . -name "app.aab" -type f || echo "app.aab not found"
+          find . -name "keystore.jks" -type f || echo "keystore.jks not found"
 
-      - name: Préparation du keystore
+      - name: Ensure keystore directory
         run: |
           mkdir -p ./client/credentials/android
-          if [ -f "build_artifacts/client/credentials/android/keystore.jks" ]; then
-            echo "Keystore trouvé dans l'artifact"
-            cp build_artifacts/client/credentials/android/keystore.jks ./client/credentials/android/
-          elif [ -f "build_artifacts/keystore.jks" ]; then
-            echo "Keystore trouvé à la racine des artifacts"
-            cp build_artifacts/keystore.jks ./client/credentials/android/
-          else
-            echo "ATTENTION: Keystore non trouvé, vérifiez la structure des artifacts"
-            find build_artifacts -name "*.jks" -type f
-          fi
           
-          # Vérification du keystore
-          ls -la ./client/credentials/android/ || echo "Répertoire du keystore non créé"
-
-      - name: Recherche du fichier AAB
-        id: find_aab
-        run: |
-          echo "Recherche du fichier AAB..."
-          AAB_PATH=$(find build_artifacts -name "*.aab" -type f | head -n 1)
+          # Essayer de trouver le keystore et le copier
+          KEYSTORE_PATH=$(find . -name "keystore.jks" -type f | head -n 1)
           
-          if [ -n "$AAB_PATH" ]; then
-            echo "Fichier AAB trouvé: $AAB_PATH"
-            mkdir -p build
-            cp "$AAB_PATH" build/app.aab
-            echo "aab_path=build/app.aab" >> $GITHUB_OUTPUT
+          if [ -n "$KEYSTORE_PATH" ]; then
+            echo "Found keystore at $KEYSTORE_PATH"
+            cp "$KEYSTORE_PATH" ./client/credentials/android/keystore.jks
           else
-            echo "ERREUR: Aucun fichier AAB trouvé dans les artifacts!"
+            echo "No keystore found!"
             exit 1
           fi
-          
-          # Vérification
-          ls -la build/
 
-      - name: Conversion AAB en APK
-        if: steps.find_aab.outputs.aab_path
+      - name: Convert AAB to APK
         run: |
-          echo "Début de la conversion AAB en APK"
-          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+          # Trouver le fichier app.aab où qu'il soit
+          AAB_PATH=$(find . -name "app.aab" -type f | head -n 1)
           
-          echo "Commande de conversion avec bundletool:"
-          echo "java -jar bundletool-all-1.15.6.jar build-apks --bundle=${{ steps.find_aab.outputs.aab_path }} --output=build/app.apks --mode=universal --ks=./client/credentials/android/keystore.jks --ks-pass=pass:**** --ks-key-alias=**** --key-pass=pass:****"
+          if [ -n "$AAB_PATH" ]; then
+            echo "Found app.aab at $AAB_PATH"
+            # Créer le répertoire de sortie si nécessaire
+            mkdir -p build
           
-          java -jar bundletool-all-1.15.6.jar build-apks \
-            --bundle=${{ steps.find_aab.outputs.aab_path }} \
-            --output=build/app.apks \
-            --mode=universal \
-            --ks=./client/credentials/android/keystore.jks \
-            --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
-            --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
-            --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
+            # Copier le fichier app.aab dans le répertoire build si nécessaire
+            if [ "$AAB_PATH" != "./build/app.aab" ]; then
+              cp "$AAB_PATH" "./build/app.aab"
+            fi
           
-          echo "Extraction de l'APK depuis le fichier APKS"
-          unzip build/app.apks -d build
-          mv build/universal.apk build/app.apk
+            # Télécharger bundletool
+            wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
           
-          echo "Vérification des fichiers générés:"
-          ls -la build/
+            # Vérifier que le keystore existe
+            if [ ! -f "./client/credentials/android/keystore.jks" ]; then
+              echo "ERROR: keystore.jks not found at expected path!"
+              exit 1
+            fi
           
-          echo "Conversion terminée avec succès!"
+            # Convertir AAB en APK
+            java -jar bundletool-all-1.15.6.jar build-apks \
+              --bundle=./build/app.aab \
+              --output=./build/app.apks \
+              --mode=universal \
+              --ks=./client/credentials/android/keystore.jks \
+              --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
+              --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
+              --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
+          
+            # Extraire et renommer l'APK
+            unzip ./build/app.apks -d ./build
+            mv ./build/universal.apk ./build/app.apk
+            echo "APK conversion successful"
+          else
+            echo "ERROR: app.aab file not found!"
+            exit 1
+          fi
 
-      - name: Upload des artifacts générés
+      - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-package-artifacts
+          name: packaged-artifacts
           path: |
             build/app.aab
             build/app.apk
