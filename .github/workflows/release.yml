@@ -59,9 +59,17 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           cd client
+          # Déconnexion et connexion correcte avec Expo
           eas logout || true
-          eas login --token $EXPO_TOKEN
-          eas build --platform android --non-interactive --no-wait
+          echo "Logging in to Expo..."
+          EXPO_DEBUG=1 npx expo login --non-interactive --token $EXPO_TOKEN
+
+          # Vérification de la connexion
+          npx expo whoami || (echo "Login failed" && exit 1)
+
+          # Construction avec EAS
+          echo "Starting EAS build..."
+          npx eas-cli build --platform android --non-interactive --no-wait
 
       - name: Local build for GitHub artifacts
         run: |
