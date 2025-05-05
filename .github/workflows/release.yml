@@ -73,7 +73,7 @@ jobs:
           
           # Configuration EAS
           echo " Configuring EAS project..."
-          npx eas-cli configure
+          npx eas-cli build:configure --platform android
           
           # Build EAS
           echo " Starting EAS build..."
