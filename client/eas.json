@@ -13,16 +13,21 @@
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
       "android": {
         "buildType": "app-bundle",
-        "credentialsSource": "local",
-        "gradleCommand": ":app:bundleRelease",
-        "env": {
-          "EXPO_DEBUG": "true"
-        }
+        "gradleCommand": ":app:bundleRelease"
       },
-      "ios": {
-        "simulator": true
+      "env": {
+        "EXPO_DEBUG": "true"
+      }
+    },
+    "local-production": {
+      "extends": "production",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "credentialsSource": "local"
       }
     }
   },
