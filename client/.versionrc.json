@@ -3,9 +3,11 @@
     "package.json",
     "package-lock.json",
     {
-      "filename": "app.json",
-      "type": "json",
-      "jsonpath": "$.expo.version"
+      "filename": "app.config.js",
+      "updater": "./version-updater.js"
     }
-  ]
+  ],
+  "scripts": {
+    "prerelease": "echo 'Dernière version :' && git describe --tags --abbrev=0 || echo 'Aucun tag existant'"
+  }
 }

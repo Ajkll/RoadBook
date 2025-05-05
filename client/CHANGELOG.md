@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/Yanstart/RoadBook/compare/v2.3.0...v3.0.0) (2025-05-05)
+
+## [2.3.0](https://github.com/Yanstart/RoadBook/compare/v2.2.0...v2.3.0) (2025-05-05)
+
+## [2.2.0](https://github.com/Yanstart/RoadBook/compare/v2.1.0...v2.2.0) (2025-05-05)
+
+## [2.1.0](https://github.com/Yanstart/RoadBook/compare/v2.0.0...v2.1.0) (2025-05-05)
+
+## [2.0.0](https://github.com/Yanstart/RoadBook/compare/v1.24.0...v2.0.0) (2025-05-04)
+
+## [1.23.0](https://github.com/Yanstart/RoadBook/compare/v1.24.0...v1.23.0) (2025-05-04)
+
+## [1.22.0](https://github.com/Yanstart/RoadBook/compare/v1.24.0...v1.22.0) (2025-05-04)
+
+## [1.24.0](https://github.com/Yanstart/RoadBook/compare/v1.23.0...v1.24.0) (2025-05-04)
+
+## [1.23.0](https://github.com/Yanstart/RoadBook/compare/v1.22.0...v1.23.0) (2025-05-04)
+
+## [1.22.0](https://github.com/Yanstart/RoadBook/compare/v1.21.0...v1.22.0) (2025-05-03)
+
+## [1.21.0](https://github.com/Yanstart/RoadBook/compare/v1.20.0...v1.21.0) (2025-05-03)
+
+## [1.20.0](https://github.com/Yanstart/RoadBook/compare/v1.19.0...v1.20.0) (2025-05-03)
+
+## [1.19.0](https://github.com/Yanstart/RoadBook/compare/v1.18.0...v1.19.0) (2025-05-03)
+
+## [1.18.0](https://github.com/Yanstart/RoadBook/compare/v1.15.0...v1.18.0) (2025-05-03)
+
+## [1.17.0](https://github.com/Yanstart/RoadBook/compare/v1.15.0...v1.17.0) (2025-05-03)
+
+## [1.16.0](https://github.com/Yanstart/RoadBook/compare/v1.15.0...v1.16.0) (2025-05-03)
+
+## [1.15.0](https://github.com/Yanstart/RoadBook/compare/v1.14.0...v1.15.0) (2025-05-03)
+
+## [1.14.0](https://github.com/Yanstart/RoadBook/compare/v1.13.0...v1.14.0) (2025-05-03)
+
+## [1.13.0](https://github.com/Yanstart/RoadBook/compare/v1.12.0...v1.13.0) (2025-05-02)
+
 ## [1.12.0](https://github.com/Yanstart/RoadBook/compare/v1.11.0...v1.12.0) (2025-05-02)
 
 ## [1.11.0](https://github.com/Yanstart/RoadBook/compare/v1.10.0...v1.11.0) (2025-05-02)

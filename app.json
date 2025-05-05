@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "892a6018-d385-424a-b701-cd02f7a29d0a"
+      }
+    },
+    "android": {
+      "package": "com.ajkll.roadbook"
+    }
+  }
+}

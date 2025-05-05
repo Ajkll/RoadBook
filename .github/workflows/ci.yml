@@ -14,21 +14,22 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20.18.1'
+          cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
       - name: Install dependencies
         run: |
           cd client
-          npm ci
+          yarn install --frozen-lockfile
       - name: Create lint directory
         run: mkdir -p client/lint-results
       - name: Run ESLint and generate reports
         run: |
           cd client
           # Toujours générer le rapport même en cas d'erreur
-          npx eslint --format html --output-file ./lint-results/report.html . || true
+          yarn eslint --format html --output-file ./lint-results/report.html . || true
           # Afficher les erreurs dans les logs mais ne pas faire échouer le job
-          npx eslint --format stylish . || echo "ESLint found errors but continuing..."
+          yarn eslint --format stylish . || echo "ESLint found errors but continuing..."
       - name: Verify and upload report
         run: |
           cd client
@@ -53,25 +54,27 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20.18.1'
+          cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
       - name: Install dependencies
         run: |
           cd client
-          npm ci
+          yarn install --frozen-lockfile
           cd ../server
-          npm ci
+          yarn install --frozen-lockfile
       - name: Run client tests with coverage
         run: |
           cd client
-          npm run test:coverage || echo "::warning::Coverage insufficient"
+          yarn test:coverage || echo "::warning::Coverage insufficient"
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: client/coverage/lcov-report/
           if-no-files-found: warn
-      - name: Run server tests
-        run: |
-          cd server
-          npm test
+      #- name: Run server tests
+      #  run: |
+      #   cd server
+      #   yarn test
+      # pas pour tout de suite

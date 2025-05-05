@@ -1,17 +1,38 @@
 {
+  "cli": {
+    "version": ">= 5.9.1",
+    "appVersionSource": "remote"
+  },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
     "preview": {
-      "android": {
-        "buildType": "apk"
-      }
+      "distribution": "internal"
     },
     "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "credentialsSource": "local",
       "android": {
-        "buildType": "app-bundle"  // Pour un .aab (Google Play)
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
       },
-      "ios": {
-        "distribution": "store"  // Pour l'App Store
+      "env": {
+        "EXPO_DEBUG": "true"
+      }
+    },
+    "local-production": {
+      "extends": "production",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "credentialsSource": "local"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
