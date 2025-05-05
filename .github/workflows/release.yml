@@ -11,38 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download already built artifact
-        run: |
-          mkdir -p build
-          # Téléchargement de l'artefact depuis l'URL GitHub
-          ARTIFACT_URL="https://github.com/Ajkll/testingroad/actions/runs/14832439690/artifacts/3060736967"
-          
-          # Utiliser le token GitHub pour télécharger l'artifact
-          echo "Downloading artifact from $ARTIFACT_URL"
-          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               "$ARTIFACT_URL/zip" -o artifact.zip
-          
-          # Décompresser l'artifact
-          unzip -o artifact.zip -d ./build_downloaded
-          echo "Contents of downloaded artifact:"
-          find ./build_downloaded -type f | sort
-          
-          # Copier les fichiers nécessaires
-          cp -r ./build_downloaded/* ./build/
-          echo "Files in build directory after copy:"
-          find ./build -type f | sort
-
-      # Alternative si le téléchargement direct ne fonctionne pas
-      - name: Alternative - Use artifact from previous run
-        if: ${{ failure() }}
+      - name: Download build artifacts
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: Test Env Release
           workflow_conclusion: success
           name: build-artifacts
           path: ./build
-          skip_unpack: false
+          check_artifacts: true
+          search_artifacts: true
 
       - name: Debug file structure
         run: |
