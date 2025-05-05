@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler un bug critique
+    url: https://github.com/<ton-utilisateur>/<ton-repo>/issues/new?title=BUG%20critique%20-%20&body=Expliquez%20le%20problème...
+    about: Utilisez ce lien pour signaler un bug urgent.
