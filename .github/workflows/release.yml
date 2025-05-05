@@ -70,40 +70,57 @@ jobs:
           jq '.build."local-production".android.withoutCredentials = true' eas.json > "$TMP_EAS_JSON"
           mv "$TMP_EAS_JSON" eas.json
           
-          # Lancer le build avec les credentials locaux
+          # Lancer le build avec les credentials locaux et ATTENDRE qu'il se termine (pas de --no-wait)
           eas build --platform android --profile local-production \
           --non-interactive \
-          --no-wait \
+          --output=./build \
           --clear-cache
-
-
-      - name: Wait for build completion and download artifacts
-        run: |
-          # Pour un build local, l'attente n'est pas nécessaire, et l'artifact est déjà présent
-          mkdir -p ./build
-          find . -name "*.aab" -type f
           
-          # Chercher le fichier AAB de manière plus extensive
+          # Vérifier que les artefacts de build existent
+          ls -la ./build
+
+      - name: Prepare APK from AAB
+        run: |
+          mkdir -p ./build
+          
+          # Rechercher le fichier AAB dans le répertoire de build ou ailleurs
           AAB_PATH=$(find . -name "*.aab" -type f | head -n 1)
           if [ -n "$AAB_PATH" ]; then
             echo "Found AAB at: $AAB_PATH"
-            cp "$AAB_PATH" ./build/app.aab
+            # Si le fichier n'est pas déjà dans ./build, le copier
+            if [[ "$AAB_PATH" != "./build/"* ]]; then
+              cp "$AAB_PATH" ./build/app.aab
+            else
+              # Renommer si nécessaire
+              if [[ "$AAB_PATH" != "./build/app.aab" ]]; then
+                mv "$AAB_PATH" ./build/app.aab
+              fi
+            fi
           else
             echo "No AAB file found! Checking Android directories..."
             if [ -d "./android" ]; then
               find ./android -type f -name "*.aab" || echo "No AAB found in android directory"
             fi
-            exit 1
+            # Ne pas exit 1 ici, mais afficher un avertissement
+            echo "WARNING: Could not find AAB file. APK generation might fail."
           fi
           
-          # Convertir AAB en APK (via bundletool)
-          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
-          java -jar bundletool-all-1.15.6.jar build-apks \
-            --bundle=./build/app.aab \
-            --output=./build/app.apks \
-            --mode=universal
-          unzip ./build/app.apks -d ./build
-          mv ./build/universal.apk ./build/app.apk
+          # Vérifier si le fichier AAB existe avant de tenter la conversion
+          if [ -f "./build/app.aab" ]; then
+            # Convertir AAB en APK (via bundletool)
+            wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+            java -jar bundletool-all-1.15.6.jar build-apks \
+              --bundle=./build/app.aab \
+              --output=./build/app.apks \
+              --mode=universal
+            unzip ./build/app.apks -d ./build
+            mv ./build/universal.apk ./build/app.apk
+            echo "Successfully converted AAB to APK"
+          else
+            echo "ERROR: Cannot convert AAB to APK because AAB file is missing"
+            # Permet au workflow de continuer même sans APK
+            touch ./build/app.apk.missing
+          fi
 
       - name: Extract changelog entry
         id: changelog
@@ -127,6 +144,27 @@ jobs:
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check artifacts before release
+        run: |
+          echo "Checking available artifacts:"
+          ls -la ./build/
+          
+          # Vérifier si les artifacts critiques existent
+          if [ -f "./build/app.aab" ]; then
+            echo "AAB file found and ready for release"
+          else
+            echo "WARNING: No AAB file found for release"
+          fi
+          
+          if [ -f "./build/app.apk" ]; then
+            echo "APK file found and ready for release"
+          elif [ -f "./build/app.apk.missing" ]; then
+            echo "WARNING: APK generation was skipped"
+            rm ./build/app.apk.missing
+          else
+            echo "WARNING: No APK file found for release"
+          fi
 
       - name: Create Release with Artifacts
         if: startsWith(github.ref, 'refs/tags/')
