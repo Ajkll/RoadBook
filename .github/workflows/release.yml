@@ -59,17 +59,39 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           cd client
-          # Déconnexion et connexion correcte avec Expo
-          eas logout || true
-          echo "Logging in to Expo..."
-          EXPO_DEBUG=1 npx expo login --non-interactive --token $EXPO_TOKEN
-
-          # Vérification de la connexion
-          npx expo whoami || (echo "Login failed" && exit 1)
-
-          # Construction avec EAS
-          echo "Starting EAS build..."
-          npx eas-cli build --platform android --non-interactive --no-wait
+          
+          # Cleanup et setup
+          rm -rf .expo
+          npm config set //registry.npmjs.org/:_authToken=${EXPO_TOKEN}
+          
+          # Authentification Expo
+          echo "🔑 Authenticating with Expo..."
+          npx expo login --non-interactive --token $EXPO_TOKEN
+          
+          # Validation auth
+          if ! npx expo whoami; then
+            echo "❌ Expo authentication failed"
+            exit 1
+          fi
+          
+          # Configuration EAS
+          echo "⚙️ Configuring EAS project..."
+          npx eas-cli configure
+          
+          # Build EAS
+          echo "🏗 Starting EAS build..."
+          npx eas-cli build \
+            --platform android \
+            --non-interactive \
+            --no-wait \
+            --json | tee eas-build.log
+          
+          # Optionnel: Récupérer l'ID du build
+          BUILD_ID=$(jq -r '.buildId' eas-build.log)
+          echo "Build ID: ${BUILD_ID}"
+          echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
+          
+          echo "✅ EAS build started successfully. Check progress at https://expo.dev/accounts/ajkll/projects/Roadbook/builds"
 
       - name: Local build for GitHub artifacts
         run: |
