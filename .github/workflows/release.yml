@@ -32,53 +32,68 @@ jobs:
 
       - run: npm ci
 
-      # On n'utilise pas la commande login explicitement car EXPO_TOKEN est déjà dans l'environnement
-      # et sera utilisé automatiquement par EAS
-
-      # Étape critique: créer le keystore.json et la structure de répertoires
-      - name: Create keystore.json credentials file
+      # Étape critique: créer les credentials dans le bon répertoire
+      - name: Create keystore credentials in the correct directory
         run: |
-          mkdir -p ./android/app/build/outputs/bundle/release
-          mkdir -p ./android/keystores
-          echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./android/keystores/release.keystore
-          cat > ./android/keystores/keystore.json << EOF
+          # Créer le répertoire pour les credentials
+          mkdir -p ./credentials/android
+          
+          # Décodage du keystore dans le bon emplacement
+          echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./credentials/android/keystore.jks
+          
+          # Créer le fichier credentials.json
+          cat > ./credentials.json << EOF
           {
-            "keystore": "./release.keystore",
-            "keystorePassword": "${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }}",
-            "keyAlias": "${{ secrets.EXPO_ANDROID_KEY_ALIAS }}",
-            "keyPassword": "${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}"
+            "android": {
+              "keystore": {
+                "keystorePath": "./credentials/android/keystore.jks",
+                "keystorePassword": "${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }}",
+                "keyAlias": "${{ secrets.EXPO_ANDROID_KEY_ALIAS }}",
+                "keyPassword": "${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}"
+              }
+            }
           }
           EOF
+          
+          # Vérifier que le fichier existe
+          ls -la ./credentials/android/keystore.jks
 
       - name: Build Android App Bundle
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          # Forcer la déconnexion pour éviter l'utilisation des credentials distants
+          eas logout || true
+          
+          # Utiliser withoutCredentials via une option temporaire
+          TMP_EAS_JSON=$(mktemp)
+          jq '.build."local-production".android.withoutCredentials = true' eas.json > "$TMP_EAS_JSON"
+          mv "$TMP_EAS_JSON" eas.json
+          
+          # Lancer le build avec les credentials locaux
           eas build --platform android --profile local-production \
           --non-interactive \
           --no-wait \
           --clear-cache \
-          --local \
-          --local-build-options="--android-keystore-path=./credentials/android/keystore.jks"
+          --local
 
       - name: Wait for build completion and download artifacts
         run: |
           # Pour un build local, l'attente n'est pas nécessaire, et l'artifact est déjà présent
           mkdir -p ./build
-          find ./android -name "*.aab" -type f
-          cp ./android/app/build/outputs/bundle/release/app-release.aab ./build/app.aab || echo "AAB file not found at expected location"
+          find . -name "*.aab" -type f
           
-          # Si le fichier n'existe pas, cherchons-le
-          if [ ! -f ./build/app.aab ]; then
-            echo "Searching for AAB file..."
-            AAB_PATH=$(find ./android -name "*.aab" -type f | head -n 1)
-            if [ -n "$AAB_PATH" ]; then
-              echo "Found AAB at: $AAB_PATH"
-              cp "$AAB_PATH" ./build/app.aab
-            else
-              echo "No AAB file found!"
-              exit 1
+          # Chercher le fichier AAB de manière plus extensive
+          AAB_PATH=$(find . -name "*.aab" -type f | head -n 1)
+          if [ -n "$AAB_PATH" ]; then
+            echo "Found AAB at: $AAB_PATH"
+            cp "$AAB_PATH" ./build/app.aab
+          else
+            echo "No AAB file found! Checking Android directories..."
+            if [ -d "./android" ]; then
+              find ./android -type f -name "*.aab" || echo "No AAB found in android directory"
             fi
+            exit 1
           fi
           
           # Convertir AAB en APK (via bundletool)
@@ -101,10 +116,10 @@ jobs:
               else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
             }
             found {print}
-          ' client/CHANGELOG.md)
+          ' CHANGELOG.md)
           
           if [ -z "$SECTION" ]; then
-            SECTION=$(cat client/CHANGELOG.md)
+            SECTION=$(cat CHANGELOG.md)
           fi
           
           CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
@@ -135,7 +150,7 @@ jobs:
             - Roadbook.apk (Android Package)
             - Roadbook.aab (Android App Bundle)
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
