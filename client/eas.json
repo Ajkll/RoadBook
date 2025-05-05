@@ -15,18 +15,14 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
-        "credentialsSource": "remote",
+        "credentialsSource": "local",
         "gradleCommand": ":app:bundleRelease",
-        "withoutCredentials": false
+        "env": {
+          "EXPO_DEBUG": "true"
+        }
       },
       "ios": {
         "simulator": true
-      },
-      "env": {
-        "EXPO_DEBUG": "true"
-      },
-      "cache": {
-        "key": "production-v1"
       }
     }
   },

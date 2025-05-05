@@ -17,163 +17,83 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup environment
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+          npm install -g eas-cli
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'yarn'
+          cache: 'npm'
 
-      - name: Install dependencies with Yarn
-        run: |
-          yarn global add eas-cli@16.4.0
-          yarn install --frozen-lockfile
-
-      - name: Verify EAS CLI version
-        run: |
-          eas --version
-          echo "EAS CLI installed successfully"
+      - run: npm ci
 
       - name: Configure Expo token
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          echo "EXPO_TOKEN configured as environment variable"
-          eas whoami
+        run: npx eas-cli login --non-interactive
 
-      # Générer un keystore pour le build local
-      - name: Generate Keystore
+      # Étape critique: créer le keystore.json
+      - name: Create keystore.json credentials file
         run: |
-          mkdir -p android/app
-          keytool -genkeypair -v \
-            -keystore keystore.jks \
-            -alias upload \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Upload Key, OU=Development, O=YourOrganization, L=City, ST=State, C=Country" \
-            -storepass android \
-            -keypass android
-
-      # Création du fichier de config eas.json temporaire pour le build local
-      - name: Create temporary eas.json config
-        run: |
-          cat > eas.local.json << EOF
+          mkdir -p ./android/keystores
+          echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./android/keystores/release.keystore
+          cat > ./android/keystores/keystore.json << EOF
           {
-            "cli": {
-              "version": ">= 16.4.0",
-              "appVersionSource": "remote"
-            },
-            "build": {
-              "local": {
-                "android": {
-                  "buildType": "apk",
-                  "gradleCommand": ":app:assembleRelease",
-                  "env": {
-                    "ANDROID_SDK_ROOT": "$ANDROID_SDK_ROOT"
-                  }
-                }
-              }
-            }
+            "keystore": "./release.keystore",
+            "keystorePassword": "${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }}",
+            "keyAlias": "${{ secrets.EXPO_ANDROID_KEY_ALIAS }}",
+            "keyPassword": "${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}"
           }
           EOF
-          
-          cat eas.local.json
 
-      # Configuration pour le build local
-      - name: Prepare for local build
-        run: |
-          mkdir -p build
-          
-          # Configurer le keystore temporaire
-          cp keystore.jks android/app/
-          
-          # Créer le fichier de configuration gradle.properties
-          mkdir -p ~/.gradle
-          echo 'MYAPP_UPLOAD_STORE_FILE=keystore.jks' > android/gradle.properties
-          echo 'MYAPP_UPLOAD_KEY_ALIAS=upload' >> android/gradle.properties
-          echo 'MYAPP_UPLOAD_STORE_PASSWORD=android' >> android/gradle.properties
-          echo 'MYAPP_UPLOAD_KEY_PASSWORD=android' >> android/gradle.properties
-          echo 'org.gradle.daemon=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx4608m' >> ~/.gradle/gradle.properties
-
-      # Méthode 1: Utiliser eas build en local
-      - name: Build with EAS local
+      - name: Build Android App Bundle
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          # Configurer le projet pour Android
-          eas build:configure --platform android
+          eas build --platform android --profile production \
+            --non-interactive \
+            --no-wait \
+            --clear-cache \
+            --local
+
+      - name: Wait for build completion and download artifacts
+        run: |
+          # Pour un build local, l'attente n'est pas nécessaire, et l'artifact est déjà présent
+          mkdir -p ./build
+          cp ./android/app/build/outputs/bundle/release/app-release.aab ./build/app.aab
           
-          # Exécuter le build local
-          eas build --platform android --profile local --local --output=build/app.apk --config=eas.local.json
-        continue-on-error: true
-
-      # Méthode 2: Si le build EAS échoue, utiliser expo directement
-      - name: Fallback - use expo directly
-        if: ${{ failure() }}
-        run: |
-          echo "EAS build failed, attempting direct build with expo..."
-          yarn global add expo-cli
-          npx expo prebuild --platform android --clean
-          cd android
-          JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 ./gradlew assembleRelease
-          mkdir -p ../build
-          cp app/build/outputs/apk/release/app-release.apk ../build/app.apk
-
-      # Vérifier que le build a bien généré un APK
-      - name: Verify APK exists
-        run: |
-          if [ ! -f build/app.apk ]; then
-            echo "Build failed - no APK was generated"
-            exit 1
-          else
-            ls -la build/
-            echo "APK generated successfully"
-          fi
+          # Convertir AAB en APK (via bundletool)
+          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+          java -jar bundletool-all-1.15.6.jar build-apks \
+            --bundle=./build/app.aab \
+            --output=./build/app.apks \
+            --mode=universal
+          unzip ./build/app.apks -d ./build
+          mv ./build/universal.apk ./build/app.apk
 
       - name: Extract changelog entry
         id: changelog
         run: |
           CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          SECTION=$(awk -v tag="$CURRENT_TAG" '
+            BEGIN {found=0}
+            /^## / {
+              if ($0 ~ "\\["tag"\\]") {found=1; next}
+              else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
+            }
+            found {print}
+          ' client/CHANGELOG.md)
           
-          if [ -f "client/CHANGELOG.md" ]; then
-            CHANGELOG_PATH="client/CHANGELOG.md"
-          elif [ -f "CHANGELOG.md" ]; then
-            CHANGELOG_PATH="CHANGELOG.md"
-          else
-            echo "CHANGELOG not found"
-            CHANGELOG_PATH=""
+          if [ -z "$SECTION" ]; then
+            SECTION=$(cat client/CHANGELOG.md)
           fi
           
-          if [ -n "$CHANGELOG_PATH" ]; then
-            SECTION=$(awk -v tag="$CURRENT_TAG" '
-              BEGIN {found=0}
-              /^## / {
-                if ($0 ~ "\\["tag"\\]") {found=1; next}
-                else if ($0 ~ /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/) {found=0}
-              }
-              found {print}
-            ' $CHANGELOG_PATH)
-          
-            if [ -z "$SECTION" ]; then
-              SECTION=$(cat $CHANGELOG_PATH)
-            fi
-          
-            CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
-          else
-            CLEAN_SECTION="No changelog available"
-          fi
+          CLEAN_SECTION=$(echo "$SECTION" | sed '/^$/d')
           
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
@@ -199,11 +119,13 @@ jobs:
             
             **Artifacts disponibles:**
             - Roadbook.apk (Android Package)
+            - Roadbook.aab (Android App Bundle)
             
-            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/test-env/CHANGELOG.md)
+            [Voir le CHANGELOG complet](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/client/CHANGELOG.md)
           prerelease: true
           files: |
             build/app.apk
+            build/app.aab
 
       - name: Create PR to main
         if: github.ref == 'refs/heads/test-env' && !contains(github.event.head_commit.message, 'chore(release)')
