@@ -70,57 +70,61 @@ jobs:
           jq '.build."local-production".android.withoutCredentials = true' eas.json > "$TMP_EAS_JSON"
           mv "$TMP_EAS_JSON" eas.json
           
-          # Lancer le build avec les credentials locaux et ATTENDRE qu'il se termine (pas de --no-wait)
-          eas build --platform android --profile local-production \
+          # Vérifier la configuration de eas.json
+          echo "Contenu de eas.json:"
+          cat eas.json
+          
+          # Lancer un build local avec EAS Build
+          # Pour les builds locaux avec EAS, nous devons utiliser la commande correcte
+          eas build --platform android --profile local-production --local \
           --non-interactive \
-          --output=./build \
           --clear-cache
           
-          # Vérifier que les artefacts de build existent
-          ls -la ./build
+          # Une fois le build local terminé, les fichiers devraient être dans le répertoire de sortie
+          # qui est généralement dans ./android/app/build/outputs/bundle/release/
+          mkdir -p ./build
+          
+          # Chercher le fichier AAB généré par le build local
+          find . -name "*.aab" -type f
 
-      - name: Prepare APK from AAB
+      - name: Copy and prepare artifacts
         run: |
           mkdir -p ./build
           
-          # Rechercher le fichier AAB dans le répertoire de build ou ailleurs
+          # Chercher le fichier AAB généré
+          # Généralement, pour un build local, il se trouve dans ./android/app/build/outputs/
           AAB_PATH=$(find . -name "*.aab" -type f | head -n 1)
+          
           if [ -n "$AAB_PATH" ]; then
             echo "Found AAB at: $AAB_PATH"
-            # Si le fichier n'est pas déjà dans ./build, le copier
-            if [[ "$AAB_PATH" != "./build/"* ]]; then
-              cp "$AAB_PATH" ./build/app.aab
-            else
-              # Renommer si nécessaire
-              if [[ "$AAB_PATH" != "./build/app.aab" ]]; then
-                mv "$AAB_PATH" ./build/app.aab
-              fi
-            fi
+            cp "$AAB_PATH" ./build/app.aab
           else
-            echo "No AAB file found! Checking Android directories..."
-            if [ -d "./android" ]; then
-              find ./android -type f -name "*.aab" || echo "No AAB found in android directory"
-            fi
-            # Ne pas exit 1 ici, mais afficher un avertissement
-            echo "WARNING: Could not find AAB file. APK generation might fail."
+            echo "No AAB file found in standard locations, checking Android directories..."
+            for dir in $(find . -type d -name "android"); do
+              echo "Checking in $dir"
+              find "$dir" -type f -name "*.aab" -o -name "*.apk"
+            done
+          
+            # Chercher dans des sous-répertoires spécifiques où EAS pourrait placer les builds
+            echo "Checking in EAS build directories..."
+            find . -path "*/build/*" -name "*.aab" -o -name "*.apk"
+          
+            # Si toujours rien trouvé, essayer de regarder où les fichiers ont été générés
+            echo "Listing recently created files..."
+            find . -type f -mmin -10 | grep -E '\.(aab|apk)$' || echo "No recent AAB/APK files found"
+          
+            echo "ERROR: Cannot find AAB file"
+            exit 1
           fi
           
-          # Vérifier si le fichier AAB existe avant de tenter la conversion
-          if [ -f "./build/app.aab" ]; then
-            # Convertir AAB en APK (via bundletool)
-            wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
-            java -jar bundletool-all-1.15.6.jar build-apks \
-              --bundle=./build/app.aab \
-              --output=./build/app.apks \
-              --mode=universal
-            unzip ./build/app.apks -d ./build
-            mv ./build/universal.apk ./build/app.apk
-            echo "Successfully converted AAB to APK"
-          else
-            echo "ERROR: Cannot convert AAB to APK because AAB file is missing"
-            # Permet au workflow de continuer même sans APK
-            touch ./build/app.apk.missing
-          fi
+          # Convertir AAB en APK (via bundletool)
+          wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
+          java -jar bundletool-all-1.15.6.jar build-apks \
+            --bundle=./build/app.aab \
+            --output=./build/app.apks \
+            --mode=universal
+          unzip ./build/app.apks -d ./build
+          mv ./build/universal.apk ./build/app.apk
 
       - name: Extract changelog entry
         id: changelog
@@ -144,27 +148,6 @@ jobs:
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_SECTION" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Check artifacts before release
-        run: |
-          echo "Checking available artifacts:"
-          ls -la ./build/
-          
-          # Vérifier si les artifacts critiques existent
-          if [ -f "./build/app.aab" ]; then
-            echo "AAB file found and ready for release"
-          else
-            echo "WARNING: No AAB file found for release"
-          fi
-          
-          if [ -f "./build/app.apk" ]; then
-            echo "APK file found and ready for release"
-          elif [ -f "./build/app.apk.missing" ]; then
-            echo "WARNING: APK generation was skipped"
-            rm ./build/app.apk.missing
-          else
-            echo "WARNING: No APK file found for release"
-          fi
 
       - name: Create Release with Artifacts
         if: startsWith(github.ref, 'refs/tags/')
