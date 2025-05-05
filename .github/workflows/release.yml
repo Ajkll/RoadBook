@@ -32,13 +32,14 @@ jobs:
 
       - run: npm ci
 
-      # On n'utilise pas la commande login explicitement car EXPO_TOKEN est déjà dans l'environnement
-      # et sera utilisé automatiquement par EAS
+      - name: Configure Expo token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli login --non-interactive
 
-      # Étape critique: créer le keystore.json et la structure de répertoires
+      # Étape critique: créer le keystore.json
       - name: Create keystore.json credentials file
         run: |
-          mkdir -p ./android/app/build/outputs/bundle/release
           mkdir -p ./android/keystores
           echo '${{ secrets.EXPO_ANDROID_KEYSTORE_BASE64 }}' | base64 -d > ./android/keystores/release.keystore
           cat > ./android/keystores/keystore.json << EOF
@@ -64,21 +65,7 @@ jobs:
         run: |
           # Pour un build local, l'attente n'est pas nécessaire, et l'artifact est déjà présent
           mkdir -p ./build
-          find ./android -name "*.aab" -type f
-          cp ./android/app/build/outputs/bundle/release/app-release.aab ./build/app.aab || echo "AAB file not found at expected location"
-          
-          # Si le fichier n'existe pas, cherchons-le
-          if [ ! -f ./build/app.aab ]; then
-            echo "Searching for AAB file..."
-            AAB_PATH=$(find ./android -name "*.aab" -type f | head -n 1)
-            if [ -n "$AAB_PATH" ]; then
-              echo "Found AAB at: $AAB_PATH"
-              cp "$AAB_PATH" ./build/app.aab
-            else
-              echo "No AAB file found!"
-              exit 1
-            fi
-          fi
+          cp ./android/app/build/outputs/bundle/release/app-release.aab ./build/app.aab
           
           # Convertir AAB en APK (via bundletool)
           wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
