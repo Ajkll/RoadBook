@@ -150,34 +150,37 @@ jobs:
 
       - name: Convert AAB to APK
         run: |
-          if [ -f "./build/app.aab" ]; then
-            echo "Found app.aab file, proceeding with conversion"
-          
+          # Chemin corrigé avec le double build
+          AAB_PATH="./build/build/app.aab"
+
+          if [ -f "$AAB_PATH" ]; then
+            echo "Found app.aab file at $AAB_PATH, proceeding with conversion"
+
             # Télécharger bundletool
             wget https://github.com/google/bundletool/releases/download/1.15.6/bundletool-all-1.15.6.jar
-          
+
             # Vérifier que le keystore existe
             if [ ! -f "./client/credentials/android/keystore.jks" ]; then
               echo "ERROR: keystore.jks not found at expected path!"
               exit 1
             fi
-          
+
             # Convertir AAB en APK
             java -jar bundletool-all-1.15.6.jar build-apks \
-              --bundle=./build/app.aab \
+              --bundle="$AAB_PATH" \
               --output=./build/app.apks \
               --mode=universal \
               --ks=./client/credentials/android/keystore.jks \
               --ks-pass=pass:${{ secrets.EXPO_ANDROID_KEYSTORE_PASSWORD }} \
               --ks-key-alias=${{ secrets.EXPO_ANDROID_KEY_ALIAS }} \
               --key-pass=pass:${{ secrets.EXPO_ANDROID_KEY_PASSWORD }}
-          
+
             # Extraire et renommer l'APK
             unzip ./build/app.apks -d ./build
             mv ./build/universal.apk ./build/app.apk
             echo "APK conversion successful"
           else
-            echo "ERROR: app.aab file not found in build directory!"
+            echo "ERROR: app.aab file not found at $AAB_PATH!"
             find . -name "app.aab" -type f
             exit 1
           fi
