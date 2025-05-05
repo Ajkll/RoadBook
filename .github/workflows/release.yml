@@ -66,7 +66,7 @@ jobs:
           
           # Authentification Expo
           echo "🔑 Authenticating with Expo..."
-          npx expo login --non-interactive --token $EXPO_TOKEN
+          npx expo login --token $EXPO_TOKEN
           
           # Validation auth
           if ! npx expo whoami; then
