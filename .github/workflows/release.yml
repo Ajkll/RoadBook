@@ -5,6 +5,12 @@ on:
     branches:
       - test-env
 
+# Définir les permissions au niveau du workflow (global)
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   mock_build_package:
     runs-on: ubuntu-latest
@@ -148,9 +154,11 @@ jobs:
   test_create_pr:
     needs: mock_build_package
     runs-on: ubuntu-latest
+    # Définir explicitement les permissions au niveau du job
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -216,7 +224,8 @@ jobs:
       - name: Create Test PR to main
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Utilisez un token personnel si disponible, sinon utilisez GITHUB_TOKEN avec les bonnes permissions
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           base: main
           branch: test-env-to-main-pretest
           title: "[TEST] Pre-test PR from test-env → main"
