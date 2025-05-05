@@ -69,23 +69,23 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           cd client
-          
+
           # Forcer la déconnexion pour éviter l'utilisation des credentials distants
           eas logout || true
-          
+
           # Vérifier si le dossier android existe déjà
           if [ ! -d "./android" ]; then
             # Générer le projet natif Android si nécessaire
             yarn expo prebuild --platform android --clean
           fi
-          
+
           # Utiliser eas build:configure pour générer la config correcte si nécessaire
-          yarn eas build:configure --platform android
-          
+          npx eas-cli build:configure --platform android
+
           # Utiliser la commande directe avec Gradle pour construire l'AAB
           cd android
           ./gradlew bundleRelease
-          
+
           # Vérifier si le AAB a été correctement généré
           mkdir -p ../../build
           AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
