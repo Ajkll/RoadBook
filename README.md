@@ -94,6 +94,9 @@ npm run dev         # Start development server
 - GET /api/users - Get all users (admin only)
 
 # Gestion des versions - Workflow
+
+![Version](https://img.shields.io/github/package-json/v/Ajkll/testingroad)
+
  - Commandes disponibles
 ```bash
 yarn check-version - Affiche la version actuelle (tag et package.json)
