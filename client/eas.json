@@ -6,10 +6,26 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -20,7 +36,12 @@
         "gradleCommand": ":app:bundleRelease"
       },
       "env": {
-        "EXPO_DEBUG": "true"
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key"
       }
     },
     "local-production": {

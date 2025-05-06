@@ -194,6 +194,7 @@ const createStyles = (theme: any, insets: any) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
   },
   navText: {

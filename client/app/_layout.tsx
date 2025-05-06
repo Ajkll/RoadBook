@@ -27,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { SoundProvider } from './components/SoundProvider';
 import { NotificationHandler } from './components/NotificationHandler';
-
+import { logger, initLogger } from './utils/logger';
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -187,9 +187,9 @@ export default function RootLayout() {
   useEffect(() => {
     // Configuration automatique basée sur la plateforme
     //apiProxy.updateConfig();
-
+    initLogger(); // Initialise le logger
     // Log pour débogage
-    console.log(`Platform: ${Platform.OS}`);
+    logger.info(`Platform: ${Platform.OS}`);
     console.log(`API URL: ${apiProxy.getBaseUrl()}`);
 
     // Si on est en dev, lancer un test de connexion basique

@@ -1,9 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haversineDistance } from '../../utils/firebase/driveSessionUtils';
+import Constants from 'expo-constants';
 
 // Configuration du cache
-const API_KEY = 'EBCPXGKNCZ8PU7UXYDYZQGFSJ';
+const API_KEY = Constants.expoConfig?.extra?.WEATHER_API_KEY || 'CLEF_PAR_DEFAUT_POUR_DEV';
 const BASE_URL =
   'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/';
 const CACHE_PREFIX = '@WEATHER_CACHE_';

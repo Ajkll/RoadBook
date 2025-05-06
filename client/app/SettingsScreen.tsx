@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
 import SoundCardParameters from './components/parameters/soundCardParameters';
+import { LogViewer } from './components/parameters/LogViewer';
 import { useTheme } from './constants/theme';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import * as Notifications from 'expo-notifications';
@@ -100,10 +101,11 @@ const SettingsScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Section Son (version améliorée de main) */}
+        {/* section son */}
         <SoundCardParameters />
-
-        {/* Notifications */}
+        {/* section log */}
+        <LogViewer  />
+        {/* section notifications */}
         <View style={styles.settingItem}>
           <Text style={styles.label}>
             Activer les notifications
