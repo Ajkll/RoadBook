@@ -2,14 +2,15 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { ENV } from '../config/env';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBWN9S1okxnIkxAmmqiu5LmkKsX6956lDs',
-  authDomain: 'roadbook-5c1ad.firebaseapp.com',
+  apiKey: ENV.FIREBASE_API_KEY,
+  authDomain: ENV.FIREBASE_AUTH_DOMAIN,
   projectId: 'roadbook-5c1ad',
   storageBucket: 'roadbook-5c1ad.appspot.com',
   messagingSenderId: '861432841004',
-  appId: '1:861432841004:web:25da6c059f5e564f476289',
+  appId: ENV.FIREBASE_APP_ID,
   measurementId: 'G-TPBQCVKT71',
 };
 

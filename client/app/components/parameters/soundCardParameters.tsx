@@ -167,9 +167,11 @@ const createStyles = (theme: any) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      backgroundColor : theme.colors.secondary,
       paddingVertical: theme.spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
+      borderWidth: 1,
+      borderRadius: theme.borderRadius.medium,
+      ...theme.shadow.lg,
     },
     section: {
       marginBottom: theme.spacing.md,
@@ -179,8 +181,9 @@ const createStyles = (theme: any) =>
       ...theme.shadow.xm,
     },
     sectionTitle: {
-      fontSize: theme.typography.title.fontSize,
+      fontSize: theme.typography.subtitle.fontSize,
       fontWeight: theme.typography.title.fontWeight,
+      marginLeft: 10,
       color: theme.colors.primary,
     },
     controlRow: {

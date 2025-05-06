@@ -183,31 +183,40 @@ function NetworkStatusHandler() {
 }
 
 export default function RootLayout() {
-  // Initialiser la configuration du proxy API
+  const [isLoggerReady, setIsLoggerReady] = useState(false);
+  // Initialiser la configuration du proxy API et du logging
   useEffect(() => {
-    // Configuration automatique basée sur la plateforme
-    //apiProxy.updateConfig();
-    initLogger(); // Initialise le logger
-    // Log pour débogage
-    logger.info(`Platform: ${Platform.OS}`);
-    console.log(`API URL: ${apiProxy.getBaseUrl()}`);
-
-    // Si on est en dev, lancer un test de connexion basique
-    if (__DEV__) {
-      setTimeout(async () => {
+      const initializeApp = async () => {
         try {
-          console.log('Testing API connection...');
-          const result = await fetch(apiProxy.getUrl('/health'), {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-          });
-          console.log(`API connection test: ${result.status}`);
+          // Initialisation du logger
+          await initLogger();
+          setIsLoggerReady(true);
+
+          logger.info(`App started on Platform: ${Platform.OS}`);
+          logger.info(`API URL: ${apiProxy.getBaseUrl()}`);
+
+          // Si on est en dev, lancer un test de connexion basique
+          if (__DEV__) {
+            setTimeout(async () => {
+              try {
+                logger.debug('Testing API connection...');
+                const result = await fetch(apiProxy.getUrl('/health'), {
+                  method: 'GET',
+                  headers: { 'Accept': 'application/json' }
+                });
+                logger.debug(`API connection test: ${result.status}`);
+              } catch (error) {
+                logger.error('API connection test failed:', error);
+              }
+            }, 2000);
+          }
         } catch (error) {
-          console.error(' API connection test failed:', error.message);
+          console.error('Initialization failed:', error);
         }
-      }, 2000);
-    }
-  }, []);
+      };
+
+      initializeApp();
+    }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { calculateAverageSpeed } from '../../utils/firebase/driveSessionUtils';
-
-const GEOAPIFY_API_KEY2 = 'ccdaca2c37ee4ca4a1ccc512e8ee4283';
+import { ENV } from '../config/env';
 
 /**
  * Récupère les informations de route détaillées en utilisant l'API Geoapify Map Matching
@@ -37,7 +36,7 @@ export async function getGeoapifyRouteInfo(
         'Content-Type': 'application/json',
       },
       params: {
-        apiKey: GEOAPIFY_API_KEY2,
+        apiKey: ENV.GEOAPIFY_API_KEY2,
       },
     });
     console.log('la réponse:', JSON.stringify(Object.keys(response.data), null, 2));

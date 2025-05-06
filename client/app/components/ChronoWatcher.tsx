@@ -199,7 +199,7 @@ export default function ChronoWatcher() {
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
 
-          console.log(`[${instanceId}] User ID:`, userId);
+          console.error(`[${instanceId}] User ID:`, userId);
           console.log(`[${instanceId}] Elapsedtime:`, finalElapsedTime);
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);

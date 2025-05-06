@@ -50,6 +50,7 @@ module.exports = ({config}) => {
         "expo-router",
         "expo-secure-store",
         "expo-notifications",
+        "sentry-expo",
         [
           "expo-camera",
           {
@@ -57,13 +58,24 @@ module.exports = ({config}) => {
             microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone",
             recordAudioAndroid: true
           }
-        ]
+        ],
       ],
+      sentry: {
+        organization: "roadbookCorp",
+        project: "roadbook"
+      },
       hooks: {
         postPublish: [
           {
             file: "expo-hooks/disable-bundle-compression.js",
             config: {}
+          },
+          {
+            file: "sentry-expo/upload-sourcemaps",
+            config: {
+              organization: "roadbookCorp",
+              project: "roadbook"
+            }
           }
         ]
       },
@@ -77,6 +89,7 @@ module.exports = ({config}) => {
         GEOAPIFY_API_KEY: process.env.GEOAPIFY_API_KEY,
         GEOAPIFY_API_KEY2: process.env.GEOAPIFY_API_KEY2,
         WEATHER_API_KEY: process.env.WEATHER_API_KEY,
+        SENTRY_DSN: process.env.SENTRY_DSN,
         router: {
           origin: false
         },

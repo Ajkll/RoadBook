@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
 import SoundCardParameters from './components/parameters/soundCardParameters';
-import { LogViewer } from './components/parameters/LogViewer';
+import { AppInfo } from './components/parameters/appInfoReport';
 import { useTheme } from './constants/theme';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import * as Notifications from 'expo-notifications';
@@ -101,10 +101,10 @@ const SettingsScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* section appInfo */}
+        <AppInfo  />
         {/* section son */}
         <SoundCardParameters />
-        {/* section log */}
-        <LogViewer  />
         {/* section notifications */}
         <View style={styles.settingItem}>
           <Text style={styles.label}>
@@ -140,8 +140,11 @@ const SettingsScreen = () => {
           />
         </View>
 
-        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
       </ScrollView>
+
+      <View style={styles.footerContainer}>
+        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -154,6 +157,12 @@ const createStyles = (theme: any, darkMode?: boolean) =>
     },
     content: {
       padding: theme.spacing.md,
+    },
+    footerContainer: {
+      padding: theme.spacing.md,
+      borderTopWidth: 0.5,
+      borderTopColor: theme.colors.border,
+      backgroundColor: darkMode ? '#1c1c1e' : theme.colors.background,
     },
     settingItem: {
       flexDirection: 'row',
