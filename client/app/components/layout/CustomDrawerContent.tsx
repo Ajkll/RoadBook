@@ -1,37 +1,61 @@
-// client/app/components/layout/CustomDrawerContent.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../constants/theme';
+import SyncBadge from '../ui/SyncBadge';
+import { MaterialIcons } from '@expo/vector-icons';
+import { CopyToClipboard } from '../common/ClipBoardCopy';
 
-// Fonction utilitaire pour créer un élément de menu
-const DrawerItem = ({ label, onPress, active = false, colors }) => (
+const DrawerItem = ({
+  label,
+  onPress,
+  active = false,
+  theme,
+  iconName,
+}: {
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+  theme: Theme;
+  iconName?: string;
+}) => (
   <TouchableOpacity
     style={[
       styles.drawerItem,
-      active && { backgroundColor: colors.primary + '20' }, // 20% opacity
+      active && { backgroundColor: theme.colors.ui.button.primary + '20' },
     ]}
     onPress={onPress}
   >
-    <Text style={[styles.drawerItemText, { color: active ? colors.primary : colors.text }]}>
-      {label}
-    </Text>
+    <View style={styles.itemContent}>
+      {iconName && (
+        <MaterialIcons
+          name={iconName}
+          size={theme.typography.subtitle.fontSize}
+          color={active ? theme.colors.ui.button.primary : theme.colors.backgroundText}
+          style={styles.icon}
+        />
+      )}
+      <Text
+        style={[
+          styles.drawerItemText(theme),
+          active && { color: theme.colors.ui.button.primary, fontWeight: '600' },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   </TouchableOpacity>
 );
 
-// Composant principal du tiroir personnalisé
 export default function CustomDrawerContent(props) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const theme = useTheme();
   const { user, logout } = useAuth();
-
-  // Obtenir le chemin actuel pour mettre en évidence l'élément actif
   const currentRoute = props.state?.routes[props.state.index]?.name || '';
 
-  // Fonction pour naviguer vers une route
-  const navigateTo = (route) => {
+  const navigateTo = (route: string) => {
     props.navigation.closeDrawer();
     router.push(route);
   };
@@ -39,147 +63,232 @@ export default function CustomDrawerContent(props) {
   return (
     <DrawerContentScrollView
       {...props}
-      contentContainerStyle={{ flex: 1 }}
-      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ flex: 1, paddingLeft: 0 }}
+      style={styles.container(theme)}
     >
-      {/* En-tête du tiroir avec les infos de l'utilisateur */}
-      <View style={[styles.drawerHeader, { backgroundColor: colors.primary }]}>
+      {/* Header */}
+      <View style={styles.drawerHeader(theme)}>
         <View style={styles.userInfoContainer}>
           <Image
-            source={{ uri: user?.profilePicture || 'https://via.placeholder.com/100' }}
-            style={styles.userAvatar}
+            source={{ uri: user?.profilePicture || 'https://via.placeholder.com/200' }}
+            style={styles.userAvatar(theme)}
           />
           <View>
-            <Text style={[styles.userName, { color: colors.white }]}>
-              {user?.displayName || 'Utilisateur'}
-            </Text>
-            <Text style={[styles.userEmail, { color: colors.white + 'CC' }]}>
-              {user?.email || 'email@example.com'}
-            </Text>
+            <Text style={styles.userName(theme)}>{user?.displayName || 'Utilisateur : N/A'}</Text>
+            <CopyToClipboard
+              text={user?.email || 'email@example.com'}
+              showText={true}
+              iconSize={14}
+              containerStyle={{ marginTop: 4 }}
+            />
           </View>
         </View>
       </View>
 
-      {/* Liste des éléments de menu */}
+      {/* Menu items */}
       <ScrollView style={styles.drawerContent}>
         <DrawerItem
           label="Accueil"
           onPress={() => navigateTo('/(tabs)')}
           active={currentRoute === '(tabs)'}
-          colors={colors}
+          theme={theme}
+          iconName="home"
         />
         <DrawerItem
           label="Dashboard"
           onPress={() => navigateTo('/DashboardScreen')}
           active={currentRoute === 'DashboardScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="dashboard"
+        />
+        <DrawerItem
+          label="Payment"
+          onPress={() => navigateTo('/PaymentScreen')}
+          active={currentRoute === 'PaymentScreen'}
+          theme={theme}
+          iconName="credit-card"
         />
         <DrawerItem
           label="Mon Carnet"
           onPress={() => navigateTo('/MyRoadbookScreen')}
           active={currentRoute === 'MyRoadbookScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="book"
         />
         <DrawerItem
           label="Mes trajets"
-          onPress={() => navigateTo('/MyRoutesScreen')}
+          onPress={() => navigateTo('/(tabs)/my-routes')}
           active={currentRoute === 'MyRoutesScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="directions"
         />
 
-        <View style={styles.divider} />
+        <View style={styles.divider(theme)} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Communauté</Text>
+        <Text style={styles.sectionTitle(theme)}>Communauté</Text>
         <DrawerItem
           label="Communauté"
           onPress={() => navigateTo('/CommunityScreen')}
           active={currentRoute === 'CommunityScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="people"
         />
         <DrawerItem
           label="Mentors"
           onPress={() => navigateTo('/MentorsScreen')}
           active={currentRoute === 'MentorsScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="school"
         />
         <DrawerItem
           label="Compétences"
           onPress={() => navigateTo('/SkillsScreen')}
           active={currentRoute === 'SkillsScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="star"
         />
         <DrawerItem
           label="Marketplace"
           onPress={() => navigateTo('/MarketplaceScreen')}
           active={currentRoute === 'MarketplaceScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="shopping-cart"
         />
 
-        <View style={styles.divider} />
+        <View style={styles.divider(theme)} />
 
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Paramètres</Text>
+        <Text style={styles.sectionTitle(theme)}>Paramètres</Text>
         <DrawerItem
           label="Profil"
           onPress={() => navigateTo('/ProfileScreen')}
           active={currentRoute === 'ProfileScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="person"
         />
+        <TouchableOpacity
+          style={[
+            styles.drawerItem,
+            currentRoute === 'OfflineSyncScreen' && {
+              backgroundColor: theme.colors.ui.button.primary + '20',
+            },
+          ]}
+          onPress={() => navigateTo('/OfflineSyncScreen')}
+        >
+          <View style={styles.itemWithBadge}>
+            <View style={styles.itemContent}>
+              <MaterialIcons
+                name="sync"
+                size={theme.typography.subtitle.fontSize}
+                color={
+                  currentRoute === 'OfflineSyncScreen'
+                    ? theme.colors.ui.button.primary
+                    : theme.colors.backgroundText
+                }
+                style={styles.icon}
+              />
+              <Text
+                style={[
+                  styles.drawerItemText(theme),
+                  currentRoute === 'OfflineSyncScreen' && {
+                    color: theme.colors.ui.button.primary,
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                Synchronisation Offline
+              </Text>
+            </View>
+            <SyncBadge />
+          </View>
+        </TouchableOpacity>
         <DrawerItem
           label="Paramètres"
           onPress={() => navigateTo('/SettingsScreen')}
           active={currentRoute === 'SettingsScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="settings"
         />
         <DrawerItem
           label="Aide"
           onPress={() => navigateTo('/HelpScreen')}
           active={currentRoute === 'HelpScreen'}
-          colors={colors}
+          theme={theme}
+          iconName="help"
         />
         <DrawerItem
-          label="À propos"
-          onPress={() => navigateTo('/AboutUsScreen')}
-          active={currentRoute === 'AboutUsScreen'}
-          colors={colors}
+          label="Privacy"
+          onPress={() => navigateTo('/PrivacyScreen')}
+          active={currentRoute === 'PrivacyScreen'}
+          theme={theme}
+          iconName="info"
         />
       </ScrollView>
 
-      {/* Bouton de déconnexion en bas */}
-      <View style={styles.logoutContainer}>
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: colors.error + '20' }]}
-          onPress={logout}
-        >
-          <Text style={[styles.logoutText, { color: colors.error }]}>Déconnexion</Text>
+      {/* Logout button */}
+      <View style={styles.logoutContainer(theme)}>
+        <TouchableOpacity style={styles.logoutButton(theme)} onPress={logout}>
+          <MaterialIcons
+            name="logout"
+            size={theme.typography.subtitle.fontSize}
+            color={theme.colors.ui.button.dangerText}
+            style={styles.icon}
+          />
+          <Text style={styles.logoutText(theme)}>Déconnexion</Text>
         </TouchableOpacity>
       </View>
     </DrawerContentScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  drawerHeader: {
-    padding: 16,
-    paddingTop: 48,
-    paddingBottom: 24,
-  },
+const styles = {
+  container: (theme: Theme) => ({
+    backgroundColor: theme.colors.background,
+    zIndex: 1000,
+    elevation: 1000,
+    borderTopRightRadius: theme.borderRadius.xlarge,
+    borderBottomRightRadius: theme.borderRadius.xlarge,
+    marginLeft: 0,
+    paddingLeft: 0,
+    borderWidth: 5,
+    borderColor: '#D8D8D0',
+  }),
+  drawerHeader: (theme: Theme) => ({
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    borderTopRightRadius: theme.borderRadius.xlarge,
+    borderBottomRightRadius: theme.borderRadius.xlarge,
+    padding: theme.spacing.xl,
+    marginLeft: -30, // React Navigation ajoute une marge au drawer donc on triche
+    borderWidth: 6,
+    borderTopColor: theme.colors.primary,
+    borderRightColor: theme.colors.secondary,
+    borderBottomColor: theme.colors.secondary,
+    ...theme.shadow.xl,
+  }),
   userInfoContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'top',
+    paddingBottom: 50,
   },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  userEmail: {
-    fontSize: 14,
-  },
+  userAvatar: (theme: Theme) => ({
+    width: '35%',
+    height: ' 100%',
+    marginLeft: -11,
+    borderRadius: theme.borderRadius.xlarge,
+    marginRight: theme.spacing.sm,
+    backgroundColor: theme.colors.secondary,
+  }),
+  userName: (theme: Theme) => ({
+    fontSize: theme.typography.SuperTitle.fontSize,
+    fontWeight: theme.typography.title.fontWeight as 'bold',
+    color: theme.colors.primaryText,
+    marginBottom: theme.spacing.xs,
+  }),
+  userEmail: (theme: Theme) => ({
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.colors.primaryTextSoft,
+  }),
   drawerContent: {
     flex: 1,
     paddingTop: 8,
@@ -190,35 +299,67 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     borderRadius: 8,
   },
-  drawerItemText: {
-    fontSize: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    marginLeft: 16,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  logoutContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  logoutButton: {
-    padding: 12,
-    borderRadius: 8,
+  itemContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  icon: {
+    marginRight: 8,
+    padding: 5,
+    fontSize: 22,
   },
-});
+  drawerItemText: (theme: Theme) => ({
+    fontSize: theme.typography.subtitle.fontSize,
+    color: theme.colors.backgroundText,
+    fontSize: theme.typography.subtitle.fontSize,
+  }),
+  divider: (theme: Theme) => ({
+    height: 2.3,
+    marginVertical: theme.spacing.sm,
+    marginHorizontal: theme.spacing.md,
+    marginLeft: -500,
+    padding: 0,
+    backgroundColor: theme.colors.border,
+  }),
+  sectionTitle: (theme: Theme) => ({
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: theme.typography.caption.fontWeight as 'bold',
+    textTransform: 'uppercase',
+    marginLeft: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    color: theme.colors.backgroundTextSoft,
+    letterSpacing: 1,
+  }),
+  logoutContainer: (theme: Theme) => ({
+    paddingTop: 15,
+    paddingBottom: 10,
+    borderTopWidth: 7,
+    borderColor: theme.colors.secondary,
+    borderTop: 20,
+    borderRadius: 10,
+  }),
+  logoutButton: (theme: Theme) => ({
+    padding: theme.spacing.sm,
+    marginRight: '5%',
+    borderRadius: theme.borderRadius.xlarge,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.ui.button.danger,
+    ...theme.shadow.sm,
+  }),
+  logoutText: (theme: Theme) => ({
+    fontSize: theme.typography.button.fontSize,
+    fontWeight: theme.typography.button.fontWeight as 'bold',
+    color: theme.colors.ui.button.dangerText,
+    marginLeft: theme.spacing.sm,
+  }),
+  itemWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+};
+
+type Theme = ReturnType<typeof useTheme>;

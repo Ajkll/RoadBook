@@ -31,6 +31,21 @@ yarn-error.*
 
 # local env files
 .env*.local
+*.env
 
 # typescript
 *.tsbuildinfo
+
+# test coverage
+/coverage
+
+/lint-results
+
+# USE YARN PLS
+package-lock.json
+
+/credentials
+credentials.json
+
+ogs/
+*.log

@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, ThemeColors } from '../../constants/theme';
+import { useTheme, getShadowStyle } from '../../constants/theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 interface HeaderProps {
@@ -13,19 +13,21 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress }) => {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
-  const handleMenuPress = onMenuPress ?? (() => {
-    navigation.dispatch(DrawerActions.openDrawer());
-  });
+  const handleMenuPress =
+    onMenuPress ??
+    (() => {
+      navigation.dispatch(DrawerActions.openDrawer());
+    });
 
-  const styles = useMemo(() => createStyles(colors, insets), [colors, insets]);
+  const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={handleMenuPress} style={styles.menuButton}>
-        <Ionicons name="menu" size={24} color={colors.backgroundIcon} />
+        <Ionicons name="menu" size={24} color={theme.colors.backgroundIcon} />
       </TouchableOpacity>
 
       <Text style={styles.title}>{title}</Text>
@@ -36,35 +38,29 @@ const Header: React.FC<HeaderProps> = ({ title = 'RoadBook Tracker', onMenuPress
   );
 };
 
-const createStyles = (colors: ThemeColors, insets: any) =>
+const createStyles = (theme, insets) =>
   StyleSheet.create({
     header: {
-      backgroundColor: colors.background, 
+      backgroundColor: theme.colors.background,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 16,
+      paddingHorizontal: theme.spacing.md,
       paddingTop: insets.top,
       height: 60 + insets.top,
-      // Shadow for iOS
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.5,
-      shadowRadius: 5,
-      // Shadow for Android
-      elevation: 10,
-    } as ViewStyle,
+      ...getShadowStyle(theme),
+    },
     menuButton: {
-      padding: 8,
-    } as ViewStyle,
+      padding: theme.spacing.sm,
+    },
     title: {
-      color: colors.backgroundTextSoft, 
-      fontSize: 18,
-      fontWeight: 'bold',
-    } as TextStyle,
+      color: theme.colors.backgroundText,
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: theme.typography.title.fontWeight,
+    },
     rightPlaceholder: {
       width: 40,
-    } as ViewStyle,
+    },
   });
 
 export default Header;

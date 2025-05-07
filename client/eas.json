@@ -1,0 +1,65 @@
+{
+  "cli": {
+    "version": ">= 5.9.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key",
+        "SENTRY_DSN": "@sentry_dsn",
+        "SENTRY_AUTH_TOKEN": "@sentry_auth_token"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key",
+        "SENTRY_DSN": "@sentry_dsn",
+        "SENTRY_AUTH_TOKEN": "@sentry_auth_token"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "credentialsSource": "local",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "env": {
+        "FIREBASE_API_KEY": "@firebase_api_key",
+        "FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+        "FIREBASE_APP_ID": "@firebase_app_id",
+        "GEOAPIFY_API_KEY": "@geoapify_api_key",
+        "GEOAPIFY_API_KEY2": "@geoapify_api_key2",
+        "WEATHER_API_KEY": "@weather_api_key",
+        "SENTRY_DSN": "@sentry_dsn",
+        "SENTRY_AUTH_TOKEN": "@sentry_auth_token"
+      }
+    },
+    "local-production": {
+      "extends": "production",
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "credentialsSource": "local"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

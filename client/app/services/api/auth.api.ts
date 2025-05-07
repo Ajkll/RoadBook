@@ -10,6 +10,7 @@ import {
 } from '../../types/auth.types';
 import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
 import apiClient, { API_URL, TUNNEL_MODE } from './client'; // Import our central API client and configuration
+import { logger } from '../../utils/logger';
 
 // Log API configuration for debugging
 console.log('🔄 AUTH API: Using URL from central API client:', API_URL);
@@ -31,25 +32,25 @@ const logDebug = (message: string, data?: unknown) => {
 
 // Utility for logging errors
 const logError = (message: string, error: unknown) => {
-  console.error(`❌ AUTH API ERROR: ${message}`, error);
+  logger.error(`❌ AUTH API ERROR: ${message}`, error);
 
   // Extract and log additional error details if available
   if (error.response) {
-    console.error('- Status:', error.response.status);
-    console.error('- Data:', error.response.data);
-    console.error('- Headers:', error.response.headers);
+    logger.error('- Status:', error.response.status);
+    logger.error('- Data:', error.response.data);
+    logger.error('- Headers:', error.response.headers);
   } else if (error.request) {
-    console.error('- Request was made but no response received');
-    console.error('- Request:', error.request);
+    logger.error('- Request was made but no response received');
+    logger.error('- Request:', error.request);
   } else {
-    console.error('- Error message:', error.message);
+    logger.error('- Error message:', error.message);
   }
 
   // Log network information if available
   if (error.config) {
-    console.error('- Request URL:', error.config.url);
-    console.error('- Request Method:', error.config.method?.toUpperCase());
-    console.error('- Request Headers:', error.config.headers);
+    logger.error('- Request URL:', error.config.url);
+    logger.error('- Request Method:', error.config.method?.toUpperCase());
+    logger.error('- Request Headers:', error.config.headers);
 
     // Don't log sensitive data in production, but helpful for debugging
     if (DEBUG && error.config.data) {
@@ -58,9 +59,9 @@ const logError = (message: string, error: unknown) => {
         const configData = JSON.parse(error.config.data);
         const sanitizedData = { ...configData };
         if (sanitizedData.password) sanitizedData.password = '******';
-        console.error('- Request Data (sanitized):', sanitizedData);
+        logger.error('- Request Data (sanitized):', sanitizedData);
       } catch {
-        console.error('- Request Data: [Could not parse]');
+        logger.error('- Request Data: [Could not parse]');
       }
     }
   }
