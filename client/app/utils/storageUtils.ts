@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { store } from '../store/store';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getWeather } from '../services/api/weather';
+import { logger } from './logger';
 
 export interface PendingDriveSession {
   id: string;
@@ -103,7 +104,7 @@ export const savePendingRoadInfoRequest = async (
     console.log(' info routière en attente sauvegardée:', id);
     return id;
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde routière:', error);
+    logger.error('Erreur lors de la sauvegarde routière:', error);
     throw error;
   }
 };
@@ -113,7 +114,7 @@ export const getPendingRoadInfoRequests = async (): Promise<PendingRoadInfoReque
     const requestsString = await AsyncStorage.getItem(KEYS.PENDING_ROADINFO_REQUESTS);
     return requestsString ? JSON.parse(requestsString) : [];
   } catch (error) {
-    console.error('Erreur lors de la récupération routière en attente:', error);
+    logger.error('Erreur lors de la récupération routière en attente:', error);
     return [];
   }
 };
@@ -125,7 +126,7 @@ export const removePendingRoadInfoRequest = async (id: string): Promise<void> =>
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRequests));
     console.log(' info routière supprimée du stockage local:', id);
   } catch (error) {
-    console.error('Erreur lors de la suppression info routière:', error);
+    logger.error('Erreur lors de la suppression info routière:', error);
     throw error;
   }
 };
@@ -157,7 +158,7 @@ export const savePendingDriveSession = async (
 
     return id;
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde locale de la session:', error);
+    logger.error('Erreur lors de la sauvegarde locale de la session:', error);
     throw error;
   }
 };
@@ -167,7 +168,7 @@ export const getPendingDriveSessions = async (): Promise<PendingDriveSession[]> 
     const sessionsString = await AsyncStorage.getItem(KEYS.PENDING_DRIVE_SESSIONS);
     return sessionsString ? JSON.parse(sessionsString) : [];
   } catch (error) {
-    console.error(' Erreur lors de la récupération des sessions en attente:', error);
+    logger.error(' Erreur lors de la récupération des sessions en attente:', error);
     return [];
   }
 };
@@ -192,7 +193,7 @@ export const removePendingDriveSession = async (id: string): Promise<void> => {
 
     console.log(' Session et requetes associées supprimées:', id);
   } catch (error) {
-    console.error('Erreur lors de la suppression de la session:', error);
+    logger.error('Erreur lors de la suppression de la session:', error);
     throw error;
   }
 };
@@ -212,7 +213,7 @@ export const savePendingWeatherRequest = async (
     console.log('Requete météo en attente sauvegardée:', id);
     return id;
   } catch (error) {
-    console.error('erreur lors de la sauvegarde météo:', error);
+    logger.error('erreur lors de la sauvegarde météo:', error);
     throw error;
   }
 };
@@ -247,7 +248,7 @@ export async function syncPendingWeatherRequests(): Promise<{
         const weather = await getWeather(request.latitude, request.longitude);
 
         if (!weather) {
-          console.error(` resultat defférer api : météo pour la requete ${request.id}`);
+          logger.error(` resultat defférer api : météo pour la requete ${request.id}`);
           failedCount++;
           continue;
         }
@@ -266,12 +267,12 @@ export async function syncPendingWeatherRequests(): Promise<{
         successCount++;
         console.log(`api météo ${request.id} traitée avec succès`);
       } catch (error) {
-        console.error(`traitement météo échec ${request.id}:`, error);
+        logger.error(`traitement météo échec ${request.id}:`, error);
         failedCount++;
       }
     }
   } catch (error) {
-    console.error('sync des données météo failed:', error);
+    logger.error('sync des données météo failed:', error);
   }
 
   return { success: successCount, failed: failedCount };
@@ -282,7 +283,7 @@ export const getPendingWeatherRequests = async (): Promise<PendingWeatherRequest
     const requestsString = await AsyncStorage.getItem(KEYS.PENDING_WEATHER_REQUESTS);
     return requestsString ? JSON.parse(requestsString) : [];
   } catch (error) {
-    console.error('récup api météo en attente failed:', error);
+    logger.error('récup api météo en attente failed:', error);
     return [];
   }
 };
@@ -294,7 +295,7 @@ export const removePendingWeatherRequest = async (id: string): Promise<void> => 
     await AsyncStorage.setItem(KEYS.PENDING_WEATHER_REQUESTS, JSON.stringify(updatedRequests));
     console.log('api meteo supprimée du stockage local:', id);
   } catch (error) {
-    console.error('suppression api météo failed:', error);
+    logger.error('suppression api météo failed:', error);
     throw error;
   }
 };
@@ -304,7 +305,7 @@ export const saveLastSyncDate = async (): Promise<void> => {
   try {
     await AsyncStorage.setItem(KEYS.LAST_SYNC_DATE, Date.now().toString());
   } catch (error) {
-    console.error('stockage de la date de sync failed:', error);
+    logger.error('stockage de la date de sync failed:', error);
   }
 };
 
@@ -313,7 +314,7 @@ export const getLastSyncDate = async (): Promise<number | null> => {
     const dateString = await AsyncStorage.getItem(KEYS.LAST_SYNC_DATE);
     return dateString ? parseInt(dateString, 10) : null;
   } catch (error) {
-    console.error('récup de la date de sync failed:', error);
+    logger.error('récup de la date de sync failed:', error);
     return null;
   }
 };
@@ -328,6 +329,6 @@ export const clearAllStorageData = async (): Promise<void> => {
     ]);
     console.log(' données local effacées');
   } catch (error) {
-    console.error('echec de la suppression des données du stockage par clearAll:', error);
+    logger.error('echec de la suppression des données du stockage par clearAll:', error);
   }
 };

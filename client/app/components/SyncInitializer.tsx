@@ -6,6 +6,7 @@ import {
   getPendingWeatherRequests,
   getPendingRoadInfoRequests,
 } from '../utils/storageUtils';
+import { logger } from '../utils/logger';
 
 const SyncInitializer = () => {
   const dispatch = useDispatch();
@@ -77,7 +78,7 @@ const SyncInitializer = () => {
           }
         });
       } catch (error) {
-        console.error('erreur de sync api route:', error);
+        logger.error('erreur de sync api route:', error);
       }
     };
 

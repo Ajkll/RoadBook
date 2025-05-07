@@ -1,5 +1,6 @@
 import { api } from './client';
 import { SessionData } from '../../types/session.types';
+import { logger } from '../../utils/logger';
 
 // pour enregistrer une session
 export const createSession = async (sessionData: SessionData) => {
@@ -7,7 +8,7 @@ export const createSession = async (sessionData: SessionData) => {
     const response = await api.post('/sessions', sessionData);
     return response.data;
   } catch (error) {
-    console.error('Erreur lors de la création de session:', error);
+    logger.error('Erreur lors de la création de session:', error);
     throw error;
   }
 };
@@ -18,7 +19,7 @@ export const updateSession = async (sessionId: string, sessionData: SessionData)
     const response = await api.put(`/sessions/${sessionId}`, sessionData);
     return response.data;
   } catch (error) {
-    console.error('Erreur lors de la maj de session:', error);
+    logger.error('Erreur lors de la maj de session:', error);
     throw error;
   }
 };

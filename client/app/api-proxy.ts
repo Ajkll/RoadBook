@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { Alert } from 'react-native';
 // Import centralized API configuration from client.ts
 import { API_URL, TUNNEL_MODE, CODESPACE_BASE_URL } from './services/api/client';
+import { logger } from './utils/logger';
 
 console.log('🔄 API PROXY: Using centralized configuration:');
 console.log('🔄 API URL:', API_URL);
@@ -92,7 +93,7 @@ export const testApiConnection = async () => {
         tunnelMode: TUNNEL_MODE
       };
     } else {
-      console.error('❌ PROXY: API connection failed with status:', response.status);
+      logger.error('❌ PROXY: API connection failed with status:', response.status);
       let errorText = `Server responded with ${response.status}`;
       try {
         const errorData = await response.json();
@@ -110,7 +111,7 @@ export const testApiConnection = async () => {
       };
     }
   } catch (error) {
-    console.error('❌ PROXY: API connection failed with error:', error.message, error);
+    logger.error('❌ PROXY: API connection failed with error:', error.message, error);
     
     // Better error information
     let errorDetails = error.message;

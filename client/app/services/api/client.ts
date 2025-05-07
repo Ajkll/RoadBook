@@ -3,6 +3,7 @@ import axios, { AxiosError, AxiosInstance } from 'axios';
 import { Platform } from 'react-native';
 import { getItem, STORAGE_KEYS } from '../secureStorage';
 import Constants from 'expo-constants';
+import { logger } from '../../utils/logger';
 
 // ===== CONFIGURATION URLs =====
 // URLs de base pour différents environnements
@@ -49,7 +50,7 @@ const detectEnvironment = () => {
     console.log(`🔍 Environment detected: ${environment} (${explanation})`);
     return { environment, explanation };
   } catch (e) {
-    console.error('❌ Error detecting environment:', e);
+    logger.error('❌ Error detecting environment:', e);
     // Par défaut, on considère qu'on est sur un appareil physique
     return { environment: 'physical', explanation: 'Detection error, assuming physical device' };
   }
@@ -162,7 +163,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    logger.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -178,16 +179,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    console.error('Response interceptor error:', error.message);
+    logger.error('Response interceptor error:', error.message);
 
     // Logguer les informations d'erreur détaillées
     if (error.response) {
-      console.error(`Server responded with status ${error.response.status}`);
-      console.error('Response data:', error.response.data);
+      logger.error(`Server responded with status ${error.response.status}`);
+      logger.error('Response data:', error.response.data);
     } else if (error.request) {
-      console.error('No response received:', error.request);
+      logger.error('No response received:', error.request);
     } else {
-      console.error('Error setting up request:', error.message);
+      logger.error('Error setting up request:', error.message);
     }
 
     // Extraire et créer une erreur plus conviviale
@@ -245,7 +246,7 @@ export const testApiConnection = async () => {
       hostUri: Constants.expoConfig?.hostUri || 'N/A',
     };
   } catch (error) {
-    console.error('❌ API connection failed:', error);
+    logger.error('❌ API connection failed:', error);
     return {
       success: false,
       message: error.message,

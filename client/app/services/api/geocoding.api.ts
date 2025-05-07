@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { ENV } from '../config/env';
+import { logger } from '../../utils/logger';
 
-const GEOAPIFY_API_KEY = 'cf42108f59fd40158417cf0be8c3aadb';
 const CACHE_PREFIX = '@GEOCODE_';
 const MAX_CACHE_ITEMS = 200; // max d'entrés dans le cache
 const CACHE_KEYS_KEY = '@GEOCODE_CACHE_KEYS';
@@ -25,8 +26,8 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
     const { isConnected } = await NetInfo.fetch();
     if (!isConnected) return 'Adresse inconnue (hors ligne)';
 
-    // 3. Requete à l'API
-    const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${GEOAPIFY_API_KEY}`;
+    // 3. Requete à l'API - Utilise la clé sécurisée depuis ENV
+    const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${ENV.GEOAPIFY_API_KEY}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Erreur API');
 
@@ -38,7 +39,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
 
     return address;
   } catch (error) {
-    console.error('Erreur de géocodage:', error);
+    logger.error('Erreur de géocodage:', error);
     return 'Adresse inconnue';
   }
 }

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { calculateAverageSpeed } from '../../utils/firebase/driveSessionUtils';
-
-const GEOAPIFY_API_KEY = 'ccdaca2c37ee4ca4a1ccc512e8ee4283';
+import { ENV } from '../config/env';
+import { logger } from '../../utils/logger';
 
 /**
  * Récupère les informations de route détaillées en utilisant l'API Geoapify Map Matching
@@ -37,7 +37,7 @@ export async function getGeoapifyRouteInfo(
         'Content-Type': 'application/json',
       },
       params: {
-        apiKey: GEOAPIFY_API_KEY,
+        apiKey: ENV.GEOAPIFY_API_KEY2,
       },
     });
     console.log('la réponse:', JSON.stringify(Object.keys(response.data), null, 2));
@@ -47,7 +47,7 @@ export async function getGeoapifyRouteInfo(
       !response.data.features ||
       !response.data.features.length
     ) {
-      console.error('Format de réponse inattendu (geoapify)');
+      logger.error('Format de réponse inattendu (geoapify)');
       return null;
     }
 
@@ -122,9 +122,9 @@ export async function getGeoapifyRouteInfo(
     return resultObject;
   } catch (error: any) {
     if (error.response) {
-      console.error('Url de Geoapify :', error.config?.url);
-      console.error('la requete:', JSON.stringify(error.config?.params, null, 2));
-      console.error('la réponse:', error.response?.data);
+      logger.error('Url de Geoapify :', error.config?.url);
+      logger.error('la requete:', JSON.stringify(error.config?.params, null, 2));
+      logger.error('la réponse:', error.response?.data);
     }
 
     return null;

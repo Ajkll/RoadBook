@@ -1,6 +1,7 @@
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../services/firebase/firebaseConfig';
 import { reverseGeocode } from '../../services/api/geocoding.api';
+import { logger } from '../../utils/logger';
 
 // Type d'une session pour la cache
 export interface DriveSession {
@@ -126,7 +127,7 @@ export async function getLastDriveSessions(count: number): Promise<DriveSession[
 
     return sessions;
   } catch (error) {
-    console.error('Erreur lors de la récupération des sessions:', error);
+    logger.error('Erreur lors de la récupération des sessions:', error);
     return [];
   }
 }

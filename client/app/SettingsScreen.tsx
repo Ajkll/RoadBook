@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
 import SoundCardParameters from './components/parameters/soundCardParameters';
+import { AppInfo } from './components/parameters/appInfoReport';
 import { useTheme } from './constants/theme';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import * as Notifications from 'expo-notifications';
@@ -14,6 +15,7 @@ import {
   scheduleMotivationalNotification,
   scheduleLocalNotification,
 } from './utils/notifications';
+import { logger } from './utils/logger';
 
 const SettingsScreen = () => {
   const theme = useTheme();
@@ -68,7 +70,7 @@ const SettingsScreen = () => {
         await scheduleMotivationalNotification(25, 'daily');
       }
     } catch (error) {
-      console.error("Erreur lors de la configuration des notifications:", error);
+      logger.error("Erreur lors de la configuration des notifications:", error);
       setNotificationsEnabled(false);
     }
   };
@@ -100,10 +102,11 @@ const SettingsScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Section Son (version améliorée de main) */}
+        {/* section appInfo */}
+        <AppInfo  />
+        {/* section son */}
         <SoundCardParameters />
-
-        {/* Notifications */}
+        {/* section notifications */}
         <View style={styles.settingItem}>
           <Text style={styles.label}>
             Activer les notifications
@@ -138,8 +141,11 @@ const SettingsScreen = () => {
           />
         </View>
 
-        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
       </ScrollView>
+
+      <View style={styles.footerContainer}>
+        <GoBackHomeButton containerStyle={{ marginTop: theme.spacing.md }} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -152,6 +158,12 @@ const createStyles = (theme: any, darkMode?: boolean) =>
     },
     content: {
       padding: theme.spacing.md,
+    },
+    footerContainer: {
+      padding: theme.spacing.md,
+      borderTopWidth: 0.5,
+      borderTopColor: theme.colors.border,
+      backgroundColor: darkMode ? '#1c1c1e' : theme.colors.background,
     },
     settingItem: {
       flexDirection: 'row',

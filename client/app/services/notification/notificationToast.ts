@@ -2,6 +2,7 @@ import Toast from 'react-native-toast-message';
 import { Audio } from 'expo-av';
 import { useSound } from '../../hooks/useSound';
 import { SOUNDS } from '../../constants/sound';
+import { logger } from '../../utils/logger';
 
 // Version simple (sans hook)
 export const showNotification = (
@@ -52,7 +53,7 @@ export const showNotification = (
           }
         });
       } catch (error) {
-        console.error('Error playing notification sound:', error);
+        logger.error('Error playing notification sound:', error);
       }
     };
 

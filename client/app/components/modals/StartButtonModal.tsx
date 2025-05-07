@@ -12,6 +12,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import ActionSheet from 'react-native-actions-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Dimensions } from 'react-native';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 interface StartButtonModalProps {
   actionSheetRef: React.RefObject<ActionSheet>;
@@ -35,7 +38,10 @@ const StartButtonModal = ({
     router.push('/(tabs)/my-routes');
   };
 
-  const SNAP_POINTS = [100, 200];
+  const SNAP_POINTS = useMemo(() => [
+      Math.min(89, screenHeight * 0.10),
+      Math.min(250, screenHeight * 0.20)
+    ], [screenHeight]);
 
   return (
     <>

@@ -6,7 +6,7 @@ import { selectPendingItems, selectIsSyncing } from '../store/slices/syncSlice';
 import { completeSync } from '../services/sync/syncManager'; // Changé pour utiliser completeSync
 import Toast from 'react-native-toast-message';
 import { useNotifications } from './NotificationHandler';
-
+import { logger } from '../utils/logger';
 
 const NetworkSyncManager: React.FC = () => {
   const isOnline = useSelector(selectIsInternetReachable);
@@ -25,7 +25,7 @@ const NetworkSyncManager: React.FC = () => {
           });
         })
         .catch((error) => {
-          console.error('Erreur de synchronisation:', error);
+          logger.error('Erreur de synchronisation:', error);
         });
     }
   }, [isOnline, pendingItems.length, isSyncing]);

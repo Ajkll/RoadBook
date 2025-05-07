@@ -2,6 +2,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform, Alert } from 'react-native';
+import { logger } from './logger';
 
 // Check if we're running in Expo Go
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -65,7 +66,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
         ).data;
         console.log('Token Expo Push:', token);
       } catch (error) {
-        console.error('Erreur lors de l\'obtention du token:', error);
+        logger.error('Erreur lors de l\'obtention du token:', error);
         return;
       }
     }
@@ -121,7 +122,7 @@ export async function scheduleMotivationalNotification(kmRemaining: number, freq
       },
     });
   } catch (error) {
-    console.error('Erreur lors de la planification de la notification:', error);
+    logger.error('Erreur lors de la planification de la notification:', error);
     return null;
   }
 }

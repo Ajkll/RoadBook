@@ -35,7 +35,7 @@ const BottomNavigation = () => {
       if (!isChronoRunning) {
         if (!mapReady) {
           showError('⛔ Carte non prête', 'Veuillez attendre que la carte soit chargée', {
-            position: 'center',
+            position: 'top',
           });
           return;
         }
@@ -194,6 +194,7 @@ const createStyles = (theme: any, insets: any) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
   },
   navText: {

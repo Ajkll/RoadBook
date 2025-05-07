@@ -28,6 +28,7 @@ import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
 import OfflineContent from './components/ui/OfflineContent';
+import { logger } from './utils/logger';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 32) / 2 - 8; // 2 colonnes avec marges
@@ -119,7 +120,7 @@ const MarketplaceScreen = () => {
         text2: 'Impossible de sélectionner l\'image',
         position: 'bottom',
       });
-      console.error(error);
+      logger.error(error);
     }
   };
 

@@ -14,6 +14,7 @@ import { useTheme } from '../../constants/theme';
 import { formatElapsedTime } from '../../utils/firebase/driveSessionUtils';
 import { reverseGeocode } from '../../services/api/geocoding.api';
 import { getWeatherImageSource, getWeatherDescription } from '../../utils/weatherUtils';
+import { logger } from '../../utils/logger';
 
 interface Point {
   latitude: number;
@@ -87,7 +88,7 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
             setStartAddress(startAddr);
             setEndAddress(endAddr);
           } catch (error) {
-            console.error('Erreur lors du géocodage inverse:', error);
+            logger.error('Erreur lors du géocodage inverse:', error);
           }
         }
       };

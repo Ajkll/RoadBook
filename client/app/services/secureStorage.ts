@@ -1,6 +1,7 @@
 // client/app/services/secureStorage.ts
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { logger } from '../utils/logger';
 
 // Pour les environnements web où SecureStore n'est pas disponible
 const inMemoryStorage = new Map<string, string>();
@@ -52,7 +53,7 @@ export async function saveItem(key: string, value: string): Promise<void> {
       console.log(`Saved ${key} to SecureStore`);
     }
   } catch (error) {
-    console.error(`Error saving ${key}:`, error);
+    logger.error(`Error saving ${key}:`, error);
   }
 }
 
@@ -75,7 +76,7 @@ export async function getItem(key: string): Promise<string | null> {
     console.log(`Retrieved ${key} from SecureStore: ${value ? 'found' : 'not found'}`);
     return value;
   } catch (error) {
-    console.error(`Error retrieving ${key}:`, error);
+    logger.error(`Error retrieving ${key}:`, error);
     return null;
   }
 }
@@ -99,7 +100,7 @@ export async function removeItem(key: string): Promise<void> {
       console.log(`Removed ${key} from SecureStore`);
     }
   } catch (error) {
-    console.error(`Error removing ${key}:`, error);
+    logger.error(`Error removing ${key}:`, error);
   }
 }
 
@@ -120,11 +121,11 @@ export async function saveAuthData(
       await saveItem(STORAGE_KEYS.USER, JSON.stringify(user));
       console.log('Auth data saved successfully');
     } else {
-      console.error('Invalid user object provided to saveAuthData:', user);
+      logger.error('Invalid user object provided to saveAuthData:', user);
       throw new Error('Invalid user object');
     }
   } catch (error) {
-    console.error('Failed to save auth data:', error);
+    logger.error('Failed to save auth data:', error);
     throw error; // Re-throw to allow caller to handle
   }
 }

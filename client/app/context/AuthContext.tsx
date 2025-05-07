@@ -9,6 +9,7 @@ import {
   saveAuthData,
   STORAGE_KEYS,
 } from '../services/secureStorage';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -68,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('No stored user data found');
         }
       } catch (err) {
-        console.error('Error loading user from storage:', err);
+        logger.error('Error loading user from storage:', err);
         await clearAuthData();
       } finally {
         setIsLoading(false);
@@ -115,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return response;
     } catch (err) {
-      console.error('Login error:', err);
+      logger.error('Login error:', err);
 
       const errorMessage = err.response?.data?.message || err.message || 'Échec de connexion';
       setError(errorMessage);
@@ -145,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return response;
     } catch (err) {
-      console.error('Registration error:', err);
+      logger.error('Registration error:', err);
 
       const errorMessage = err.response?.data?.message || err.message || "Échec d'inscription";
       setError(errorMessage);
@@ -174,7 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('No refresh token found, skipping server logout');
         }
       } catch (serverError) {
-        console.error('Server logout failed:', serverError);
+        logger.error('Server logout failed:', serverError);
         console.log('Continuing with client-side logout despite server error');
       }
 
@@ -183,14 +184,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await clearAuthData();
         console.log('Authentication data cleared successfully');
       } catch (storageError) {
-        console.error('Error clearing auth data from storage:', storageError);
+        logger.error('Error clearing auth data from storage:', storageError);
       }
 
       console.log('Resetting user state');
       setUser(null);
 
     } catch (err) {
-      console.error('==== LOGOUT ERROR ====', err);
+      logger.error('==== LOGOUT ERROR ====', err);
 
       try {
         await clearAuthData();
@@ -211,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(updatedUser);
       console.log('User data refreshed successfully');
     } catch (err) {
-      console.error('Error refreshing user data:', err);
+      logger.error('Error refreshing user data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -227,11 +228,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await saveItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
         return true;
       } else {
-        console.error('No access token in refresh response');
+        logger.error('No access token in refresh response');
         return false;
       }
     } catch (err) {
-      console.error('Token refresh failed:', err);
+      logger.error('Token refresh failed:', err);
       return false;
     }
   };
