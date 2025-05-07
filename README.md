@@ -243,6 +243,68 @@ Merci de **ne pas utiliser `npm install`**, car cela peut créer des conflits av
 
 ```bash
 yarn install
+```
+
+# APIs Externes
+
+## 1. Geoapify Map Matching API
+- **Type**: RESTful API
+- **Méthode**: POST
+- **Endpoint**: `https://api.geapify.com/v1/mapmatching`
+- **Sécurité**: Clé API sécurisée via variables d'environnement
+- **Usage**: Corrige et améliore les tracés GPS bruts
+- **Cache**: Non (traitement temps réel nécessaire)
+
+## 2. Geoapify Reverse Geocoding
+- **Type**: RESTful API  
+- **Méthode**: GET  
+- **Endpoint**: `https://api.geoapify.com/v1/geocode/reverse`  
+- **Sécurité**: Clé API via ENV  
+- **Cache**: Local (200 entrées max, 300 jours)  
+
+## 3. VisualCrossing Weather API
+- **Type**: RESTful API
+- **Méthode**: GET
+- **Endpoint**: `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/[lat],[lon]`
+- **Sécurité**: Clé API chiffrée
+- **Cache**: Local (50 entrées max, 15 jours) avec système de géo-précision
+
+## 4. Firebase Services
+- **Services**: Firestore + Storage
+- **Auth**: Via clé API Firebase
+- **Config**: Optimisée pour Expo (long-polling)
+- **Sécurité**: Règles Firebase côté serveur
+
+## Points Communs
+- Toutes utilisent Axios/Fetch
+- Gestion d'erreur standardisée
+- Logging détaillé
+- Optimisé pour usage mobile (cache offline)
 
 
+
+# Logging & Error Tracking
+
+## Solution
+- **Sentry** pour le monitoring d'erreurs en production
+- **loglevel** pour les logs en développement
+- **Console** en backup
+
+## Configuration
+- **DSN**: Chargé depuis `expo-constants`
+- **Environnement**: Auto-détecté (dev/prod)
+- **Niveau**: `debug` en dev, `error` en prod
+
+## Fonctionnalités
+- Capture des erreurs et messages
+- Tags automatiques (version, OS)
+- User tracking
+- Breadcrumbs pour le contexte
+- Désactivé en Expo Go (dev)
+
+## Usage
+```bash
+logger.error("Message", error)
+logger.setUser({id: "123"})
+```
 
