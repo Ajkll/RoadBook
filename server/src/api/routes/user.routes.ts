@@ -15,8 +15,12 @@
 
 import express from "express";
 import * as userController from "../../controllers/user.controller";
-import { authenticateJWT, authorizeRoles } from "../../middleware/auth.middleware";
-import { validateChangePassword } from "../../middleware/validation.middleware";
+import * as competencyController from "../../controllers/competency.controller";
+import { authenticate, authorizeRoles } from "../../middleware/auth.middleware";
+import { 
+  validateChangePassword,
+  validateProfilePicture
+} from "../../middleware/validation.middleware";
 
 const router = express.Router();
 
@@ -27,14 +31,14 @@ const router = express.Router();
  * @desc    Get current user profile
  * @access  Private - Requires authentication
  */
-router.get("/me", authenticateJWT, userController.getCurrentUser);
+router.get("/me", authenticate, userController.getCurrentUser);
 
 /**
  * @route   PUT /api/users/me
  * @desc    Update current user profile
  * @access  Private - Requires authentication
  */
-router.put("/me", authenticateJWT, userController.updateCurrentUser);
+router.put("/me", authenticate, userController.updateCurrentUser);
 
 /**
  * @route   PUT /api/users/me/password
@@ -43,9 +47,32 @@ router.put("/me", authenticateJWT, userController.updateCurrentUser);
  */
 router.put(
   "/me/password", 
-  authenticateJWT, 
+  authenticate, 
   validateChangePassword, 
   userController.changePassword
+);
+
+/**
+ * @route   POST /api/users/me/profile-picture
+ * @desc    Upload or update current user's profile picture
+ * @access  Private - Requires authentication
+ */
+router.post(
+  "/me/profile-picture",
+  authenticate,
+  validateProfilePicture,
+  userController.uploadProfilePicture
+);
+
+/**
+ * @route   DELETE /api/users/me/profile-picture
+ * @desc    Delete current user's profile picture
+ * @access  Private - Requires authentication
+ */
+router.delete(
+  "/me/profile-picture",
+  authenticate,
+  userController.deleteProfilePicture
 );
 
 // ---- Routes administratives ----
@@ -57,7 +84,7 @@ router.put(
  */
 router.get(
   "/", 
-  authenticateJWT, 
+  authenticate, 
   authorizeRoles("ADMIN"), 
   userController.getAllUsers
 );
@@ -71,7 +98,7 @@ router.get(
  */
 router.get(
   "/:id", 
-  authenticateJWT, 
+  authenticate, 
   userController.getUserById
 );
 
@@ -82,7 +109,7 @@ router.get(
  */
 router.put(
   "/:id", 
-  authenticateJWT, 
+  authenticate, 
   userController.updateUser
 );
 
@@ -93,8 +120,19 @@ router.put(
  */
 router.delete(
   "/:id",
-  authenticateJWT,
+  authenticate,
   userController.deleteUser
+);
+
+/**
+ * @route   GET /api/users/:id/competencies/stats
+ * @desc    Get competency statistics for a user
+ * @access  Private - Self, instructor, or admin
+ */
+router.get(
+  "/:id/competencies/stats",
+  authenticate,
+  competencyController.getApprenticeCompetencyStats
 );
 
 export default router;

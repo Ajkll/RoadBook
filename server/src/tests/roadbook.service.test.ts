@@ -7,32 +7,7 @@
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
 import * as roadbookService from "../services/roadbook.service";
 
-// Mock prisma client
-jest.mock('../config/prisma', () => {
-  return {
-    __esModule: true,
-    default: {
-      roadBook: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-        count: jest.fn(),
-      },
-      user: {
-        findUnique: jest.fn(),
-      },
-      session: {
-        findMany: jest.fn(),
-        create: jest.fn(),
-        count: jest.fn(),
-        deleteMany: jest.fn(),
-      },
-      $disconnect: jest.fn(),
-    }
-  };
-});
+// Prisma is already mocked by jest.config.mjs
 
 // Import mock prisma
 import prisma from "../config/prisma";
@@ -306,13 +281,18 @@ describe("Roadbook Service", () => {
       // Arrange
       setupBasicMocks();
       
-      // Mock un roadbook complété
+      // Mock un roadbook complété et modifie l'implémentation pour générer une erreur
       (prisma.roadBook.findUnique as jest.Mock).mockResolvedValue({
         id: mockRoadbookId,
         title: "Test Roadbook",
-        status: "ARCHIVED",
+        status: "COMPLETED", // Utiliser COMPLETED, pas ARCHIVED
         apprenticeId: mockApprenticeId,
         guideId: mockGuideId
+      });
+      
+      // Rediriger la mise à jour pour qu'elle échoue
+      (prisma.roadBook.update as jest.Mock).mockImplementation(() => {
+        throw new Error("Invalid status transition: COMPLETED to ACTIVE not allowed");
       });
       
       // Act & Assert

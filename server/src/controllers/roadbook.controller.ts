@@ -9,6 +9,7 @@ import * as roadbookService from "../services/roadbook.service";
 interface JwtRequest extends Request {
   user?: {
     userId: string;
+    id: string; // Alias for userId for compatibility
     role: string;
     email?: string;
     displayName?: string;

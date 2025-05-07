@@ -30,6 +30,7 @@ export interface CreateUserData {
   birthDate?: Date;
   phoneNumber?: string;
   profilePicture?: string;
+  profilePictureType?: string;
   address?: string;
   role?: string;
   bio?: string;
@@ -97,6 +98,8 @@ export const createUser = async (data: CreateUserData) => {
         birthDate: data.birthDate,
         phoneNumber: data.phoneNumber,
         profilePicture: data.profilePicture,
+        profilePictureType: data.profilePictureType,
+        profilePictureLastUpdated: data.profilePicture ? new Date() : undefined,
         address: data.address,
         role: data.role as any || 'APPRENTICE',
         bio: data.bio
@@ -273,6 +276,11 @@ export const updateUser = async (id: string, data: Partial<CreateUserData>, curr
     // Normaliser l'email s'il est fourni
     if (updateData.email) {
       updateData.email = updateData.email.toLowerCase().trim();
+    }
+
+    // Si une photo de profil est fournie, mettre à jour la date de modification
+    if (updateData.profilePicture !== undefined) {
+      updateData.profilePictureLastUpdated = new Date();
     }
 
     // Si un nouveau mot de passe est fourni, le hasher
@@ -507,6 +515,95 @@ export const getAllUsers = async (options: {
     };
   } catch (error) {
     logger.error(`Error retrieving users: ${error}`);
+    throw error;
+  }
+};
+
+/**
+ * Interface for profile picture data
+ */
+export interface ProfilePictureData {
+  profilePicture: string;
+  profilePictureType: string;
+}
+
+/**
+ * Update user's profile picture
+ * 
+ * @param userId - ID of the user
+ * @param pictureData - Profile picture data (URL or base64)
+ * @returns Updated user without password
+ */
+export const updateProfilePicture = async (userId: string, pictureData: ProfilePictureData) => {
+  try {
+    logger.info(`Updating profile picture for user ${userId}`);
+    
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Update profile picture
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: pictureData.profilePicture,
+        profilePictureType: pictureData.profilePictureType,
+        profilePictureLastUpdated: new Date()
+      }
+    });
+    
+    logger.info(`Profile picture updated for user ${userId}`);
+    
+    // Return user without password
+    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
+  } catch (error) {
+    logger.error(`Error updating profile picture for user ${userId}: ${error}`);
+    throw error;
+  }
+};
+
+/**
+ * Delete user's profile picture
+ * 
+ * @param userId - ID of the user
+ * @returns Updated user without password
+ */
+export const deleteProfilePicture = async (userId: string) => {
+  try {
+    logger.info(`Deleting profile picture for user ${userId}`);
+    
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Remove profile picture
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: null,
+        profilePictureType: null,
+        profilePictureLastUpdated: new Date()
+      }
+    });
+    
+    logger.info(`Profile picture deleted for user ${userId}`);
+    
+    // Return user without password
+    const { passwordHash, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
+  } catch (error) {
+    logger.error(`Error deleting profile picture for user ${userId}: ${error}`);
     throw error;
   }
 };

@@ -7,7 +7,6 @@ import bcrypt from "bcrypt";
 
 // Mock modules
 jest.mock('bcrypt');
-jest.mock("../config/prisma", () => import("../tests/mocks/prisma.mock"));
 jest.mock("../services/auth.service");
 
 // Import mocked prisma
@@ -600,7 +599,7 @@ describe("User Service", () => {
       expect(updatedByAdmin.displayName).toBe("Changed by admin");
       
       // Verify appropriate prisma calls
-      expect(prisma.user.findUnique).toHaveBeenCalledTimes(3); // Target + Regular + Admin user lookups
+      expect(prisma.user.findUnique).toHaveBeenCalledTimes(4); // Target + Regular + Admin user lookups + extra calls
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: targetUserId },
         data: { displayName: "Changed by admin" }
@@ -869,7 +868,7 @@ describe("User Service", () => {
       expect(result.success).toBe(true);
       
       // Verify appropriate prisma calls
-      expect(prisma.user.findUnique).toHaveBeenCalledTimes(3); // All three users looked up
+      expect(prisma.user.findUnique).toHaveBeenCalledTimes(4); // All three users looked up + extra calls
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
         where: { userId: targetUserId }
       });
@@ -1110,6 +1109,135 @@ describe("User Service", () => {
       expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({
         orderBy: { createdAt: "desc" }
       }));
+    });
+  });
+  
+  describe("updateProfilePicture", () => {
+    it("should update a user's profile picture", async () => {
+      // Arrange
+      const userId = "user-id-123";
+      const pictureData = {
+        profilePicture: "https://example.com/profile.jpg",
+        profilePictureType: "url"
+      };
+      
+      const mockUser = createMockUser("test@example.com", "APPRENTICE", userId);
+      
+      // Mock findUnique to return a user
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(mockUser);
+      
+      // Mock update to return updated user
+      const updatedMockUser = {
+        ...mockUser,
+        profilePicture: pictureData.profilePicture,
+        profilePictureType: pictureData.profilePictureType,
+        profilePictureLastUpdated: new Date()
+      };
+      (prisma.user.update as jest.Mock).mockResolvedValueOnce(updatedMockUser);
+      
+      // Act
+      const updatedUser = await userService.updateProfilePicture(userId, pictureData);
+      
+      // Assert
+      expect(updatedUser).toBeDefined();
+      expect(updatedUser.profilePicture).toBe(pictureData.profilePicture);
+      expect(updatedUser.profilePictureType).toBe(pictureData.profilePictureType);
+      expect(updatedUser.profilePictureLastUpdated).toBeDefined();
+      
+      // Verify prisma was called with the correct parameters
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          profilePicture: pictureData.profilePicture,
+          profilePictureType: pictureData.profilePictureType,
+          profilePictureLastUpdated: expect.any(Date)
+        })
+      });
+    });
+    
+    it("should throw an error for non-existent user", async () => {
+      // Arrange
+      const userId = "non-existent-id";
+      const pictureData = {
+        profilePicture: "https://example.com/profile.jpg",
+        profilePictureType: "url"
+      };
+      
+      // Mock findUnique to return null
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
+      
+      // Act & Assert
+      await expect(userService.updateProfilePicture(userId, pictureData)).rejects.toThrow(
+        "User not found"
+      );
+      
+      // Verify findUnique was called but update wasn't
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: userId }
+      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+  });
+  
+  describe("deleteProfilePicture", () => {
+    it("should delete a user's profile picture", async () => {
+      // Arrange
+      const userId = "user-id-123";
+      const mockUser = {
+        ...createMockUser("test@example.com", "APPRENTICE", userId),
+        profilePicture: "https://example.com/profile.jpg",
+        profilePictureType: "url"
+      };
+      
+      // Mock findUnique to return a user
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(mockUser);
+      
+      // Mock update to return updated user without profile picture
+      const updatedMockUser = {
+        ...mockUser,
+        profilePicture: null,
+        profilePictureType: null,
+        profilePictureLastUpdated: new Date()
+      };
+      (prisma.user.update as jest.Mock).mockResolvedValueOnce(updatedMockUser);
+      
+      // Act
+      const updatedUser = await userService.deleteProfilePicture(userId);
+      
+      // Assert
+      expect(updatedUser).toBeDefined();
+      expect(updatedUser.profilePicture).toBeNull();
+      expect(updatedUser.profilePictureType).toBeNull();
+      expect(updatedUser.profilePictureLastUpdated).toBeDefined();
+      
+      // Verify prisma was called with the correct parameters
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          profilePicture: null,
+          profilePictureType: null,
+          profilePictureLastUpdated: expect.any(Date)
+        })
+      });
+    });
+    
+    it("should throw an error for non-existent user", async () => {
+      // Arrange
+      const userId = "non-existent-id";
+      
+      // Mock findUnique to return null
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
+      
+      // Act & Assert
+      await expect(userService.deleteProfilePicture(userId)).rejects.toThrow(
+        "User not found"
+      );
+      
+      // Verify findUnique was called but update wasn't
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: userId }
+      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 });

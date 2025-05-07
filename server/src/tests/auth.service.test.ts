@@ -25,33 +25,7 @@ jest.mock('crypto', () => ({
   randomBytes: jest.fn(() => ({ toString: () => 'mock-reset-token' })),
 }));
 
-// Mock prisma client with type support
-jest.mock('../config/prisma', () => {
-  return {
-    __esModule: true,
-    default: {
-      user: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
-        create: jest.fn(),
-        delete: jest.fn(),
-      },
-      refreshToken: {
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-        deleteMany: jest.fn(),
-      },
-      passwordReset: {
-        create: jest.fn(),
-        updateMany: jest.fn()
-      },
-      $disconnect: jest.fn(),
-    }
-  };
-});
+// Prisma is already mocked by jest.config.mjs
 
 // Import the mocked prisma
 import prisma from "../config/prisma";

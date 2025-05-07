@@ -8,6 +8,8 @@
  * - POST /logout: Déconnexion et révocation du token
  * - POST /refresh-token: Obtention d'un nouveau access token
  * - GET /verify: Vérification de la validité d'un token
+ * - POST /forgot-password: Demande de réinitialisation de mot de passe
+ * - POST /reset-password: Réinitialisation de mot de passe avec token
  *
  * Toutes ces routes sont publiques (ne nécessitent pas d'authentification)
  */
@@ -67,7 +69,7 @@ router.post("/login", validation_middleware_1.validateLogin, authController.logi
 /**
  * @route   POST /api/auth/logout
  * @desc    Logout user and invalidate refresh token
- * @access  Public
+ * @access  Public (but may use JWT if available)
  */
 router.post("/logout", authController.logout);
 /**
@@ -82,4 +84,16 @@ router.post("/refresh-token", authController.refreshToken);
  * @access  Public
  */
 router.get("/verify", authController.verifyToken);
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Request password reset email
+ * @access  Public
+ */
+router.post("/forgot-password", validation_middleware_1.validateForgotPassword, authController.forgotPassword);
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password with token
+ * @access  Public
+ */
+router.post("/reset-password", validation_middleware_1.validateResetPassword, authController.resetPassword);
 exports.default = router;
