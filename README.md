@@ -285,6 +285,8 @@ yarn install
 
 # Logging & Error Tracking
 
+![Sentry](https://img.shields.io/badge/Sentry-✓-green?logo=sentry)
+
 ## Solution
 - **Sentry** pour le monitoring d'erreurs en production
 - **loglevel** pour les logs en développement
