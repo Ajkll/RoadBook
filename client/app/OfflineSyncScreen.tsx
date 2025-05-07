@@ -16,6 +16,7 @@ import { useTheme } from './constants/theme';
 import CleanupStorage from './components/ui/ClearAllLocalStorage';
 import { store } from './store/store';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
+import { logger } from './utils/logger';
 
 type SyncItemType = {
   id: string;
@@ -288,7 +289,7 @@ const OfflineSyncScreen: React.FC = () => {
                 text2: "Impossible de supprimer l'élément",
                 position: 'bottom',
               });
-              console.error('Erreur lors de la suppression:', error);
+              logger.error('Erreur lors de la suppression:', error);
             }
           },
         },

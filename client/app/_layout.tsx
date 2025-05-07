@@ -192,21 +192,22 @@ export default function RootLayout() {
           await initLogger();
           setIsLoggerReady(true);
 
-          logger.info(`App started on Platform: ${Platform.OS}`);
-          logger.info(`API URL: ${apiProxy.getBaseUrl()}`);
+
+          console.log(`App started on Platform: ${Platform.OS}`);
+          console.log(`API URL: ${apiProxy.getBaseUrl()}`);
 
           // Si on est en dev, lancer un test de connexion basique
           if (__DEV__) {
             setTimeout(async () => {
               try {
-                logger.debug('Testing API connection...');
+                console.log('Testing API connection...');
                 const result = await fetch(apiProxy.getUrl('/health'), {
                   method: 'GET',
                   headers: { 'Accept': 'application/json' }
                 });
-                logger.debug(`API connection test: ${result.status}`);
+                console.log(`API connection test: ${result.status}`);
               } catch (error) {
-                logger.error('API connection test failed:', error);
+                console.error('API connection test failed:', error);
               }
             }, 2000);
           }

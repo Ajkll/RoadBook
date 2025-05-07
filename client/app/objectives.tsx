@@ -22,7 +22,7 @@ import {
 } from './utils/notifications';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useNotifications } from './components/NotificationHandler';
-
+import { logger } from './utils/logger';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -62,7 +62,7 @@ const ObjectifScreen = () => {
       if (savedGoalKm) setGoalKm(savedGoalKm);
       if (savedGoalDate) setDeadline(new Date(savedGoalDate));
     } catch (error) {
-      console.error("Erreur lors du chargement de l'objectif", error);
+      logger.error("Erreur lors du chargement de l'objectif", error);
     }
   };
 
@@ -237,7 +237,7 @@ const ObjectifScreen = () => {
                     { position: 'bottom', visibilityTime: 3000 }
                   );
                 } catch (error) {
-                  console.error("Erreur lors de la sauvegarde de l'objectif", error);
+                  logger.error("Erreur lors de la sauvegarde de l'objectif", error);
                 }
               }}
             >

@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { logger } from '../../utils/logger';
 
 interface Coord {
   latitude: number;
@@ -40,7 +41,7 @@ export const locationSlice = createSlice({
     },
     startTracking: (state) => {
       if (!state.mapReady) {
-        console.error("Le tracking ne peut pas démarrer : la carte n'est pas prête");
+        logger.error("Le tracking ne peut pas démarrer : la carte n'est pas prête");
         return;
       }
       state.tracking = true;

@@ -5,6 +5,7 @@ import { SoundKey, SOUNDS, SoundConfig } from '../constants/sound';
 import { RootState } from '../store/store';
 import { setGlobalMute, setGlobalVolume, updateSoundConfig } from '../store/slices/appSoundSlice';
 import { playSound } from '../utils/soundPlayer';
+import { logger } from '../utils/logger';
 
 export const useSound = () => {
   const dispatch = useDispatch();
@@ -62,11 +63,11 @@ export const useSound = () => {
               await new Promise((resolve) => setTimeout(resolve, 100)); // Petit délai entre chaque chargement
             }
           } catch (error) {
-            console.error(`Failed to preload sound ${key}:`, error);
+            logger.error(`Failed to preload sound ${key}:`, error);
           }
         }
       } catch (error) {
-        console.error('Audio initialization error:', error);
+        logger.error('Audio initialization error:', error);
       }
     };
 
@@ -76,7 +77,7 @@ export const useSound = () => {
       const soundKeys = Object.keys(SOUNDS) as SoundKey[];
       soundKeys.forEach((key) => {
         if (SOUNDS[key].soundObject) {
-          SOUNDS[key].soundObject.unloadAsync().catch(console.error);
+          SOUNDS[key].soundObject.unloadAsync().catch(logger.error);
         }
       });
     };

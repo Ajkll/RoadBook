@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { ENV } from '../config/env';
+import { logger } from '../../utils/logger';
 
 const CACHE_PREFIX = '@GEOCODE_';
 const MAX_CACHE_ITEMS = 200; // max d'entrés dans le cache
@@ -38,7 +39,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<string> 
 
     return address;
   } catch (error) {
-    console.error('Erreur de géocodage:', error);
+    logger.error('Erreur de géocodage:', error);
     return 'Adresse inconnue';
   }
 }

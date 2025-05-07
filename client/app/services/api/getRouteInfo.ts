@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { calculateAverageSpeed } from '../../utils/firebase/driveSessionUtils';
 import { ENV } from '../config/env';
+import { logger } from '../../utils/logger';
 
 /**
  * Récupère les informations de route détaillées en utilisant l'API Geoapify Map Matching
@@ -46,7 +47,7 @@ export async function getGeoapifyRouteInfo(
       !response.data.features ||
       !response.data.features.length
     ) {
-      console.error('Format de réponse inattendu (geoapify)');
+      logger.error('Format de réponse inattendu (geoapify)');
       return null;
     }
 
@@ -121,9 +122,9 @@ export async function getGeoapifyRouteInfo(
     return resultObject;
   } catch (error: any) {
     if (error.response) {
-      console.error('Url de Geoapify :', error.config?.url);
-      console.error('la requete:', JSON.stringify(error.config?.params, null, 2));
-      console.error('la réponse:', error.response?.data);
+      logger.error('Url de Geoapify :', error.config?.url);
+      logger.error('la requete:', JSON.stringify(error.config?.params, null, 2));
+      logger.error('la réponse:', error.response?.data);
     }
 
     return null;

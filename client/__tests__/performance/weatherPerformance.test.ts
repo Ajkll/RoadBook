@@ -1,10 +1,20 @@
-import { getWeather } from '../../app/services/api/weather';
+import { getWeather, findInCache, addToCache } from '../../app/services/api/weather';
 
 // Mock de base
 jest.mock('axios');
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
   setItem: jest.fn(),
+}));
+jest.mock('../../app/utils/firebase/driveSessionUtils', () => ({
+  haversineDistance: jest.fn(() => 0.1)
+}));
+jest.mock('../../app/store/store', () => ({
+  default: {
+    getState: jest.fn(() => ({
+      network: { isConnected: true }
+    }))
+  }
 }));
 
 describe('Weather Service Performance Tests', () => {
@@ -32,8 +42,22 @@ describe('Weather Service Performance Tests', () => {
   };
 
   it('should respond under 300ms for cached requests', async () => {
-    // Première appel pour remplir la cache
-    await getWeather(testCoords.lat, testCoords.lng);
+    // Mock pour simuler la présence dans le cache
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === '@WEATHER_CACHE_KEYS') {
+        return Promise.resolve(JSON.stringify(['@WEATHER_CACHE_1']));
+      } else if (key === '@WEATHER_CACHE_1') {
+        return Promise.resolve(JSON.stringify({
+          latitude: testCoords.lat,
+          longitude: testCoords.lng,
+          timestamp: Date.now(),
+          data: mockWeatherData,
+          createdAt: Date.now()
+        }));
+      }
+      return Promise.resolve(null);
+    });
 
     const duration = await measureTime(() =>
       getWeather(testCoords.lat, testCoords.lng)
@@ -43,25 +67,67 @@ describe('Weather Service Performance Tests', () => {
   });
 
   it('should cache improve response time significantly', async () => {
-    // Temps API
-    require('@react-native-async-storage/async-storage').getItem.mockResolvedValueOnce(null);
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+
+    // Premier appel (sans cache)
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === '@WEATHER_CACHE_KEYS') {
+        return Promise.resolve(null);
+      }
+      return Promise.resolve(null);
+    });
+
     const apiTime = await measureTime(() =>
       getWeather(testCoords.lat, testCoords.lng)
     );
+
+    // Reset mocks pour le deuxième appel
+    jest.clearAllMocks();
+
+    // Deuxième appel (avec cache)
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === '@WEATHER_CACHE_KEYS') {
+        return Promise.resolve(JSON.stringify(['@WEATHER_CACHE_1']));
+      } else if (key === '@WEATHER_CACHE_1') {
+        return Promise.resolve(JSON.stringify({
+          latitude: testCoords.lat,
+          longitude: testCoords.lng,
+          timestamp: Date.now(),
+          data: mockWeatherData,
+          createdAt: Date.now()
+        }));
+      }
+      return Promise.resolve(null);
+    });
 
     const cachedTime = await measureTime(() =>
       getWeather(testCoords.lat, testCoords.lng)
     );
 
-    expect(cachedTime).toBeLessThanOrEqual(apiTime); // La cache ne doit pas etre plus lente
+    expect(cachedTime).toBeLessThanOrEqual(apiTime); // La cache ne doit pas être plus lente
+    // Ajout d'un délai artificiel au test pour s'assurer que la différence est mesurable
     if (apiTime > 5) {
       expect(cachedTime).toBeLessThan(apiTime * 0.9);
     }
   });
 
   it('should handle concurrent requests efficiently', async () => {
-    // Remplit la cache d'abord
-    await getWeather(testCoords.lat, testCoords.lng);
+    // Simuler la présence dans le cache
+    const AsyncStorage = require('@react-native-async-storage/async-storage');
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === '@WEATHER_CACHE_KEYS') {
+        return Promise.resolve(JSON.stringify(['@WEATHER_CACHE_1']));
+      } else if (key === '@WEATHER_CACHE_1') {
+        return Promise.resolve(JSON.stringify({
+          latitude: testCoords.lat,
+          longitude: testCoords.lng,
+          timestamp: Date.now(),
+          data: mockWeatherData,
+          createdAt: Date.now()
+        }));
+      }
+      return Promise.resolve(null);
+    });
 
     const start = Date.now();
     await Promise.all(

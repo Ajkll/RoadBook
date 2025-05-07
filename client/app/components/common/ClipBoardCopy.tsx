@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../constants/theme';
 import { Theme } from '../../constants/theme';
 import { useNotifications } from '../NotificationHandler';
+import { logger } from '../../utils/logger';
 
 interface CopyToClipboardProps {
   text: string;
@@ -42,7 +43,7 @@ export const CopyToClipboard: React.FC<CopyToClipboardProps> = ({
       showError('⛔ Erreur', "Échec de la copie dans le presse-papiers", {
         position: 'top',
       });
-      console.error('Erreur lors de la copie:', error);
+      logger.error('Erreur lors de la copie:', error);
     }
   };
 

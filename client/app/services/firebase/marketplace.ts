@@ -2,6 +2,7 @@ import { storage, db } from './firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
+import { logger } from '../../utils/logger';
 
 export interface MarketplaceItem {
   id: string;
@@ -23,7 +24,7 @@ export const getMarketplaceItems = async (): Promise<MarketplaceItem[]> => {
       createdAt: doc.data().createdAt.toDate(),
     })) as MarketplaceItem[];
   } catch (error) {
-    console.error('Error getting marketplace items:', error);
+    logger.error('Error getting marketplace items:', error);
     return [];
   }
 };
@@ -50,7 +51,7 @@ export const addMarketplaceItem = async (
       createdAt: new Date(),
     });
   } catch (error) {
-    console.error('Error adding marketplace item:', error);
+    logger.error('Error adding marketplace item:', error);
     throw error;
   }
 };

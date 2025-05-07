@@ -1,62 +1,59 @@
+import * as SentryModule from 'sentry-expo';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import loglevel from 'loglevel';
 
-// Définir le niveau de log en fonction de l'environnement
+// Dans sentry-expo v7.x, on utilise directement SentryModule pour init
+const Sentry = SentryModule.Native;
 const logLevel = __DEV__ ? 'debug' : 'error';
-
-// Variables pour Sentry
+const enableDevLoggingForTesting = false;
 let isSentryInitialized = false;
-let SentryExpo: any = null;
 
-// Fonction pour initialiser le logger
 export async function initLogger() {
-  // Configuration de loglevel pour la journalisation de base
   loglevel.setLevel(logLevel);
   console.log(`Base logger initialized with level: ${logLevel}`);
-
-  // Désactiver Sentry dans Expo Go en développement
-  if (__DEV__ && Constants.appOwnership === 'expo') {
+  if (__DEV__ && !enableDevLoggingForTesting) {
     console.warn('Sentry is disabled in Expo Go development mode');
     return;
   }
 
   try {
-    // Import dynamique de Sentry
-    try {
-      const SentryModule = await import('sentry-expo');
-      // Correction importante pour l'import
-      SentryExpo = SentryModule.default || SentryModule;
-      console.log('Sentry module imported successfully');
-    } catch (importError) {
-      console.error('Failed to import sentry-expo:', importError);
-      return;
-    }
-
-    // Récupération du DSN depuis les constantes d'Expo
     const dsn = Constants.expoConfig?.extra?.SENTRY_DSN;
 
     if (!dsn) {
       console.warn('No Sentry DSN provided in app config, skipping Sentry initialization');
       return;
     }
-
     console.log(`Initializing Sentry with DSN: ${dsn.substring(0, 20)}...`);
-
-    // Initialisation de Sentry
     try {
-      if (!SentryExpo.init) {
-        throw new Error('Sentry.init is not available - check sentry-expo version');
-      }
-
-      SentryExpo.init({
+      await SentryModule.init({
         dsn,
-        enableInExpoDevelopment: true,
         debug: __DEV__,
+        enableInExpoDevelopment: true,
         environment: __DEV__ ? 'development' : 'production',
+
+        // a reactive en mode prod
+        enableNativeNagger: false,
+        enableNativeCrashHandling: false,
+        enableNativeTracking: false,
+
+        // a reactive en mode prod
+        enableAutoSessionTracking: false,
+        enableAutoPerformanceTracking: false,
+        enableOutOfMemoryTracking: false,
+        attachStacktrace: false,
+
         beforeSend: (event) => {
           if (__DEV__) {
             console.log('Sending event to Sentry:', event.event_id);
+          }
+          // Enlever les données de stack pour éviter la symbolication on peut la reactiver en mode prod
+          if (event && event.exception && event.exception.values) {
+            event.exception.values.forEach(ex => {
+              if (ex.stacktrace) {
+                delete ex.stacktrace;
+              }
+            });
           }
           return event;
         },
@@ -70,20 +67,17 @@ export async function initLogger() {
 
     // Configuration des tags de base
     try {
-      if (SentryExpo.Native) {
-        SentryExpo.Native.setTag('app.version', Constants.expoConfig?.version || 'unknown');
-        SentryExpo.Native.setTag('platform', Platform.OS);
-        SentryExpo.Native.setTag('environment', __DEV__ ? 'development' : 'production');
-        console.log('Sentry tags set successfully');
-      }
+      Sentry.setTag('app.version', Constants.expoConfig?.version || 'unknown');
+      Sentry.setTag('platform', Platform.OS);
+      Sentry.setTag('environment', __DEV__ ? 'development' : 'production');
+      console.log('Sentry tags set successfully');
     } catch (tagError) {
       console.warn('Error setting Sentry tags:', tagError);
     }
 
-    // Test d'envoi d'un événement simple
     try {
       console.log('Sending test event to Sentry...');
-      SentryExpo.captureMessage('Logger initialized - test message', 'info');
+      Sentry.captureMessage('Logger initialized - test message');
       console.log('Test event sent to Sentry');
     } catch (testError) {
       console.error('Failed to send test event to Sentry:', testError);
@@ -97,39 +91,37 @@ export async function initLogger() {
   }
 }
 
-// Fonctions sécurisées pour Sentry
 const safeCapture = {
   message: (message: string, level: 'debug' | 'info' | 'warning' | 'error' | 'fatal' = 'info') => {
-    if (!isSentryInitialized || !SentryExpo) {
+    if (!isSentryInitialized) {
       if (__DEV__) {
         console.warn(`Sentry not initialized, can't send message: ${message}`);
       }
       return;
     }
-
     try {
       if (__DEV__) {
         console.log(`Sending message to Sentry: ${message} (${level})`);
       }
-      SentryExpo.captureMessage(message, { level });
+
+      Sentry.captureMessage(message);
     } catch (e) {
       console.warn('Error capturing Sentry message:', e);
     }
   },
 
   exception: (error: Error) => {
-    if (!isSentryInitialized || !SentryExpo) {
+    if (!isSentryInitialized) {
       if (__DEV__) {
         console.warn(`Sentry not initialized, can't send exception: ${error.message}`);
       }
       return;
     }
-
     try {
       if (__DEV__) {
         console.log(`Sending exception to Sentry: ${error.message}`);
       }
-      SentryExpo.captureException(error);
+      Sentry.captureMessage(`[EXCEPTION] ${error.name}: ${error.message}`);
     } catch (e) {
       console.warn('Error capturing Sentry exception:', e);
     }
@@ -173,9 +165,9 @@ export const logger = {
   },
 
   setUser: (userData: { id?: string; email?: string; username?: string }) => {
-    if (isSentryInitialized && SentryExpo) {
+    if (isSentryInitialized) {
       try {
-        SentryExpo.setUser(userData);
+        Sentry.setUser(userData);
         if (__DEV__) {
           console.log(`Sentry user set: ${JSON.stringify(userData)}`);
         }
@@ -186,15 +178,14 @@ export const logger = {
       console.warn(`Sentry not initialized, can't set user: ${JSON.stringify(userData)}`);
     }
   },
-
   addBreadcrumb: (breadcrumb: {
     category?: string;
     message: string;
     data?: Record<string, any>;
   }) => {
-    if (isSentryInitialized && SentryExpo) {
+    if (isSentryInitialized) {
       try {
-        SentryExpo.addBreadcrumb({
+        Sentry.addBreadcrumb({
           category: breadcrumb.category || 'app',
           message: breadcrumb.message,
           data: breadcrumb.data,
@@ -212,11 +203,11 @@ export const logger = {
     return isSentryInitialized;
   },
 
-  // Nouvelle méthode pour le debug
+  // Méthode pour le debug
   debugSentryStatus: () => {
     return {
       isInitialized: isSentryInitialized,
-      hasModule: !!SentryExpo,
+      hasModule: !!Sentry,
       dsnConfigured: !!Constants.expoConfig?.extra?.SENTRY_DSN,
       environment: __DEV__ ? 'development' : 'production',
       appOwnership: Constants.appOwnership

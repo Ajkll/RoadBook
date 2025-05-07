@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haversineDistance } from '../../utils/firebase/driveSessionUtils';
 import Constants from 'expo-constants';
 import { ENV } from '../../services/config/env';
+import { logger } from '../../utils/logger';
 
 // Configuration du cache
 const API_KEY = ENV.WEATHER_API_KEY;
@@ -47,6 +48,8 @@ export async function cleanCache() {
           validKeys.push(key);
           itemsToKeep.push(item);
         }
+      } else {
+        logger.error(`Item non trouvé dans le cache pour la clé: ${key}`);
       }
     }
 
@@ -56,7 +59,7 @@ export async function cleanCache() {
 
     await AsyncStorage.setItem(CACHE_KEYS_KEY, JSON.stringify(finalKeys));
   } catch (error) {
-    console.error('Erreur lors du nettoyage de la cache:', error);
+    logger.error('Erreur lors du nettoyage de la cache:', error);
   }
 }
 
@@ -91,11 +94,13 @@ export async function findInCache(
         if (isTimeValid && isLocationValid && now - item.createdAt <= CACHE_LIFETIME_MS) {
           return item;
         }
+      } else {
+        logger.error(`Item de cache non trouvé pour la clé: ${key}`);
       }
     }
     return null;
   } catch (error) {
-    console.error('Erreur lors de la recherche dans la cache:', error);
+    logger.error('Erreur lors de la recherche dans la cache:', error);
     return null;
   }
 }
@@ -112,7 +117,7 @@ export async function addToCache(item: WeatherCacheItem): Promise<void> {
     await AsyncStorage.setItem(key, JSON.stringify(item));
     await AsyncStorage.setItem(CACHE_KEYS_KEY, JSON.stringify([...keys, key]));
   } catch (error) {
-    console.error("Erreur lors de l'ajout à notre cache météo:", error);
+    logger.error("Erreur lors de l'ajout à notre cache météo:", error);
   }
 }
 
@@ -206,7 +211,7 @@ export const getWeather = async (
 
     return weatherData;
   } catch (error) {
-    console.error('Erreur dans getWeather:', {
+    logger.error('Erreur dans getWeather:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });

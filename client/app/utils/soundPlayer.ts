@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import { SOUNDS, SoundKey } from '../constants/sound';
+import { logger } from './logger';
 
 let soundCache: Record<SoundKey, Audio.Sound | null> = {} as Record<SoundKey, Audio.Sound | null>;
 let currentlyPlaying: SoundKey[] = [];
@@ -15,7 +16,7 @@ const loadSound = async (key: SoundKey) => {
       (status) => {
         if (!status.isLoaded) {
           if (status.error) {
-            console.error(`Playback error for ${key}:`, status.error);
+            logger.error(`Playback error for ${key}:`, status.error);
           }
         }
       }
@@ -24,7 +25,7 @@ const loadSound = async (key: SoundKey) => {
     soundCache[key] = sound;
     return sound;
   } catch (error) {
-    console.error(`Error loading sound ${key}:`, error);
+    logger.error(`Error loading sound ${key}:`, error);
     return null;
   }
 };
@@ -62,7 +63,7 @@ export const playSound = async (
     currentlyPlaying = currentlyPlaying.filter((k) => k !== key);
     currentlyPlaying.push(key);
   } catch (error) {
-    console.error(`Error playing sound ${key}:`, error);
+    logger.error(`Error playing sound ${key}:`, error);
   }
 };
 
@@ -81,7 +82,7 @@ const playShortSound = async (key: SoundKey, volume: number) => {
       }
     });
   } catch (error) {
-    console.error(`Error playing short sound ${key}:`, error);
+    logger.error(`Error playing short sound ${key}:`, error);
   }
 };
 
@@ -97,7 +98,7 @@ export const stopAllSounds = async () => {
     );
     currentlyPlaying = [];
   } catch (error) {
-    console.error('Error stopping sounds:', error);
+    logger.error('Error stopping sounds:', error);
   }
 };
 
@@ -113,6 +114,6 @@ export const unloadAllSounds = async () => {
     );
     soundCache = {} as Record<SoundKey, Audio.Sound | null>;
   } catch (error) {
-    console.error('Error unloading sounds:', error);
+    logger.error('Error unloading sounds:', error);
   }
 };

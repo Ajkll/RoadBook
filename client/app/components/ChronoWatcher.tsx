@@ -15,6 +15,7 @@ import { getWeather } from '../services/api/weather';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
 import { useNotifications } from './NotificationHandler';
+import { logger } from '../utils/logger';
 
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
@@ -155,7 +156,7 @@ export default function ChronoWatcher() {
           }
         );
       } catch (error) {
-        console.error(`[${instanceId}] erreur le tracking ne demarre pas:`, error);
+        logger.error(`[${instanceId}] erreur le tracking ne demarre pas:`, error);
         isTrackingActive.current = false;
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
@@ -199,7 +200,7 @@ export default function ChronoWatcher() {
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
 
-          console.error(`[${instanceId}] User ID:`, userId);
+          console.log(`[${instanceId}] User ID:`, userId);
           console.log(`[${instanceId}] Elapsedtime:`, finalElapsedTime);
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);
@@ -218,7 +219,7 @@ export default function ChronoWatcher() {
                 roadInfo = await getGeoapifyRouteInfo(finalPath, finalElapsedTime);
                 console.log(`[${instanceId}] informations sur la route:`, roadInfo);
               } catch (error) {
-                console.error(`[${instanceId}] récupération des infos routières echoué:`, error);
+                logger.error(`[${instanceId}] récupération des infos routières echoué:`, error);
               }
             } else {
               console.log(
@@ -240,7 +241,7 @@ export default function ChronoWatcher() {
 
               console.log(`[${instanceId}] session sauvegardée `);
             } catch (error) {
-              console.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
+              logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
               showWarning(
                 '⚠️ Problème de sauvegarde',
                 "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",

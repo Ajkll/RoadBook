@@ -15,6 +15,7 @@ import {
   scheduleMotivationalNotification,
   scheduleLocalNotification,
 } from './utils/notifications';
+import { logger } from './utils/logger';
 
 const SettingsScreen = () => {
   const theme = useTheme();
@@ -69,7 +70,7 @@ const SettingsScreen = () => {
         await scheduleMotivationalNotification(25, 'daily');
       }
     } catch (error) {
-      console.error("Erreur lors de la configuration des notifications:", error);
+      logger.error("Erreur lors de la configuration des notifications:", error);
       setNotificationsEnabled(false);
     }
   };

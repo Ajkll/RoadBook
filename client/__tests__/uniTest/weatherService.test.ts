@@ -16,6 +16,12 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
   setItem: jest.fn()
 }));
+jest.mock('../../app/utils/logger', () => ({
+  logger: {
+    error: jest.fn()
+  }
+}));
+
 
 const createMockWeatherData = (overrides = {}) => ({
   temperature: 15,
@@ -42,38 +48,45 @@ describe('Weather Service - Unit Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (haversineDistance as jest.Mock).mockImplementation(() => 0.5);
+    const { logger } = require('../../app/utils/logger');
+    logger.error.mockClear();
   });
   describe('Error Handling', () => {
     it('should log error when cleanCache fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const { logger } = require('../../app/utils/logger');
       (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
 
       await cleanCache();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Erreur lors du nettoyage de la cache:', expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Erreur lors du nettoyage de la cache:',
+        expect.any(Error)
+      );
     });
 
     it('should log error when findInCache fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const { logger } = require('../../app/utils/logger');
       (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
 
       const result = await findInCache(48.8566, 2.3522, Date.now(), 1, 1000);
 
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith('Erreur lors de la recherche dans la cache:', expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Erreur lors de la recherche dans la cache:',
+        expect.any(Error)
+      );
     });
 
     it('should log error when addToCache fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
+      const { logger } = require('../../app/utils/logger');
       (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
 
       await addToCache(createMockCacheItem());
 
-      expect(consoleSpy).toHaveBeenCalledWith("Erreur lors de l'ajout à notre cache météo:", expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith(
+        "Erreur lors de l'ajout à notre cache météo:",
+        expect.any(Error)
+      );
     });
   });
   describe('Cache Management', () => {
@@ -93,7 +106,48 @@ describe('Weather Service - Unit Tests', () => {
         JSON.stringify(['@WEATHER_CACHE_1']) // Seul le fresh item devrait rester
       );
     });
+    // Ajoutez ce test à votre suite de tests existante
 
+    it('should log error when a cache key references a non-existent item', async () => {
+      const { logger } = require('../../app/utils/logger');
+
+      // Mock AsyncStorage.getItem pour renvoyer une liste de clés puis null pour un élément
+      (AsyncStorage.getItem as jest.Mock)
+        .mockResolvedValueOnce(JSON.stringify(['@WEATHER_CACHE_1', '@WEATHER_CACHE_2']))
+        .mockResolvedValueOnce(null) // Simuler un élément manquant
+        .mockResolvedValueOnce(JSON.stringify(createMockCacheItem())); // Simuler un élément valide
+
+      await cleanCache();
+
+      // Vérifier que logger.error a été appelé avec le message approprié
+      expect(logger.error).toHaveBeenCalledWith(
+        'Item non trouvé dans le cache pour la clé: @WEATHER_CACHE_1'
+      );
+
+      // Vérifier que AsyncStorage.setItem a été appelé avec seulement la clé valide
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+        '@WEATHER_CACHE_KEYS',
+        JSON.stringify(['@WEATHER_CACHE_2'])
+      );
+    });
+    it('should log error when cache key references missing item in findInCache', async () => {
+      const { logger } = require('../../app/utils/logger');
+
+      // Simuler une liste de clés existante mais un item manquant
+      (AsyncStorage.getItem as jest.Mock)
+        .mockResolvedValueOnce(JSON.stringify(['@WEATHER_CACHE_1'])) // Réponse pour CACHE_KEYS_KEY
+        .mockResolvedValueOnce(null); // Simuler un élément manquant pour @WEATHER_CACHE_1
+
+      const result = await findInCache(48.8566, 2.3522, Date.now(), 1, 1000);
+
+      // Vérifier que logger.error a été appelé avec le message approprié
+      expect(logger.error).toHaveBeenCalledWith(
+        'Item de cache non trouvé pour la clé: @WEATHER_CACHE_1'
+      );
+
+      // Vérifier que la fonction retourne null quand aucun item valide n'est trouvé
+      expect(result).toBeNull();
+    });
     it('should find valid cache item matching criteria', async () => {
       const mockItem = createMockCacheItem();
 

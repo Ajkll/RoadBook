@@ -21,6 +21,7 @@ import { selectIsInternetReachable } from '../../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../api/getRouteInfo';
 import { getWeather } from '../api/weather';
 import { useNotifications } from '../../components/NotificationHandler';
+import { logger } from '../../utils/logger';
 
 interface DriveSessionData {
   elapsedTime: number;
@@ -83,7 +84,7 @@ export async function saveSessionWithOfflineSupport(data: DriveSessionData): Pro
       return await saveOfflineSession(data, timestamp);
     }
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde de session:', error);
+    logger.error('Erreur lors de la sauvegarde de session:', error);
     return await handleSaveError(data, timestamp);
   }
 }
@@ -214,7 +215,7 @@ async function tryGetWeather(path: { latitude: number; longitude: number }[]) {
     const lastPoint = path[path.length - 1];
     return await getWeather(lastPoint.latitude, lastPoint.longitude);
   } catch (error) {
-    console.error(
+    logger.error(
       'Erreur lors de la récupération des données météo de la sauvegard de secoure (fallback):',
       error
     );
@@ -231,7 +232,7 @@ async function tryGetRoadInfo(
   try {
     return await getGeoapifyRouteInfo(path, elapsedTime);
   } catch (error) {
-    console.error('Erreur lors de la récupération des infos de route :', error);
+    logger.error('Erreur lors de la récupération des infos de route :', error);
     return null;
   }
 }
@@ -279,7 +280,7 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
         successCount++;
         console.log(`Session ${session.id} synchronisée avec succès (ID Firebase: ${docRef.id})`);
       } catch (error) {
-        console.error(`Échec de synchronisation pour la session ${session.id}:`, error);
+        logger.error(`Échec de synchronisation pour la session ${session.id}:`, error);
         store.dispatch(
           setSyncError({
             id: session.id,
@@ -355,7 +356,7 @@ export async function completeSync(): Promise<void> {
         await processSingleSession(session);
         processedSessions.add(session.id);
       } catch (error) {
-        console.error(`Erreur sur session ${session.id}:`, error);
+        logger.error(`Erreur sur session ${session.id}:`, error);
       }
     }
   } finally {
@@ -383,7 +384,7 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
         console.log(`Météo récupérée pour ${updatedSession.id}`);
       }
     } catch (error) {
-      console.error(`Erreur météo pour ${updatedSession.id}:`, error);
+      logger.error(`Erreur météo pour ${updatedSession.id}:`, error);
     }
   }
 
@@ -395,7 +396,7 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
         console.log(`RoadInfo récupéré pour ${updatedSession.id}`);
       }
     } catch (error) {
-      console.error(`Erreur roadInfo pour ${updatedSession.id}:`, error);
+      logger.error(`Erreur roadInfo pour ${updatedSession.id}:`, error);
     }
   }
 
@@ -426,7 +427,7 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
 
       console.log(`Session ${updatedSession.id} et requêtes associées synchronisées et nettoyées`);
     } catch (error) {
-      console.error(`Erreur lors de la sauvegarde Firebase pour ${updatedSession.id}:`, error);
+      logger.error(`Erreur lors de la sauvegarde Firebase pour ${updatedSession.id}:`, error);
       await savePendingDriveSession(updatedSession);
 
       store.dispatch(
