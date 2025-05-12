@@ -6,12 +6,11 @@
 // Pour le développement local (chemin relatif)
 // const API_URL = '/api';
 
-// Pour utiliser le backend déployé sur Vercel
-const API_URL = 'https://road-book-mu.vercel.app/api';
+// Pour utiliser le backend déployé sur Render
+const API_URL = 'https://roadbook-backend.onrender.com/api';
 
-// Décommentez la ligne appropriée en fonction de votre environnement
-// Si l'application de test est déployée sur Render et utilise le backend sur Vercel,
-// utilisez la seconde option avec l'URL complète de votre backend Vercel
+// Si vous devez changer l'URL de l'API rapidement, vous pouvez utiliser la console:
+// window.API_URL = 'https://roadbook-backend.onrender.com/api';
 
 // Liste des modules disponibles
 const MODULES = [
