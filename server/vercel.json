@@ -15,7 +15,13 @@
       "dest": "dist/index.js"
     }
   ],
+  "functions": {
+    "dist/index.js": {
+      "memory": 1024
+    }
+  },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VERCEL": "1"
   }
 }
