@@ -9,39 +9,43 @@
  * dans les environnements serverless.
  */
 
+// Imports au niveau module (obligatoire en TypeScript)
+import winston from 'winston';
+import path from 'path';
+import fs from 'fs';
+
 // Detect Vercel environment
 const isVercel = process.env.VERCEL === '1';
 
-// Import the appropriate logger
-let logger;
+// Niveaux de logging
+enum LogLevel {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  HTTP = 3,
+  DEBUG = 4,
+}
+
+// Formatage du timestamp
+const getTimestamp = (): string => {
+  return new Date().toISOString();
+};
+
+// Niveau de log basé sur l'environnement
+const getLogLevel = (): LogLevel => {
+  if (process.env.NODE_ENV === 'test') return LogLevel.ERROR;
+  if (process.env.NODE_ENV === 'production') return LogLevel.INFO;
+  return LogLevel.DEBUG;
+};
+
+// Niveau de log actuel
+const currentLogLevel = getLogLevel();
+
+// Création du logger approprié selon l'environnement
+let logger: any;
 
 if (isVercel) {
   // Simple console-based logger for Vercel
-  // Niveaux de logging
-  enum LogLevel {
-    ERROR = 0,
-    WARN = 1,
-    INFO = 2,
-    HTTP = 3,
-    DEBUG = 4,
-  }
-
-  // Niveau de log basé sur l'environnement
-  const getLogLevel = (): LogLevel => {
-    if (process.env.NODE_ENV === 'test') return LogLevel.ERROR;
-    if (process.env.NODE_ENV === 'production') return LogLevel.INFO;
-    return LogLevel.DEBUG;
-  };
-
-  // Niveau de log actuel
-  const currentLogLevel = getLogLevel();
-
-  // Formatage du timestamp
-  const getTimestamp = (): string => {
-    return new Date().toISOString();
-  };
-
-  // Créer un logger simple basé sur console
   logger = {
     error: (message: string, ...meta: any[]): void => {
       if (currentLogLevel >= LogLevel.ERROR) {
@@ -80,11 +84,7 @@ if (isVercel) {
   };
 } else {
   // Pour les environnements non-serverless, utiliser Winston avec système de fichiers
-  // Imports
-  import winston from 'winston';
-  import path from 'path';
-  import fs from 'fs';
-
+  
   // Créer le répertoire de logs s'il n'existe pas
   const logDir = path.join(process.cwd(), 'logs');
   if (!fs.existsSync(logDir)) {
