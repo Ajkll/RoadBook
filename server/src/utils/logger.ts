@@ -1,21 +1,19 @@
 /**
  * LOGGER UTILITY
- *
+ * 
  * Ce module fournit un logger configuré pour l'application.
  * Il utilise Winston pour:
  * - Logger dans la console avec couleurs en développement
  * - Différents niveaux de log (error, warn, info, debug)
  * - Format timestamp pour faciliter le debugging
- *
- * En production, seuls les logs de niveau info et supérieur sont affichés en console.
- * En développement, tous les logs (y compris debug) sont affichés.
- *
- * Version adaptée pour environnements serverless (Vercel) qui ne supportent pas
- * l'écriture de fichiers.
+ * 
+ * Version compatible Vercel/Serverless: Logs uniquement dans la console
  */
 
 import winston from 'winston';
-import path from 'path';
+
+// Détection de l'environnement serverless
+const isServerless = !!process.env.VERCEL;
 
 // Définir les niveaux et couleurs
 const levels = {
@@ -49,22 +47,22 @@ const consoleFormat = winston.format.combine(
 // Détecter l'environnement
 const isProd = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test';
-const isServerless = process.env.VERCEL === '1'; // Détection de Vercel
 
-// Créer le logger - pour les environnements serverless, utiliser uniquement la console
+// Configurer les transports basés sur l'environnement
+const transports: winston.transport[] = [
+  // Toujours inclure la console
+  new winston.transports.Console({
+    format: consoleFormat,
+    silent: process.argv.includes('--silent')
+  })
+];
+
+// Créer le logger
 const logger = winston.createLogger({
   level: isTest ? 'error' : isProd ? 'info' : 'debug',
   levels,
   format: consoleFormat,
-  transports: [
-    // Logger dans la console
-    new winston.transports.Console({
-      format: consoleFormat,
-      // Ne pas afficher les logs si les tests sont en cours avec --silent
-      silent: process.argv.includes('--silent')
-    })
-  ],
-  // Ne pas quitter en cas d'erreur non gérée
+  transports,
   exitOnError: false
 });
 
