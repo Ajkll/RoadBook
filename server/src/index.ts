@@ -36,18 +36,35 @@ const corsOrigins = process.env.CORS_ORIGINS ?
     "exp://10.0.2.2:19000",
   ];
 
-// CORS configuration
+// CORS configuration - Temporairement permissif pour faciliter les tests
+app.use(cors({
+  origin: '*', // Permettre toutes les origines pour les tests
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'X-Client-Platform',
+    'X-Client-Version',
+    'Accept'
+  ]
+}));
+
+// NOTE: Cette configuration est pour les tests uniquement
+// En production, vous devriez utiliser une configuration plus restrictive:
+/*
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, etc)
     if (!origin) return callback(null, true);
-    
+
     // In development mode, always allow any origin for easier testing
     if (process.env.NODE_ENV === 'development') {
       console.log(`CORS: Allowing origin in dev mode: ${origin}`);
       return callback(null, true);
     }
-    
+
     // Check if origin is allowed
     if (corsOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -59,14 +76,15 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With', 
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
     'X-Client-Platform',
     'X-Client-Version',
     'Accept'
   ]
 }));
+*/
 
 // Basic middleware
 app.use(cookieParser());
