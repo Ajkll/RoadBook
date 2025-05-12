@@ -1,0 +1,31 @@
+options {
+    directory "/var/cache/bind";
+    
+    // Si ce serveur est le DNS principal pour votre domaine
+    recursion yes;
+    allow-recursion { any; };
+    
+    // Forwarding vers Google et Cloudflare DNS si une requête ne peut pas être résolue localement
+    forwarders {
+        8.8.8.8;
+        8.8.4.4;
+        1.1.1.1;
+        1.0.0.1;
+    };
+
+    // DNSSEC
+    dnssec-validation auto;
+    
+    // IPv6
+    listen-on-v6 { any; };
+    
+    // Écouter sur toutes les interfaces
+    listen-on { any; };
+    
+    // Permettre les requêtes de n'importe où (pour l'environnement de production,
+    // vous pourriez vouloir restreindre cela)
+    allow-query { any; };
+    
+    // Journal des requêtes pour le débogage
+    querylog yes;
+};

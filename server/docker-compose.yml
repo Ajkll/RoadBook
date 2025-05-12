@@ -1,62 +1,147 @@
 version: '3.8'
 
 services:
+  # Base de données PostgreSQL
   postgres:
-    image: postgres:14
-    container_name: postgres-prod
+    image: postgres:14-alpine
+    container_name: roadbook-postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=roadbook
-    ports:
-      - "5432:5432"
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASS:-postgres}
+      - POSTGRES_DB=${DB_NAME:-roadbook}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    command: ["postgres", "-c", "log_statement=all"]
     networks:
       - roadbook-network
 
-  server:
+  # API Node.js
+  api:
     build:
       context: .
-      dockerfile: Dockerfile.server
-    container_name: server-prod
-    ports:
-      - "4000:4000"
+      dockerfile: Dockerfile
+    container_name: roadbook-api
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/roadbook
-      - JWT_SECRET=${JWT_SECRET:-your-very-secure-jwt-secret-for-production}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-very-secure-refresh-token-secret-for-production}
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=4000
-      - NODE_ENV=production
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASS=${POSTGRES_PASSWORD:-postgres}
-      - DB_NAME=roadbook
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:19000,http://localhost:19006,http://localhost:3000,exp://localhost:19000}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-postgres}
+      - DB_NAME=${DB_NAME:-roadbook}
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASS:-postgres}@postgres:5432/${DB_NAME:-roadbook}
+      - JWT_SECRET=${JWT_SECRET:-change_this_in_production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change_this_in_production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://api.bephec.org,https://test.bephec.org,http://localhost:19000,http://localhost:19006,http://localhost:3000}
+      - SEED_DATABASE=${SEED_DATABASE:-false}
     volumes:
-      - server_logs:/app/logs
+      - api_logs:/app/logs
     restart: always
     networks:
       - roadbook-network
-    command: ["npm", "run", "start"]
+
+  # Interface de test API
+  test-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: roadbook-test-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development
+      - PORT=4001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-postgres}
+      - DB_NAME=${DB_NAME:-roadbook}
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASS:-postgres}@postgres:5432/${DB_NAME:-roadbook}
+      - JWT_SECRET=${JWT_SECRET:-change_this_in_production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change_this_in_production}
+      - TEST_API=true
+    volumes:
+      - api_logs:/app/logs
+    restart: always
+    networks:
+      - roadbook-network
+
+  # Nginx comme reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: roadbook-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_data:/etc/nginx/ssl
+      - certbot_challenges:/var/www/certbot
+    depends_on:
+      - api
+      - test-api
+    restart: always
+    networks:
+      - roadbook-network
+
+  # Serveur DNS Bind9
+  dns:
+    image: ubuntu/bind9:latest
+    container_name: roadbook-dns
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    environment:
+      - TZ=UTC
+      - BIND9_USER=root
+    volumes:
+      - ./dns/named.conf:/etc/bind/named.conf:rw
+      - ./dns/named.conf.options:/etc/bind/named.conf.options:rw
+      - ./dns/named.conf.local:/etc/bind/named.conf.local:rw
+      - ./dns/zones:/etc/bind/zones:rw
+      - dns_data:/var/cache/bind
+      - dns_logs:/var/log/bind
+    restart: always
+    networks:
+      - roadbook-network
+
+  # Certbot pour les certificats SSL
+  certbot:
+    image: certbot/certbot
+    container_name: roadbook-certbot
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    depends_on:
+      - nginx
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - roadbook-network
 
 networks:
   roadbook-network:
-    name: roadbook-network
+    driver: bridge
 
 volumes:
   postgres_data:
-    name: roadbook-postgres-prod-data
-  server_logs:
-    name: roadbook-server-logs
+    name: roadbook-postgres-data
+  api_logs:
+    name: roadbook-api-logs
+  certbot_data:
+    name: roadbook-certbot-data
+  certbot_challenges:
+    name: roadbook-certbot-challenges
+  dns_data:
+    name: roadbook-dns-data
+  dns_logs:
+    name: roadbook-dns-logs
