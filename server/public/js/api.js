@@ -134,14 +134,37 @@ async function apiRequest(endpoint, method = 'GET', data = null, silent = false)
         
         // Traiter la réponse
         try {
-            const responseData = await response.json();
-            
+            // Cloner la réponse pour pouvoir la lire plusieurs fois si nécessaire
+            const responseClone = response.clone();
+            let responseData;
+
+            try {
+                responseData = await response.json();
+            } catch (jsonParseError) {
+                // Si le parsing JSON échoue, essayez de lire le texte et afficher l'erreur
+                const responseText = await responseClone.text();
+                console.error('Error parsing JSON response:', jsonParseError);
+
+                const errorData = {
+                    status: 'error',
+                    message: 'Error parsing server response',
+                    httpStatus: response.status,
+                    text: responseText
+                };
+
+                if (!silent) {
+                    showResponse(errorData);
+                }
+
+                throw new Error(`Failed to parse JSON: ${responseText.substring(0, 100)}...`);
+            }
+
             // Afficher la réponse si la requête n'est pas silencieuse
             if (!silent) {
                 console.log('Response:', responseData);
                 showResponse(responseData);
             }
-            
+
             // Gérer les erreurs HTTP
             if (!response.ok) {
                 const error = new Error(responseData.message || `HTTP error ${response.status}`);
@@ -149,23 +172,19 @@ async function apiRequest(endpoint, method = 'GET', data = null, silent = false)
                 error.response = responseData;
                 throw error;
             }
-            
+
             return responseData;
-        } catch (jsonError) {
-            // Erreur de parsing JSON
-            console.error('Error parsing JSON response:', jsonError);
-            const errorData = {
-                status: 'error',
-                message: 'Error parsing server response',
-                httpStatus: response.status,
-                text: await response.text()
-            };
-            
+        } catch (error) {
+            // Capturer d'autres erreurs
             if (!silent) {
-                showResponse(errorData);
+                console.error('API request error:', error);
+                showResponse({
+                    status: 'error',
+                    message: error.message || 'An unknown error occurred',
+                    details: error.toString()
+                });
             }
-            
-            throw new Error(`Failed to parse JSON: ${errorData.text.substring(0, 100)}...`);
+            throw error;
         }
     } catch (error) {
         // Ne pas afficher l'erreur pour les requêtes silencieuses
