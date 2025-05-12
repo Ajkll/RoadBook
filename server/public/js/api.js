@@ -101,21 +101,27 @@ async function apiRequest(endpoint, method = 'GET', data = null, silent = false)
         if (!silent) {
             logRequest(endpoint, method, data);
         }
-        
+
         // Configurer les en-têtes
         const headers = {
             'Content-Type': 'application/json'
         };
-        
+
         if (accessToken) {
             headers['Authorization'] = `Bearer ${accessToken}`;
         }
-        
+
+        // Ajouter les en-têtes CORS pour les requêtes vers un domaine externe
+        if (API_URL.startsWith('http')) {
+            headers['Origin'] = window.location.origin;
+        }
+
         // Options de la requête
         const fetchOptions = {
             method,
             headers,
-            credentials: 'include'
+            credentials: API_URL.startsWith('http') ? 'same-origin' : 'include',
+            mode: API_URL.startsWith('http') ? 'cors' : 'same-origin'
         };
         
         // Ajouter le corps de la requête pour les méthodes non-GET
