@@ -1,26 +1,21 @@
 /**
  * LOGGER UTILITY
- * 
+ *
  * Ce module fournit un logger configuré pour l'application.
  * Il utilise Winston pour:
  * - Logger dans la console avec couleurs en développement
- * - Logger dans des fichiers en production
  * - Différents niveaux de log (error, warn, info, debug)
  * - Format timestamp pour faciliter le debugging
- * 
+ *
  * En production, seuls les logs de niveau info et supérieur sont affichés en console.
  * En développement, tous les logs (y compris debug) sont affichés.
+ *
+ * Version adaptée pour environnements serverless (Vercel) qui ne supportent pas
+ * l'écriture de fichiers.
  */
 
 import winston from 'winston';
 import path from 'path';
-import fs from 'fs';
-
-// Créer le répertoire de logs s'il n'existe pas
-const logDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
-}
 
 // Définir les niveaux et couleurs
 const levels = {
@@ -51,47 +46,27 @@ const consoleFormat = winston.format.combine(
   )
 );
 
-// Format pour les fichiers (sans couleurs, mais avec plus de détails)
-const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.json()
-);
-
 // Détecter l'environnement
 const isProd = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test';
+const isServerless = process.env.VERCEL === '1'; // Détection de Vercel
 
-// Créer le logger
+// Créer le logger - pour les environnements serverless, utiliser uniquement la console
 const logger = winston.createLogger({
   level: isTest ? 'error' : isProd ? 'info' : 'debug',
   levels,
-  format: fileFormat,
+  format: consoleFormat,
   transports: [
-    // Logger les erreurs dans un fichier séparé
-    new winston.transports.File({ 
-      filename: path.join(logDir, 'error.log'), 
-      level: 'error' 
-    }),
-    
-    // Logger tous les messages dans un fichier
-    new winston.transports.File({ 
-      filename: path.join(logDir, 'combined.log')
-    }),
-  ],
-  // Ne pas quitter en cas d'erreur non gérée
-  exitOnError: false
-});
-
-// En développement ou test, logger aussi dans la console
-if (!isProd || isTest) {
-  logger.add(
+    // Logger dans la console
     new winston.transports.Console({
       format: consoleFormat,
       // Ne pas afficher les logs si les tests sont en cours avec --silent
       silent: process.argv.includes('--silent')
     })
-  );
-}
+  ],
+  // Ne pas quitter en cas d'erreur non gérée
+  exitOnError: false
+});
 
 /**
  * Fonctions de log avec support pour les objets (auto-stringify)
