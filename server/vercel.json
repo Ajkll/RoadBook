@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/index.js"
+    }
+  ],
+  "installCommand": "npm install && npm install --save-dev @types/node @types/express @types/cors @types/cookie-parser @types/bcrypt @types/jsonwebtoken @types/uuid @types/jest @types/winston && npx prisma generate",
+  "buildCommand": "npm run build"
+}

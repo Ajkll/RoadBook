@@ -1,0 +1,15 @@
+; Reverse lookup file for 192.168.0.0/24
+$TTL    3600
+@       IN      SOA     ns1.bephec.org. admin.bephec.org. (
+                        2023051001      ; Serial
+                        3600            ; Refresh
+                        1800            ; Retry
+                        604800          ; Expire
+                        86400 )         ; Negative Cache TTL
+
+; Serveurs de noms
+@       IN      NS      ns1.bephec.org.
+
+; Résolutions inverses pour les adresses IP internes
+; Format: Dernier octet de l'adresse IP  PTR  nom_d'hôte.domaine.
+10      IN      PTR     server.bephec.org.

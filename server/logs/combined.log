@@ -465,3 +465,5 @@
 {"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:24:05"}
 {"level":"error","message":"Token refresh error: [{}]","timestamp":"2025-04-25 08:24:05"}
 {"level":"error","message":"Password reset initiation error: [{}]","timestamp":"2025-04-25 08:24:05"}
+{"level":"debug","message":"Token verification failed: jwt expired","timestamp":"2025-05-12 06:07:52"}
+{"level":"debug","message":"Token verification failed: invalid signature","timestamp":"2025-05-12 06:22:59"}

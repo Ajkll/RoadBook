@@ -1,0 +1,17 @@
+// Configuration des zones locales pour le domaine bephec.org
+
+// Zone principale pour bephec.org
+zone "bephec.org" {
+    type master;
+    file "/etc/bind/zones/db.bephec.org";
+    allow-transfer { none; };
+    allow-update { none; };
+};
+
+// Zone de résolution inverse (pour les IP internes seulement)
+zone "0.168.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/zones/db.192.168.0";
+    allow-transfer { none; };
+    allow-update { none; };
+};
