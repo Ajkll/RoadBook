@@ -215,7 +215,7 @@ const processQueue = (error: any = null, newToken: string | null = null) => {
 };
 
 // Global event emitter for auth events
-import { EventEmitter } from 'events';
+import EventEmitter from 'eventemitter3';
 export const authEvents = new EventEmitter();
 
 // Create a custom event for token refresh failures
