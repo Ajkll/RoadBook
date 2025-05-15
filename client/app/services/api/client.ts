@@ -12,15 +12,20 @@ const ANDROID_EMULATOR_API = 'http://10.0.2.2:4002/api';
 const GITHUB_CODESPACE_URL =
   'https://yanstart-rainy-space-5rgx6q6xqpw367r5-4002.preview.app.github.dev/api';
 
+// URL de l'API de production (déployée sur Render)
+const PRODUCTION_API = 'https://roadbook-backend.onrender.com/api';
+
 // ===== NGROK CONFIG =====
 // IMPORTANT: Remplace cette URL par ton URL ngrok active
 // Exécute ngrok http 4002 dans un terminal et copie l'URL fournie ici
 const NGROK_URL = 'https://1234-abc-test.ngrok.io/api'; // REMPLACE CETTE URL!
 
 // ===== CONFIGURATION GLOBALE =====
-// Définir FORCE_NGROK = true pour utiliser ngrok systématiquement
+// Définir FORCE_PRODUCTION = true pour utiliser l'API de production systématiquement
+// Définir FORCE_NGROK = true pour utiliser ngrok systématiquement en développement
 // C'est l'option la plus fiable pour les tests sur appareil physique
-const FORCE_NGROK = true;
+const FORCE_PRODUCTION = true;
+const FORCE_NGROK = false;
 
 // ===== DÉTECTION D'ENVIRONNEMENT =====
 // Fonction améliorée pour détecter le type d'environnement
@@ -59,7 +64,13 @@ const detectEnvironment = () => {
 // ===== SÉLECTION DE L'URL DE L'API =====
 // Choisit l'URL appropriée en fonction de l'environnement
 const getApiUrl = () => {
-  // Si FORCE_NGROK est activé, toujours utiliser ngrok (option la plus fiable)
+  // Si FORCE_PRODUCTION est activé, toujours utiliser l'API de production
+  if (FORCE_PRODUCTION) {
+    console.log('🌍 Using PRODUCTION API URL (forced):', PRODUCTION_API);
+    return PRODUCTION_API;
+  }
+  
+  // Si FORCE_NGROK est activé, toujours utiliser ngrok (option pour le développement)
   if (FORCE_NGROK) {
     console.log('🌍 Using NGROK URL (forced):', NGROK_URL);
     return NGROK_URL;
@@ -82,8 +93,11 @@ const getApiUrl = () => {
       return ANDROID_EMULATOR_API;
 
     case 'physical':
-      // Sur appareils physiques, utiliser ngrok ou Codespace selon la configuration
-      if (FORCE_NGROK) {
+      // Sur appareils physiques, utiliser API de production, ngrok ou Codespace selon la configuration
+      if (FORCE_PRODUCTION) {
+        console.log('📱 Using PRODUCTION API for physical device:', PRODUCTION_API);
+        return PRODUCTION_API;
+      } else if (FORCE_NGROK) {
         console.log('📱 Using NGROK URL for physical device:', NGROK_URL);
         return NGROK_URL;
       } else {
@@ -92,9 +106,9 @@ const getApiUrl = () => {
       }
 
     default:
-      // En cas de doute, utiliser ngrok comme solution de repli
-      console.log('⚠️ Unknown environment, using NGROK URL as fallback');
-      return NGROK_URL;
+      // En cas de doute, utiliser l'API de production comme solution de repli
+      console.log('⚠️ Unknown environment, using PRODUCTION API as fallback');
+      return PRODUCTION_API;
   }
 };
 
@@ -108,7 +122,9 @@ export const API_CONFIG = {
   IS_PHYSICAL_DEVICE: env.environment === 'physical',
   IS_EMULATOR: env.environment === 'android-emulator' || env.environment === 'ios-simulator',
   IS_WEB: env.environment === 'web',
+  USING_PRODUCTION: FORCE_PRODUCTION || getApiUrl() === PRODUCTION_API,
   USING_NGROK: FORCE_NGROK || getApiUrl() === NGROK_URL,
+  PRODUCTION_API,
   NGROK_URL,
   GITHUB_CODESPACE_URL,
 };

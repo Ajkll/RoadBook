@@ -13,15 +13,16 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
+import apiClient, { API_URL } from '../services/api/client'; // Importer API_URL pour l'afficher
 import { validateEmail, validatePassword } from '../utils/validation';
 
 export default function LoginScreen() {
   // Utiliser notre hook personnalisé pour accéder au contexte d'authentification
   const { login, isLoading, error, clearError } = useAuth();
 
-  // État local pour les champs du formulaire - pré-rempli avec notre test DB user
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('Password123!');
+  // État local pour les champs du formulaire
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
@@ -137,14 +138,14 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Information sur le compte de démonstration */}
+          {/* Information sur la connexion */}
           <View style={styles.demoInfoContainer}>
             <Text style={styles.demoInfoText}>
-              <Text style={{ fontWeight: 'bold' }}>UTILISATEUR DB: </Text>
-              test@example.com / Password123!
+              <Text style={{ fontWeight: 'bold' }}>CONNEXION API: </Text>
+              Utilisez un compte valide ou inscrivez-vous
             </Text>
             <Text style={styles.demoInfoText}>
-              ✅ Ce compte est enregistré dans la base de données PostgreSQL, pas un mock!
+              ✅ L'API est connectée à : {API_URL}
             </Text>
           </View>
 
