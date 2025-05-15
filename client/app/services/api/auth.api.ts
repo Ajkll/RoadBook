@@ -11,6 +11,7 @@ import {
 import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
 import apiClient, { API_URL, API_CONFIG } from './client'; // Import our central API client and configuration
 import { logger } from '../../utils/logger';
+import { extractApiData, extractErrorMessage } from './utils';
 
 // Log API configuration for debugging
 console.log('🔄 AUTH API: Using URL from central API client:', API_URL);
@@ -159,16 +160,18 @@ export const authApi = {
         // Try both /users and /auth/register endpoints in case one fails
         try {
           // First try /users endpoint
-          const response = await apiClient.post<AuthResponse>('/users', data);
-          logDebug('Server response for registration:', response.data);
-          return response.data;
+          const response = await apiClient.post('/users', data);
+          const authData = extractApiData<AuthResponse>(response);
+          logDebug('Server response for registration:', authData);
+          return authData;
         } catch (firstError) {
           logError('First registration attempt failed, trying alternate endpoint', firstError);
 
           // Fallback to /auth/register endpoint
-          const response = await apiClient.post<AuthResponse>('/auth/register', data);
-          logDebug('Server response for registration (fallback endpoint):', response.data);
-          return response.data;
+          const response = await apiClient.post('/auth/register', data);
+          const authData = extractApiData<AuthResponse>(response);
+          logDebug('Server response for registration (fallback endpoint):', authData);
+          return authData;
         }
       } catch (error) {
         logError('Registration failed after all attempts', error);
@@ -192,26 +195,29 @@ export const authApi = {
 
     return measureRequestTime('Login request', async () => {
       try {
-        const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+        const response = await apiClient.post('/auth/login', credentials);
+        
+        // Use utility function to extract data regardless of response format
+        const authData = extractApiData<AuthResponse>(response);
 
         logDebug(`Login successful`, {
-          userId: response.data.user.id,
-          role: response.data.user.role,
-          displayName: response.data.user.displayName,
-          tokenReceived: !!response.data.accessToken,
+          userId: authData.user.id,
+          role: authData.user.role,
+          displayName: authData.user.displayName,
+          tokenReceived: !!authData.accessToken,
         });
 
         // Check if response contains expected data
-        if (!response.data.accessToken || !response.data.user) {
-          logError('Login response missing critical data', response.data);
+        if (!authData.accessToken || !authData.user) {
+          logError('Login response missing critical data', authData);
           throw new Error('Réponse du serveur invalide');
         }
 
         // Store authentication data securely
-        await saveAuthData(response.data.accessToken, response.data.refreshToken, response.data.user);
+        await saveAuthData(authData.accessToken, authData.refreshToken, authData.user);
 
         logDebug('Authentication data stored securely');
-        return response.data;
+        return authData;
       } catch (error) {
         // Provide specific error messages based on the server response
         if (error.response?.status === 401) {
@@ -262,22 +268,24 @@ export const authApi = {
         const tokenPreview = `${refreshToken.substring(0, 10)}...`;
         logDebug(`Using refresh token: ${tokenPreview}`);
 
-        const response = await apiClient.post<TokenRefreshResponse>('/auth/refresh-token', {
+        const response = await apiClient.post('/auth/refresh-token', {
           refreshToken,
         });
 
-        if (!response.data.accessToken) {
-          logError('Refresh token response missing access token', response.data);
+        const tokenData = extractApiData<TokenRefreshResponse>(response);
+
+        if (!tokenData.accessToken) {
+          logError('Refresh token response missing access token', tokenData);
           throw new Error('Invalid refresh token response');
         }
 
-        const accessTokenPreview = `${response.data.accessToken.substring(0, 10)}...`;
+        const accessTokenPreview = `${tokenData.accessToken.substring(0, 10)}...`;
         logDebug(`Received new access token: ${accessTokenPreview}`);
 
-        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
+        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.accessToken);
         logDebug('New access token stored securely');
 
-        return response.data;
+        return tokenData;
       } catch (error) {
         logError('Token refresh failed', error);
         throw new Error('Failed to refresh authentication token. Please login again.');
@@ -294,19 +302,22 @@ export const authApi = {
         const tokenPreview = token ? `${token.substring(0, 10)}...` : 'none';
         logDebug(`Using access token: ${tokenPreview}`);
 
-        const response = await apiClient.get<User>('/users/me');
+        const response = await apiClient.get('/users/me');
+        
+        // Use utility function to extract data regardless of response format
+        const userData = extractApiData<User>(response);
 
         logDebug('User profile fetched successfully', {
-          id: response.data.id,
-          email: response.data.email,
-          role: response.data.role,
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
         });
 
         // Update stored user information
-        await saveItem(STORAGE_KEYS.USER, JSON.stringify(response.data));
+        await saveItem(STORAGE_KEYS.USER, JSON.stringify(userData));
         logDebug('User profile saved to secure storage');
 
-        return response.data;
+        return userData;
       } catch (error) {
         if (error.response?.status === 401) {
           throw new Error('Session expirée. Veuillez vous reconnecter.');
