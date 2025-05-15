@@ -52,9 +52,33 @@ export default function ProfileScreen() {
         logger.warn('No user data available before refresh');
       }
       
-      await refreshUserData();
-      
-      logger.info('User data refreshed successfully');
+      try {
+        await refreshUserData();
+        logger.info('User data refreshed successfully');
+      } catch (refreshError) {
+        // Handle different types of errors
+        
+        // 1. Handle token/auth errors - handled by AuthContext which will auto-logout
+        if (refreshError instanceof Error && 
+            (refreshError.message.includes('Session expirée') || 
+             refreshError.message.includes('401') ||
+             refreshError.message.includes('token'))) {
+          logger.warn('Auth error during refresh, handled by AuthContext', refreshError);
+          // No need to show an alert - auth context will handle this and redirect to login
+          return;
+        }
+        
+        // 2. Handle storage errors during refresh specifically
+        if (refreshError instanceof Error && 
+            (refreshError.message.includes('saveItem') || 
+             refreshError.message.includes("doesn't exist"))) {
+          logger.warn('Storage error during refresh, but user data may be available', refreshError);
+          // Continue anyway - the UI can still display the user data that was returned
+        } else {
+          // Re-throw other errors to be handled by the outer catch
+          throw refreshError;
+        }
+      }
     } catch (error) {
       logger.error('Erreur lors du rafraîchissement du profil', error);
       Alert.alert(
@@ -132,6 +156,14 @@ export default function ProfileScreen() {
     );
   }
 
+  useEffect(() => {
+    // Add debug info on component mount
+    logger.info(`ProfileScreen mounted - pathname: /profile/index`);
+    return () => {
+      logger.info('ProfileScreen unmounted');
+    };
+  }, []);
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -190,7 +222,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.push('/(tabs)/profile/edit')}
+          onPress={() => router.navigate('/(tabs)/profile/edit')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="person-circle-outline" size={24} color={colors.primary} />
@@ -206,7 +238,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.push('/(tabs)/profile/change-password')}
+          onPress={() => router.navigate('/(tabs)/profile/change-password')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="key-outline" size={24} color={colors.primary} />
@@ -222,7 +254,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.push('/(tabs)/profile/sessions')}
+          onPress={() => router.navigate('/(tabs)/profile/sessions')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} />
@@ -243,7 +275,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.push('/PrivacyScreen')}
+          onPress={() => router.navigate('/PrivacyScreen')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
@@ -259,7 +291,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.push('/HelpScreen')}
+          onPress={() => router.navigate('/HelpScreen')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
@@ -278,7 +310,7 @@ export default function ProfileScreen() {
       <View style={styles.dangerZone}>
         <TouchableOpacity 
           style={[styles.dangerButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} 
-          onPress={() => router.push('/(tabs)/profile/delete-account')}
+          onPress={() => router.navigate('/(tabs)/profile/delete-account')}
         >
           <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
           <Text style={styles.dangerButtonText}>Supprimer mon compte</Text>

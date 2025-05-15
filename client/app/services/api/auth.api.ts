@@ -239,8 +239,42 @@ export const authApi = {
     logDebug('Initiating logout process');
 
     return measureRequestTime('Logout request', async () => {
+      // First, ensure we're clearing local data regardless of server success
+      const clearLocalData = async () => {
+        try {
+          // Clear auth data from secure storage
+          await clearAuthData();
+          logDebug('Local authentication data cleared');
+          return true;
+        } catch (clearError) {
+          logError('Failed to clear auth data using clearAuthData', clearError);
+          
+          // Attempt clearing individual items as fallback
+          try {
+            logDebug('Attempting fallback clear method');
+            const keys = [STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.REFRESH_TOKEN, STORAGE_KEYS.USER];
+            let success = true;
+            
+            for (const key of keys) {
+              try {
+                await saveItem(key, '');
+                logDebug(`Cleared ${key}`);
+              } catch (e) {
+                logError(`Failed to clear ${key}`, e);
+                success = false;
+              }
+            }
+            
+            return success;
+          } catch (fallbackError) {
+            logError('Complete failure clearing auth data', fallbackError);
+            return false;
+          }
+        }
+      };
+      
       try {
-        // Get the refresh token directly in the function
+        // Try to get the refresh token, but don't fail if not found
         let refreshToken = null;
         try {
           refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
@@ -248,44 +282,35 @@ export const authApi = {
           logDebug('Error retrieving refresh token - may already be logged out');
         }
 
+        // Parallel operations: try server logout and clear local data at the same time
+        const operations = [clearLocalData()];
+        
         // Only attempt server logout if we have a token
         if (refreshToken) {
-          try {
-            await apiClient.post('/auth/logout');
-            logDebug('Logout request successful');
-          } catch (serverError) {
-            logError('Logout request failed on server', serverError);
-            // Continue despite server error
-            logDebug('Proceeding with local logout despite server error');
-          }
+          operations.push(
+            apiClient.post('/auth/logout')
+              .then(() => {
+                logDebug('Logout request successful');
+                return true;
+              })
+              .catch(serverError => {
+                logError('Logout request failed on server', serverError);
+                logDebug('Proceeding with local logout despite server error');
+                return false;
+              })
+          );
         } else {
           logDebug('No refresh token found, skipping server logout');
         }
+        
+        // Wait for all operations to complete
+        await Promise.all(operations);
+        logDebug('Logout process completed');
+        
       } catch (error) {
         logError('Unexpected error during logout process', error);
-      } finally {
-        // Always clear local auth data
-        try {
-          await clearAuthData();
-          logDebug('Local authentication data cleared');
-        } catch (clearError) {
-          logError('Failed to clear auth data', clearError);
-          // Attempt clearing individual items as fallback
-          try {
-            logDebug('Attempting fallback clear method');
-            const keys = [STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.REFRESH_TOKEN, STORAGE_KEYS.USER];
-            for (const key of keys) {
-              try {
-                await saveItem(key, '');
-                logDebug(`Cleared ${key}`);
-              } catch (e) {
-                logError(`Failed to clear ${key}`, e);
-              }
-            }
-          } catch (fallbackError) {
-            logError('Complete failure clearing auth data', fallbackError);
-          }
-        }
+        // Still try to clear data as a last resort
+        await clearLocalData();
       }
     });
   },
@@ -360,9 +385,14 @@ export const authApi = {
           role: userData.role,
         });
 
-        // Update stored user information
-        await saveItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-        logDebug('User profile saved to secure storage');
+        try {
+          // Update stored user information
+          await saveItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+          logDebug('User profile saved to secure storage');
+        } catch (storageError) {
+          logError('Failed to save user profile to storage', storageError);
+          // Continue anyway - don't fail the getCurrentUser request because of storage issues
+        }
 
         return userData;
       } catch (error) {

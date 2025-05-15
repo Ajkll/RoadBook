@@ -214,6 +214,21 @@ const processQueue = (error: any = null, newToken: string | null = null) => {
   requestsQueue = [];
 };
 
+// Global event emitter for auth events
+import { EventEmitter } from 'events';
+export const authEvents = new EventEmitter();
+
+// Create a custom event for token refresh failures
+// This allows components to listen for auth failures and respond accordingly
+export const createAuthFailureEvent = () => {
+  // Use EventEmitter instead of DOM events
+  authEvents.emit('auth:failure', { 
+    message: 'Authentication failed, please login again' 
+  });
+  
+  logger.warn('Auth failure event emitted');
+};
+
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
@@ -287,7 +302,11 @@ apiClient.interceptors.response.use(
                 isRefreshingToken = false;
                 
                 // Clean up auth data since the refresh token is likely invalid
-                clearAuthData();
+                clearAuthData()
+                  .then(() => {
+                    // Notify the app that authentication has failed
+                    createAuthFailureEvent();
+                  });
               });
           });
       });

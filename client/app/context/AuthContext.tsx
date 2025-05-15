@@ -1,5 +1,5 @@
 // client/app/context/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { User, LoginRequest, RegisterRequest } from '../types/auth.types';
 import { authApi } from '../services/api/auth.api';
 import {
@@ -10,6 +10,7 @@ import {
   STORAGE_KEYS,
 } from '../services/secureStorage';
 import { logger } from '../utils/logger';
+import { authEvents } from '../services/api/client';
 
 interface AuthContextType {
   user: User | null;
@@ -43,9 +44,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
   // Flag to bypass login for development purposes - DÉSACTIVÉ
   const bypassLogin = false; // Désactivé pour forcer l'authentification
+  
+  // Listen for auth failure events using EventEmitter
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      logger.warn('Auth failure event received in AuthContext');
+      if (isMounted.current) {
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        setUser(null);
+      }
+    };
+    
+    // Add event listener using EventEmitter
+    authEvents.on('auth:failure', handleAuthFailure);
+    
+    return () => {
+      isMounted.current = false;
+      // Remove event listener on cleanup
+      authEvents.off('auth:failure', handleAuthFailure);
+    };
+  }, []);
 
   // Effet pour charger l'utilisateur depuis le stockage sécurisé au démarrage
   useEffect(() => {
@@ -228,8 +250,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Refreshing user profile data');
 
       const updatedUser = await authApi.getCurrentUser();
+      
+      // Update the user state regardless of storage success
       setUser(updatedUser);
       console.log('User data refreshed successfully');
+      return updatedUser;
     } catch (err) {
       logger.error('Error refreshing user data:', err);
       
@@ -241,8 +266,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
         logger.warn('Token expired while refreshing user data, logging out');
         setError('Votre session a expiré. Veuillez vous reconnecter.');
-        await logout();
+        
+        try {
+          // Attempt graceful logout
+          await logout();
+        } catch (logoutError) {
+          logger.error('Error during auto-logout:', logoutError);
+          // Force state reset as a last resort
+          setUser(null);
+          await clearAuthData().catch(e => logger.error('Failed to clear auth data:', e));
+        }
       }
+      
+      // Rethrow the error so callers can handle it
+      throw err;
     } finally {
       setIsLoading(false);
     }
