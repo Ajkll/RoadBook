@@ -9,12 +9,12 @@ import {
   User,
 } from '../../types/auth.types';
 import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
-import apiClient, { API_URL, TUNNEL_MODE } from './client'; // Import our central API client and configuration
+import apiClient, { API_URL, API_CONFIG } from './client'; // Import our central API client and configuration
 import { logger } from '../../utils/logger';
 
 // Log API configuration for debugging
 console.log('🔄 AUTH API: Using URL from central API client:', API_URL);
-console.log('🔄 AUTH API: Tunnel mode from client:', TUNNEL_MODE ? 'Active' : 'Inactive');
+console.log('🔄 AUTH API: Using production API:', API_CONFIG.USING_PRODUCTION ? 'Yes' : 'No');
 
 // Debug flag - easily toggle detailed logging
 const DEBUG = true;
@@ -74,7 +74,7 @@ const logError = (message: string, error: unknown) => {
 const logApiConfig = () => {
   logDebug(`Current API configuration:`, {
     url: API_URL,
-    tunnelMode: TUNNEL_MODE,
+    usingProduction: API_CONFIG.USING_PRODUCTION,
     baseURL: apiClient.defaults.baseURL,
     platform: Platform.OS
   });
@@ -183,7 +183,7 @@ export const authApi = {
     // Log API configuration using our centralized settings
     const connectionInfo = {
       apiUrl: API_URL,
-      tunnelMode: TUNNEL_MODE,
+      usingProduction: API_CONFIG.USING_PRODUCTION,
       platform: Platform.OS,
       hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A'
     };
@@ -338,7 +338,7 @@ export const authApi = {
           details: {
             serverResponse: response.data,
             apiUrl: API_URL,
-            tunnelMode: TUNNEL_MODE,
+            usingProduction: API_CONFIG.USING_PRODUCTION,
             hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A',
             platform: Platform.OS,
             timestamp: new Date().toISOString(),
@@ -350,7 +350,7 @@ export const authApi = {
           details: {
             message: error.message,
             apiUrl: API_URL,
-            tunnelMode: TUNNEL_MODE,
+            usingProduction: API_CONFIG.USING_PRODUCTION,
             hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A',
             platform: Platform.OS,
             networkError: !error.response,

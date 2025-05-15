@@ -43,13 +43,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Flag to bypass login for development purposes
-  const bypassLogin = process.env.NODE_ENV === 'development'; // Bypass login only in development mode
+  // Flag to bypass login for development purposes - DÉSACTIVÉ
+  const bypassLogin = false; // Désactivé pour forcer l'authentification
 
   // Effet pour charger l'utilisateur depuis le stockage sécurisé au démarrage
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
+        // Bypass désactivé pour forcer l'authentification réelle
+        /*
         if (bypassLogin) {
           console.log('Bypassing login for development...');
           const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -57,6 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setIsLoading(false);
           return;
         }
+        */
 
         console.log('Loading user data from secure storage...');
         const { user, accessToken } = await getAuthData();
@@ -88,6 +91,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
+      // Bypass désactivé pour forcer l'authentification réelle
+      /*
       if (bypassLogin) {
         console.log('Bypassing login for development...');
         const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -95,6 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
         return;
       }
+      */
 
       console.log('Sending login request:', credentials.email);
 

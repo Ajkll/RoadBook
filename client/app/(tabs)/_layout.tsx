@@ -22,7 +22,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />
       <Tabs.Screen name="explorer" options={{ title: 'Explorer' }} />
       <Tabs.Screen name="my-routes" options={{ title: 'Mes trajets' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen
         name="api-test"
         options={{
