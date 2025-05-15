@@ -42,11 +42,11 @@ const getLogLevel = (): LogLevel => {
 const currentLogLevel = getLogLevel();
 
 // Création du logger approprié selon l'environnement
-let logger: any;
+let loggerInstance: any;
 
 if (isVercel) {
   // Simple console-based logger for Vercel
-  logger = {
+  loggerInstance = {
     error: (message: string, ...meta: any[]): void => {
       if (currentLogLevel >= LogLevel.ERROR) {
         const metaString = meta.length > 0 ? ` ${JSON.stringify(meta)}` : '';
@@ -163,7 +163,7 @@ if (isVercel) {
   }
 
   // Wrapper pour uniformiser l'interface
-  logger = {
+  loggerInstance = {
     error: (message: string, ...meta: any[]) => {
       const metaString = meta.length > 0 ? ` ${JSON.stringify(meta)}` : '';
       winstonLogger.error(`${message}${metaString}`);
@@ -192,4 +192,7 @@ if (isVercel) {
 }
 
 // Exporter le logger sélectionné
+const logger = loggerInstance;
 export default logger;
+// Export nommé pour la compatibilité avec les imports existants
+export { logger };

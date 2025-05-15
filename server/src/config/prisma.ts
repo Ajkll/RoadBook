@@ -17,11 +17,32 @@
 
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-import { prismaManager } from './prisma-manager';
-import { logger } from '../utils/logger';
+import prismaManager from './prisma-manager';
+import logger from '../utils/logger';
 
 // Charger les variables d'environnement depuis .env
 dotenv.config();
+
+// Déclarer variable globale pour usage serverless
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
+/**
+ * Initialisation du client Prisma avec la configuration appropriée.
+ * En développement, tous les types de logs sont affichés pour faciliter le débogage.
+ * En production ou test, seules les erreurs sont affichées pour éviter de surcharger les logs.
+ */
+const initialPrismaClient = global.prisma || new PrismaClient({
+  log: process.env.NODE_ENV === "development"
+    ? ['query', 'info', 'warn', 'error']
+    : ['error'],
+});
+
+// En développement, stocke l'instance dans global pour la réutilisation entre hot-reloads
+if (process.env.NODE_ENV !== 'production') {
+  global.prisma = initialPrismaClient;
+}
 
 /**
  * Utilise le gestionnaire de connexion Prisma amélioré pour prévenir les erreurs
@@ -39,21 +60,6 @@ export const getPrismaClient = async (): Promise<PrismaClient> => {
 };
 
 /**
- * Pour compatibilité avec le code existant, nous exportons également
- * une fonction qui peut être utilisée sans await dans les contextes
- * où la connexion devrait déjà être établie.
- *
- * ATTENTION: Préférer l'utilisation de getPrismaClient() ou prismaManager.executeWithRetry()
- * pour une meilleure gestion des erreurs.
- */
-export const prisma = {
-  async $transaction<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
-    const client = await prismaManager.getClient();
-    return client.$transaction(callback);
-  }
-} as unknown as PrismaClient;
-
-/**
  * Exécute une opération de base de données avec gestion des erreurs et reconnexion
  * Cette fonction est recommandée pour toutes les opérations critiques
  */
@@ -63,5 +69,16 @@ export async function executeDbOperation<T>(
   return prismaManager.executeWithRetry(operation);
 }
 
+/**
+ * Pour compatibilité avec le code existant, nous exportons le client 
+ * Prisma standard qui sera utilisé pour les opérations de base de données.
+ * 
+ * IMPORTANT: Nous utilisons le client initial plutôt que le prismaManager
+ * pour garantir la compatibilité avec le code existant, tout en bénéficiant
+ * des fonctionnalités de gestion de connexion améliorées pour les nouvelles
+ * implémentations.
+ */
+export const prisma = initialPrismaClient;
+
 // Exporter à la fois comme export nommé et export par défaut pour la compatibilité
-export default { getPrismaClient, prisma, executeDbOperation };
+export default prisma;

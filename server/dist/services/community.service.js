@@ -1,7 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchPosts = exports.getPostsByUser = exports.hasUserLikedPost = exports.getPostLikes = exports.unlikePost = exports.likePost = exports.deleteComment = exports.addComment = exports.deletePost = exports.updatePost = exports.getPostById = exports.getPosts = exports.createPost = void 0;
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 // Rate limiter state
 const rateLimits = {};
 /**
@@ -54,7 +57,7 @@ const filterInappropriateContent = (content) => {
  * @param postId ID of the post
  */
 const canAccessPost = async (userId, postId) => {
-    const post = await prisma_1.prisma.post.findUnique({
+    const post = await prisma_1.default.post.findUnique({
         where: { id: postId },
         include: {
             author: {
@@ -92,7 +95,7 @@ const canAccessPost = async (userId, postId) => {
     if (isApprenticeOfAuthor)
         return true;
     // Check user role - admins can see all
-    const user = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma_1.default.user.findUnique({ where: { id: userId } });
     if ((user === null || user === void 0 ? void 0 : user.role) === 'ADMIN')
         return true;
     // Default to restricted access
@@ -109,7 +112,7 @@ const createPost = async (authorId, data) => {
     // Filter content
     const filteredContent = filterInappropriateContent(data.content);
     const filteredTitle = filterInappropriateContent(data.title);
-    return prisma_1.prisma.post.create({
+    return prisma_1.default.post.create({
         data: {
             authorId,
             title: filteredTitle,
@@ -129,7 +132,7 @@ const getPosts = async (params = {}, userId) => {
     const whereClause = {};
     // If userId provided, filter posts based on relationships
     if (userId) {
-        const user = await prisma_1.prisma.user.findUnique({
+        const user = await prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 guidedRoadbooks: { select: { apprenticeId: true } },
@@ -150,9 +153,9 @@ const getPosts = async (params = {}, userId) => {
         }
     }
     // Count total posts
-    const total = await prisma_1.prisma.post.count({ where: whereClause });
+    const total = await prisma_1.default.post.count({ where: whereClause });
     // Get posts with pagination
-    const posts = await prisma_1.prisma.post.findMany({
+    const posts = await prisma_1.default.post.findMany({
         where: whereClause,
         skip,
         take: limit,
@@ -189,7 +192,7 @@ const getPostById = async (postId, userId) => {
     if (userId && !(await canAccessPost(userId, postId))) {
         throw new Error('You do not have permission to view this post');
     }
-    return prisma_1.prisma.post.findUnique({
+    return prisma_1.default.post.findUnique({
         where: { id: postId },
         include: {
             author: {
@@ -229,7 +232,7 @@ exports.getPostById = getPostById;
  */
 const updatePost = async (postId, authorId, data) => {
     // Check if post exists and belongs to user
-    const existingPost = await prisma_1.prisma.post.findUnique({
+    const existingPost = await prisma_1.default.post.findUnique({
         where: { id: postId },
         select: { authorId: true },
     });
@@ -250,7 +253,7 @@ const updatePost = async (postId, authorId, data) => {
     if (data.mediaUrls) {
         updateData.mediaUrls = data.mediaUrls;
     }
-    return prisma_1.prisma.post.update({
+    return prisma_1.default.post.update({
         where: { id: postId },
         data: updateData,
     });
@@ -261,7 +264,7 @@ exports.updatePost = updatePost;
  */
 const deletePost = async (postId, userId) => {
     // Check if post exists and user has permission
-    const post = await prisma_1.prisma.post.findUnique({
+    const post = await prisma_1.default.post.findUnique({
         where: { id: postId },
         select: { authorId: true },
     });
@@ -269,7 +272,7 @@ const deletePost = async (postId, userId) => {
         throw new Error('Post not found');
     }
     // Allow deletion by post author or admin
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -277,10 +280,10 @@ const deletePost = async (postId, userId) => {
         throw new Error('You do not have permission to delete this post');
     }
     // Delete likes, comments, and post in a transaction
-    await prisma_1.prisma.$transaction([
-        prisma_1.prisma.like.deleteMany({ where: { postId } }),
-        prisma_1.prisma.comment.deleteMany({ where: { postId } }),
-        prisma_1.prisma.post.delete({ where: { id: postId } }),
+    await prisma_1.default.$transaction([
+        prisma_1.default.like.deleteMany({ where: { postId } }),
+        prisma_1.default.comment.deleteMany({ where: { postId } }),
+        prisma_1.default.post.delete({ where: { id: postId } }),
     ]);
     return true;
 };
@@ -300,7 +303,7 @@ const addComment = async (postId, authorId, content) => {
     // Filter content
     const filteredContent = filterInappropriateContent(content);
     // Create comment
-    const comment = await prisma_1.prisma.comment.create({
+    const comment = await prisma_1.default.comment.create({
         data: {
             content: filteredContent,
             authorId,
@@ -317,12 +320,12 @@ const addComment = async (postId, authorId, content) => {
         },
     });
     // Create notification for post author
-    const post = await prisma_1.prisma.post.findUnique({
+    const post = await prisma_1.default.post.findUnique({
         where: { id: postId },
         select: { authorId: true, title: true },
     });
     if (post && post.authorId !== authorId) {
-        await prisma_1.prisma.notification.create({
+        await prisma_1.default.notification.create({
             data: {
                 userId: post.authorId,
                 type: 'COMMENT_RECEIVED',
@@ -341,7 +344,7 @@ exports.addComment = addComment;
 const deleteComment = async (commentId, userId) => {
     var _a;
     // Check if comment exists and user has permission
-    const comment = await prisma_1.prisma.comment.findUnique({
+    const comment = await prisma_1.default.comment.findUnique({
         where: { id: commentId },
         include: {
             post: {
@@ -355,7 +358,7 @@ const deleteComment = async (commentId, userId) => {
         throw new Error('Comment not found');
     }
     // Allow deletion by comment author, post author, or admin
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -364,7 +367,7 @@ const deleteComment = async (commentId, userId) => {
         (user === null || user === void 0 ? void 0 : user.role) !== 'ADMIN') {
         throw new Error('You do not have permission to delete this comment');
     }
-    await prisma_1.prisma.comment.delete({ where: { id: commentId } });
+    await prisma_1.default.comment.delete({ where: { id: commentId } });
     return true;
 };
 exports.deleteComment = deleteComment;
@@ -381,7 +384,7 @@ const likePost = async (postId, userId) => {
         throw new Error('You do not have permission to like this post');
     }
     // Check if already liked
-    const existingLike = await prisma_1.prisma.like.findFirst({
+    const existingLike = await prisma_1.default.like.findFirst({
         where: {
             postId,
             userId,
@@ -391,7 +394,7 @@ const likePost = async (postId, userId) => {
         throw new Error('You have already liked this post');
     }
     // Create like
-    return prisma_1.prisma.like.create({
+    return prisma_1.default.like.create({
         data: {
             postId,
             userId,
@@ -404,7 +407,7 @@ exports.likePost = likePost;
  */
 const unlikePost = async (postId, userId) => {
     // Delete like
-    const result = await prisma_1.prisma.like.deleteMany({
+    const result = await prisma_1.default.like.deleteMany({
         where: {
             postId,
             userId,
@@ -420,9 +423,9 @@ const getPostLikes = async (postId, params = {}) => {
     const { page = 1, limit = 10 } = params;
     const skip = (page - 1) * limit;
     // Count total likes
-    const total = await prisma_1.prisma.like.count({ where: { postId } });
+    const total = await prisma_1.default.like.count({ where: { postId } });
     // Get likes with user info
-    const likes = await prisma_1.prisma.like.findMany({
+    const likes = await prisma_1.default.like.findMany({
         where: { postId },
         skip,
         take: limit,
@@ -449,7 +452,7 @@ exports.getPostLikes = getPostLikes;
  * Check if user has liked a post
  */
 const hasUserLikedPost = async (postId, userId) => {
-    const like = await prisma_1.prisma.like.findFirst({
+    const like = await prisma_1.default.like.findFirst({
         where: {
             postId,
             userId,
@@ -465,9 +468,9 @@ const getPostsByUser = async (authorId, params = {}) => {
     const { page = 1, limit = 10, sort = 'createdAt', order = 'desc' } = params;
     const skip = (page - 1) * limit;
     // Count total posts by user
-    const total = await prisma_1.prisma.post.count({ where: { authorId } });
+    const total = await prisma_1.default.post.count({ where: { authorId } });
     // Get posts with pagination
-    const posts = await prisma_1.prisma.post.findMany({
+    const posts = await prisma_1.default.post.findMany({
         where: { authorId },
         skip,
         take: limit,
@@ -511,7 +514,7 @@ const searchPosts = async (query, params = {}, userId) => {
     };
     // If userId provided, filter posts based on relationships
     if (userId) {
-        const user = await prisma_1.prisma.user.findUnique({
+        const user = await prisma_1.default.user.findUnique({
             where: { id: userId },
             include: {
                 guidedRoadbooks: { select: { apprenticeId: true } },
@@ -529,9 +532,9 @@ const searchPosts = async (query, params = {}, userId) => {
         }
     }
     // Count total matching posts
-    const total = await prisma_1.prisma.post.count({ where: whereClause });
+    const total = await prisma_1.default.post.count({ where: whereClause });
     // Get posts with pagination
-    const posts = await prisma_1.prisma.post.findMany({
+    const posts = await prisma_1.default.post.findMany({
         where: whereClause,
         skip,
         take: limit,

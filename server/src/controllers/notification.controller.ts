@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as notificationService from '../services/notification.service';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 import logger from '../utils/logger';
 
 /**

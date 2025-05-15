@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRecentActivity = exports.getRoadbookStatistics = exports.getApprenticeStatistics = exports.getCurrentUserDashboard = void 0;
 const statistics = __importStar(require("../utils/statistics"));
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const logger_1 = __importDefault(require("../utils/logger"));
 /**
  * Get user dashboard - Récupérer le tableau de bord d'un utilisateur
@@ -75,7 +75,7 @@ const getCurrentUserDashboard = async (req, res) => {
             apprenticeStats = await statistics.calculateApprenticeStatistics(req.user.id);
         }
         // Récupérer les roadbooks de l'utilisateur
-        const roadbooks = await prisma_1.prisma.roadBook.findMany({
+        const roadbooks = await prisma_1.default.roadBook.findMany({
             where: {
                 OR: [
                     { apprenticeId: req.user.id },
@@ -111,7 +111,7 @@ const getCurrentUserDashboard = async (req, res) => {
             take: 5 // Limiter aux 5 plus récents
         });
         // Récupérer les sessions récentes de l'utilisateur
-        const sessions = await prisma_1.prisma.session.findMany({
+        const sessions = await prisma_1.default.session.findMany({
             where: {
                 OR: [
                     { apprenticeId: req.user.id },
@@ -147,7 +147,7 @@ const getCurrentUserDashboard = async (req, res) => {
         // Si c'est un guide, récupérer les sessions en attente de validation
         let pendingValidations = [];
         if (['GUIDE', 'INSTRUCTOR', 'ADMIN'].includes(req.user.role || '')) {
-            pendingValidations = await prisma_1.prisma.session.findMany({
+            pendingValidations = await prisma_1.default.session.findMany({
                 where: {
                     roadbook: {
                         guideId: req.user.id
@@ -178,7 +178,7 @@ const getCurrentUserDashboard = async (req, res) => {
             });
         }
         // Récupérer les notifications non lues
-        const notifications = await prisma_1.prisma.notification.findMany({
+        const notifications = await prisma_1.default.notification.findMany({
             where: {
                 userId: req.user.id,
                 isRead: false
@@ -242,7 +242,7 @@ const getApprenticeStatistics = async (req, res) => {
         }
         // Si c'est un guide, vérifier qu'il est bien le guide de cet apprenti
         if (req.user.role === 'GUIDE') {
-            const hasAccess = await prisma_1.prisma.roadBook.findFirst({
+            const hasAccess = await prisma_1.default.roadBook.findFirst({
                 where: {
                     apprenticeId: id,
                     guideId: req.user.id
@@ -297,7 +297,7 @@ const getRoadbookStatistics = async (req, res) => {
         }
         const { id } = req.params;
         // Vérifier les permissions
-        const roadbook = await prisma_1.prisma.roadBook.findUnique({
+        const roadbook = await prisma_1.default.roadBook.findUnique({
             where: { id },
             select: {
                 apprenticeId: true,
@@ -366,7 +366,7 @@ const getRecentActivity = async (req, res) => {
         const offset = Number(req.query.offset) || 0;
         logger_1.default.debug(`Getting recent activity for user: ${req.user.id}, limit: ${limit}, offset: ${offset}`);
         // Récupérer les sessions récentes
-        const recentSessions = await prisma_1.prisma.session.findMany({
+        const recentSessions = await prisma_1.default.session.findMany({
             where: {
                 OR: [
                     { apprenticeId: req.user.id },
@@ -392,7 +392,7 @@ const getRecentActivity = async (req, res) => {
             skip: offset
         });
         // Récupérer les commentaires récents
-        const recentComments = await prisma_1.prisma.comment.findMany({
+        const recentComments = await prisma_1.default.comment.findMany({
             where: {
                 OR: [
                     { authorId: req.user.id },
@@ -426,7 +426,7 @@ const getRecentActivity = async (req, res) => {
         // Récupérer les validations récentes (si l'utilisateur est guide/instructeur)
         let recentValidations = [];
         if (['GUIDE', 'INSTRUCTOR', 'ADMIN'].includes(req.user.role || '')) {
-            recentValidations = await prisma_1.prisma.session.findMany({
+            recentValidations = await prisma_1.default.session.findMany({
                 where: { validatorId: req.user.id },
                 select: {
                     id: true,

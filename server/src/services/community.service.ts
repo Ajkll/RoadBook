@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient, Post, Comment, Like } from '@prisma/client';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 
 // Pagination type
 type PaginationParams = {

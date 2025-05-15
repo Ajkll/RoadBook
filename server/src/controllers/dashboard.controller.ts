@@ -13,7 +13,7 @@
 
 import { Request, Response } from "express";
 import * as statistics from "../utils/statistics";
-import { prisma } from "../config/prisma";
+import prisma from "../config/prisma";
 import logger from "../utils/logger";
 
 /**

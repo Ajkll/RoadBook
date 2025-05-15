@@ -1,13 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBadgeLeaderboard = exports.getBadgesByCategory = exports.deleteBadge = exports.updateBadge = exports.createBadge = exports.checkAndAwardBadges = exports.revokeBadge = exports.awardBadge = exports.getUserBadges = exports.getBadgeById = exports.getAllBadges = void 0;
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const badge_criteria_1 = require("../utils/badge-criteria");
 /**
  * Get all badges in the system
  */
 const getAllBadges = async () => {
-    return prisma_1.prisma.badge.findMany({
+    return prisma_1.default.badge.findMany({
         include: {
             _count: {
                 select: {
@@ -25,7 +28,7 @@ exports.getAllBadges = getAllBadges;
  * Get a single badge by ID
  */
 const getBadgeById = async (badgeId) => {
-    return prisma_1.prisma.badge.findUnique({
+    return prisma_1.default.badge.findUnique({
         where: { id: badgeId },
     });
 };
@@ -34,7 +37,7 @@ exports.getBadgeById = getBadgeById;
  * Get badges for a specific user
  */
 const getUserBadges = async (userId) => {
-    return prisma_1.prisma.userBadge.findMany({
+    return prisma_1.default.userBadge.findMany({
         where: { userId },
         include: {
             badge: true,
@@ -50,7 +53,7 @@ exports.getUserBadges = getUserBadges;
  */
 const awardBadge = async (userId, badgeId) => {
     // Check if user already has this badge
-    const existingBadge = await prisma_1.prisma.userBadge.findFirst({
+    const existingBadge = await prisma_1.default.userBadge.findFirst({
         where: {
             userId,
             badgeId,
@@ -60,7 +63,7 @@ const awardBadge = async (userId, badgeId) => {
         throw new Error('User already has this badge');
     }
     // Award the badge
-    const userBadge = await prisma_1.prisma.userBadge.create({
+    const userBadge = await prisma_1.default.userBadge.create({
         data: {
             userId,
             badgeId,
@@ -70,7 +73,7 @@ const awardBadge = async (userId, badgeId) => {
         },
     });
     // Create a notification for the user
-    await prisma_1.prisma.notification.create({
+    await prisma_1.default.notification.create({
         data: {
             userId,
             type: 'BADGE_EARNED',
@@ -86,7 +89,7 @@ exports.awardBadge = awardBadge;
  * Revoke a badge from a user
  */
 const revokeBadge = async (userId, badgeId) => {
-    await prisma_1.prisma.userBadge.deleteMany({
+    await prisma_1.default.userBadge.deleteMany({
         where: {
             userId,
             badgeId,
@@ -100,7 +103,7 @@ exports.revokeBadge = revokeBadge;
  */
 const checkAndAwardBadges = async (userId) => {
     // Get user data and current badges
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         include: {
             receivedBadges: {
@@ -114,7 +117,7 @@ const checkAndAwardBadges = async (userId) => {
         throw new Error('User not found');
     }
     // Get all badges
-    const allBadges = await prisma_1.prisma.badge.findMany();
+    const allBadges = await prisma_1.default.badge.findMany();
     // Get existing badge IDs
     const existingBadgeIds = user.receivedBadges.map((ub) => ub.badgeId);
     // Check each badge's criteria
@@ -148,7 +151,7 @@ exports.checkAndAwardBadges = checkAndAwardBadges;
  * Create a new badge (admin only)
  */
 const createBadge = async (badgeData) => {
-    return prisma_1.prisma.badge.create({
+    return prisma_1.default.badge.create({
         data: badgeData,
     });
 };
@@ -157,7 +160,7 @@ exports.createBadge = createBadge;
  * Update a badge (admin only)
  */
 const updateBadge = async (badgeId, badgeData) => {
-    return prisma_1.prisma.badge.update({
+    return prisma_1.default.badge.update({
         where: { id: badgeId },
         data: badgeData,
     });
@@ -168,10 +171,10 @@ exports.updateBadge = updateBadge;
  * This will also remove the badge from all users who have it
  */
 const deleteBadge = async (badgeId) => {
-    await prisma_1.prisma.userBadge.deleteMany({
+    await prisma_1.default.userBadge.deleteMany({
         where: { badgeId },
     });
-    await prisma_1.prisma.badge.delete({
+    await prisma_1.default.badge.delete({
         where: { id: badgeId },
     });
 };
@@ -180,7 +183,7 @@ exports.deleteBadge = deleteBadge;
  * Get badges by category
  */
 const getBadgesByCategory = async (category) => {
-    return prisma_1.prisma.badge.findMany({
+    return prisma_1.default.badge.findMany({
         where: { category },
         orderBy: {
             name: 'asc',
@@ -192,7 +195,7 @@ exports.getBadgesByCategory = getBadgesByCategory;
  * Get leaderboard of users with most badges
  */
 const getBadgeLeaderboard = async (limit = 10) => {
-    const leaderboard = await prisma_1.prisma.user.findMany({
+    const leaderboard = await prisma_1.default.user.findMany({
         select: {
             id: true,
             displayName: true,

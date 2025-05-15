@@ -2,7 +2,7 @@ import { Post, PrismaClient, Comment, Like } from '@prisma/client';
 import { DeepMockProxy, mockDeep, mockReset } from 'jest-mock-extended';
 import * as communityService from '../services/community.service';
 import { mockPrisma } from './mocks/prisma.mock';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 
 jest.mock('../config/prisma', () => ({
   prisma: mockPrisma,

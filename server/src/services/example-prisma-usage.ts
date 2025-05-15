@@ -10,8 +10,9 @@
  */
 
 import { User } from '@prisma/client';
-import { prismaManager, getPrismaClient, executeDbOperation } from '../config/prisma';
-import { logger } from '../utils/logger';
+import prisma, { getPrismaClient, executeDbOperation } from '../config/prisma';
+import prismaManager from '../config/prisma-manager';
+import logger from '../utils/logger';
 
 /**
  * Service d'exemple pour démontrer les différentes approches d'utilisation
