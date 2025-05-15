@@ -240,15 +240,52 @@ export const authApi = {
 
     return measureRequestTime('Logout request', async () => {
       try {
-        await apiClient.post('/auth/logout');
-        logDebug('Logout request successful');
+        // Get the refresh token directly in the function
+        let refreshToken = null;
+        try {
+          refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        } catch (tokenError) {
+          logDebug('Error retrieving refresh token - may already be logged out');
+        }
+
+        // Only attempt server logout if we have a token
+        if (refreshToken) {
+          try {
+            await apiClient.post('/auth/logout');
+            logDebug('Logout request successful');
+          } catch (serverError) {
+            logError('Logout request failed on server', serverError);
+            // Continue despite server error
+            logDebug('Proceeding with local logout despite server error');
+          }
+        } else {
+          logDebug('No refresh token found, skipping server logout');
+        }
       } catch (error) {
-        logError('Logout request failed', error);
-        // Continue with local logout regardless of server error
-        logDebug('Proceeding with local logout despite server error');
+        logError('Unexpected error during logout process', error);
       } finally {
-        await clearAuthData();
-        logDebug('Local authentication data cleared');
+        // Always clear local auth data
+        try {
+          await clearAuthData();
+          logDebug('Local authentication data cleared');
+        } catch (clearError) {
+          logError('Failed to clear auth data', clearError);
+          // Attempt clearing individual items as fallback
+          try {
+            logDebug('Attempting fallback clear method');
+            const keys = [STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.REFRESH_TOKEN, STORAGE_KEYS.USER];
+            for (const key of keys) {
+              try {
+                await saveItem(key, '');
+                logDebug(`Cleared ${key}`);
+              } catch (e) {
+                logError(`Failed to clear ${key}`, e);
+              }
+            }
+          } catch (fallbackError) {
+            logError('Complete failure clearing auth data', fallbackError);
+          }
+        }
       }
     });
   },
@@ -304,8 +341,18 @@ export const authApi = {
 
         const response = await apiClient.get('/users/me');
         
+        // Check if we have a valid response
+        if (!response || !response.data) {
+          throw new Error('Réponse du serveur vide ou invalide');
+        }
+        
         // Use utility function to extract data regardless of response format
         const userData = extractApiData<User>(response);
+
+        // Validate user data
+        if (!userData || !userData.id) {
+          throw new Error('Données utilisateur manquantes ou invalides');
+        }
 
         logDebug('User profile fetched successfully', {
           id: userData.id,
@@ -319,13 +366,28 @@ export const authApi = {
 
         return userData;
       } catch (error) {
-        if (error.response?.status === 401) {
+        // Check if it's a token error
+        if (error.response?.status === 401 || error.message?.includes('expirée')) {
           throw new Error('Session expirée. Veuillez vous reconnecter.');
-        } else if (!error.response) {
+        } 
+        // Check if it's a network error
+        else if (!error.response && error.message?.includes('network')) {
           throw new Error(
             'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
           );
-        } else {
+        }
+        // Check if response exists but has an unexpected format
+        else if (error.response?.data && error.response.status !== 200) {
+          const errorMessage = error.response.data.message || 'Erreur serveur';
+          throw new Error(`Erreur du serveur: ${errorMessage}`);
+        }
+        // Default error when response data format is unexpected
+        else if (error.message?.includes('manquantes') || error.message?.includes('invalide')) {
+          throw error; // Rethrow our validation errors
+        }
+        // Default fallback error
+        else {
+          console.error('Unexpected error in getCurrentUser:', error);
           throw new Error('Impossible de récupérer votre profil. Veuillez réessayer plus tard.');
         }
       }

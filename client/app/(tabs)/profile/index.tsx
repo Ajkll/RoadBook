@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -37,7 +38,23 @@ export default function ProfileScreen() {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
+      logger.info('Refreshing user data in profile page');
+      
+      // Add more debug information
+      if (user) {
+        logger.info('Current user before refresh:', {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          displayName: user.displayName
+        });
+      } else {
+        logger.warn('No user data available before refresh');
+      }
+      
       await refreshUserData();
+      
+      logger.info('User data refreshed successfully');
     } catch (error) {
       logger.error('Erreur lors du rafraîchissement du profil', error);
       Alert.alert(
@@ -82,12 +99,58 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, color: colors.text }}>Chargement du profil...</Text>
+      </View>
+    );
+  }
+  
+  // Vérifier si l'utilisateur est bien chargé
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.error, marginBottom: 20, fontWeight: 'bold' }}>
+          Utilisateur non disponible
+        </Text>
+        <Text style={{ marginBottom: 20, color: colors.text }}>
+          Impossible de charger les données utilisateur. Veuillez vous reconnecter.
+        </Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          onPress={handleRefresh}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Réessayer</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.logoutButton, { backgroundColor: colors.card, marginTop: 16 }]}
+          onPress={logout}
+        >
+          <Ionicons name="log-out-outline" size={20} color={colors.text} />
+          <Text style={[styles.logoutButtonText, { color: colors.text }]}>Déconnexion</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
+    >
+      {refreshing && (
+        <View style={styles.refreshingBanner}>
+          <ActivityIndicator size="small" color={colors.background} />
+          <Text style={styles.refreshingText}>Actualisation...</Text>
+        </View>
+      )}
+      
       {/* Section de l'en-tête du profil */}
       <View style={styles.profileHeader}>
         <TouchableOpacity 
@@ -247,6 +310,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshingBanner: {
+    backgroundColor: '#3498db',
+    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  refreshingText: {
+    color: 'white',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   profileHeader: {
     padding: 20,
