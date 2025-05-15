@@ -146,7 +146,7 @@ console.log('🔧 Platform:', Platform.OS);
 // Créer une instance axios configurée
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // 15 secondes
+  timeout: 30000, // 30 secondes - Augmenté pour donner plus de temps pour les reconnexions
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -242,6 +242,33 @@ apiClient.interceptors.response.use(
 
     // Get the original request config
     const originalRequest = error.config as AxiosRequestConfig;
+    
+    // Retry logic for 500 server errors (potentially database connection issues)
+    // Only retry if it's a 500 error, has not exceeded retry limit, and is not a token refresh
+    if (
+      error.response?.status === 500 && 
+      !originalRequest._retryCount && 
+      originalRequest.url && 
+      !originalRequest.url.includes('refresh-token')
+    ) {
+      // Initialize or increment retry count
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      
+      // Maximum retry attempts
+      const MAX_RETRIES = 2;
+      
+      // If we're under the retry limit
+      if (originalRequest._retryCount <= MAX_RETRIES) {
+        logger.info(`Retrying request due to 500 error (attempt ${originalRequest._retryCount}/${MAX_RETRIES})`);
+        
+        // Wait with exponential backoff
+        const delay = Math.pow(2, originalRequest._retryCount) * 1000; // 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Retry the request
+        return axios(originalRequest);
+      }
+    }
     
     // Check if the error is due to an expired token (status 401)
     // Also make sure we're not already trying to refresh the token and this isn't a token refresh request
@@ -364,7 +391,7 @@ export const testApiConnection = async () => {
     console.log('🔍 Environment:', API_CONFIG.ENVIRONMENT);
 
     const response = await axios.get(`${API_URL}/health`, {
-      timeout: 5000,
+      timeout: 10000, // 10 secondes pour le test
       headers: {
         Accept: 'application/json',
         'X-Client-Platform': Platform.OS,
@@ -381,17 +408,45 @@ export const testApiConnection = async () => {
       environment: API_CONFIG.ENVIRONMENT,
       platform: Platform.OS,
       hostUri: Constants.expoConfig?.hostUri || 'N/A',
+      connectionTime: `${Date.now()}`,
     };
   } catch (error) {
     logger.error('❌ API connection failed:', error);
+    
+    // Déterminer le type d'erreur pour un diagnostic plus précis
+    let errorType = 'unknown';
+    let errorDetails = {};
+    
+    if (error.code === 'ECONNABORTED') {
+      errorType = 'timeout';
+      errorDetails = { timeoutValue: '10000ms' };
+    } else if (!error.response) {
+      errorType = 'network';
+      errorDetails = { hasConnection: navigator.onLine };
+    } else if (error.response?.status >= 500) {
+      errorType = 'server';
+      errorDetails = { 
+        status: error.response.status,
+        serverError: error.response.data
+      };
+    } else {
+      errorType = 'client';
+      errorDetails = { 
+        status: error.response?.status,
+        message: error.message
+      };
+    }
+    
     return {
       success: false,
       message: error.message,
-      error: error,
+      errorType,
+      errorDetails,
       apiUrl: API_URL,
       environment: API_CONFIG.ENVIRONMENT,
       platform: Platform.OS,
       hostUri: Constants.expoConfig?.hostUri || 'N/A',
+      connectionTime: `${Date.now()}`,
     };
   }
 };
