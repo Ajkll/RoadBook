@@ -1,7 +1,7 @@
 // client/app/services/api/client.ts
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { Platform } from 'react-native';
-import { getItem, STORAGE_KEYS } from '../secureStorage';
+import { getItem, saveItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
 import Constants from 'expo-constants';
 import { logger } from '../../utils/logger';
 
@@ -186,6 +186,34 @@ apiClient.interceptors.request.use(
 
 // ===== INTERCEPTEURS DE RÉPONSE =====
 // Gérer les erreurs et les réponses
+
+// Variable to track if a token refresh is in progress
+let isRefreshingToken = false;
+// Queue of requests to retry after token refresh
+let requestsQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (error: unknown) => void;
+  config: any;
+}> = [];
+
+// Process requests queue with new token
+const processQueue = (error: any = null, newToken: string | null = null) => {
+  requestsQueue.forEach(({ resolve, reject, config }) => {
+    if (error) {
+      reject(error);
+    } else {
+      // Update the Authorization header with the new token
+      if (newToken) {
+        config.headers.Authorization = `Bearer ${newToken}`;
+      }
+      // Retry the request with the updated config
+      resolve(axios(config));
+    }
+  });
+  // Clear the queue
+  requestsQueue = [];
+};
+
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
@@ -196,6 +224,74 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     logger.error('Response interceptor error:', error.message);
+
+    // Get the original request config
+    const originalRequest = error.config as AxiosRequestConfig;
+    
+    // Check if the error is due to an expired token (status 401)
+    // Also make sure we're not already trying to refresh the token and this isn't a token refresh request
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._isRetry &&
+      !originalRequest.url?.includes('refresh-token') &&
+      !isRefreshingToken
+    ) {
+      // Mark that we're in the process of refreshing the token
+      isRefreshingToken = true;
+      // Mark this request to avoid infinite retry loops
+      originalRequest._isRetry = true;
+
+      logger.info('Token expired, attempting to refresh...');
+
+      // Create a new promise that will be resolved when the token is refreshed
+      return new Promise((resolve, reject) => {
+        // Add to queue of requests to retry after token refresh
+        requestsQueue.push({ resolve, reject, config: originalRequest });
+
+        // Try to refresh the token
+        getItem(STORAGE_KEYS.REFRESH_TOKEN)
+          .then(refreshToken => {
+            if (!refreshToken) {
+              logger.error('No refresh token available');
+              processQueue(new Error('No refresh token available'));
+              isRefreshingToken = false;
+              return;
+            }
+
+            // Call the token refresh function
+            return axios.post(`${API_URL}/auth/refresh-token`, { refreshToken })
+              .then(response => {
+                const newToken = response.data.data?.accessToken || response.data.accessToken;
+                if (!newToken) {
+                  throw new Error('Invalid refresh token response');
+                }
+
+                // Save the new token
+                saveItem(STORAGE_KEYS.ACCESS_TOKEN, newToken)
+                  .then(() => {
+                    logger.info('Token refreshed successfully');
+                    
+                    // Update Authorization header for future requests
+                    apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    
+                    // Process all queued requests with the new token
+                    processQueue(null, newToken);
+                    isRefreshingToken = false;
+                  });
+              })
+              .catch(refreshError => {
+                logger.error('Token refresh failed:', refreshError);
+                // Process all queued requests with the error
+                processQueue(refreshError);
+                isRefreshingToken = false;
+                
+                // Clean up auth data since the refresh token is likely invalid
+                clearAuthData();
+              });
+          });
+      });
+    }
 
     // Logguer les informations d'erreur détaillées
     if (error.response) {
@@ -224,11 +320,17 @@ apiClient.interceptors.response.use(
     interface ErrorWithDetails extends Error {
       originalError: AxiosError;
       response: unknown;
+      isRefreshError?: boolean;
     }
 
     const enhancedError = new Error(errorMessage) as ErrorWithDetails;
     enhancedError.originalError = error;
     enhancedError.response = error.response;
+    
+    // Check if this is a refresh token error (could be useful for redirecting to login)
+    if (error.response?.status === 401 && (error.config?.url?.includes('refresh-token') || isRefreshingToken)) {
+      enhancedError.isRefreshError = true;
+    }
 
     return Promise.reject(enhancedError);
   }
