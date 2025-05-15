@@ -1,7 +1,7 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { useTheme } from '../../constants/theme';
-import { ProtectedRoute } from '../../components/ProtectedRoute';
+import ProtectedRoute from '../../components/ProtectedRoute';
 
 /**
  * Layout pour la section profil qui gère la navigation entre les différentes
