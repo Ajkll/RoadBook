@@ -1,5 +1,5 @@
 import { Badge, Prisma, PrismaClient, User, UserBadge } from '@prisma/client';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 import { BadgeAwardCriteria, checkBadgeCriteria } from '../utils/badge-criteria';
 
 export type BadgeWithUserCount = Badge & {

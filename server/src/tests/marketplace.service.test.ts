@@ -6,7 +6,7 @@ jest.mock('../config/prisma', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 import * as marketplaceService from '../services/marketplace.service';
 
 const mockPrisma = prisma as unknown as DeepMockProxy<PrismaClient>;

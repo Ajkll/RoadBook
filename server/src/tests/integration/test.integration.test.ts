@@ -1,4 +1,4 @@
-import { prisma } from '../../config/prisma';
+import prisma from '../../config/prisma';
 import request from 'supertest';
 import express from 'express';
 import routes from '../../api/routes';

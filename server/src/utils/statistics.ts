@@ -8,7 +8,7 @@
  * et pour suivre la progression des apprentis.
  */
 
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 import logger from './logger';
 
 /**

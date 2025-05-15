@@ -13,7 +13,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import dotenv from 'dotenv';
 
 // Charger les variables d'environnement depuis .env
@@ -220,11 +220,12 @@ class PrismaManager {
 }
 
 // Exporter l'instance unique du gestionnaire
-export const prismaManager = global.prismaManager || PrismaManager.getInstance();
+const prismaManager = global.prismaManager || PrismaManager.getInstance();
 
 // Stocker dans la variable globale en développement pour éviter la réinitialisation lors des hot-reloads
 if (process.env.NODE_ENV !== 'production') {
   global.prismaManager = prismaManager;
 }
 
+export { prismaManager };
 export default prismaManager;

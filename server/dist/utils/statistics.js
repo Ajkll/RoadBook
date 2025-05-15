@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculatePeriodMetrics = exports.calculateApprenticeStatistics = exports.calculateRoadbookStatistics = exports.calculateSessionStatistics = void 0;
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const logger_1 = __importDefault(require("./logger"));
 /**
  * Calculer les statistiques d'une session
@@ -23,7 +23,7 @@ const logger_1 = __importDefault(require("./logger"));
  */
 const calculateSessionStatistics = async (sessionId) => {
     try {
-        const session = await prisma_1.prisma.session.findUnique({
+        const session = await prisma_1.default.session.findUnique({
             where: { id: sessionId }
         });
         if (!session) {
@@ -68,7 +68,7 @@ exports.calculateSessionStatistics = calculateSessionStatistics;
 const calculateRoadbookStatistics = async (roadbookId) => {
     try {
         // Récupérer le roadbook pour les informations de base
-        const roadbook = await prisma_1.prisma.roadBook.findUnique({
+        const roadbook = await prisma_1.default.roadBook.findUnique({
             where: { id: roadbookId },
             select: {
                 targetHours: true,
@@ -82,7 +82,7 @@ const calculateRoadbookStatistics = async (roadbookId) => {
             throw new Error('Roadbook not found');
         }
         // Récupérer toutes les sessions associées
-        const sessions = await prisma_1.prisma.session.findMany({
+        const sessions = await prisma_1.default.session.findMany({
             where: { roadbookId },
             select: {
                 id: true,
@@ -227,7 +227,7 @@ const calculateApprenticeStatistics = async (apprenticeId) => {
     var _a;
     try {
         // Vérifier si l'apprenti existe
-        const apprentice = await prisma_1.prisma.user.findUnique({
+        const apprentice = await prisma_1.default.user.findUnique({
             where: { id: apprenticeId },
             select: {
                 id: true,
@@ -241,7 +241,7 @@ const calculateApprenticeStatistics = async (apprenticeId) => {
             throw new Error('Apprentice not found');
         }
         // Récupérer les roadbooks de l'apprenti
-        const roadbooks = await prisma_1.prisma.roadBook.findMany({
+        const roadbooks = await prisma_1.default.roadBook.findMany({
             where: { apprenticeId },
             select: {
                 id: true,
@@ -256,7 +256,7 @@ const calculateApprenticeStatistics = async (apprenticeId) => {
             }
         });
         // Récupérer toutes les sessions de l'apprenti
-        const sessions = await prisma_1.prisma.session.findMany({
+        const sessions = await prisma_1.default.session.findMany({
             where: { apprenticeId },
             select: {
                 id: true,

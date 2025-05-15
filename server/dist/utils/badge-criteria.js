@@ -1,7 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkBadgeCriteria = checkBadgeCriteria;
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const client_1 = require("@prisma/client");
 /**
  * Check if a user meets the criteria for a specific badge
@@ -31,7 +34,7 @@ async function checkBadgeCriteria(userId, criteria) {
 }
 // Individual criteria checks
 async function checkFirstSession(userId) {
-    const sessionsCount = await prisma_1.prisma.session.count({
+    const sessionsCount = await prisma_1.default.session.count({
         where: {
             apprenticeId: userId
         }
@@ -39,7 +42,7 @@ async function checkFirstSession(userId) {
     return sessionsCount > 0;
 }
 async function checkCompleteSessions(userId, count) {
-    const sessionsCount = await prisma_1.prisma.session.count({
+    const sessionsCount = await prisma_1.default.session.count({
         where: {
             apprenticeId: userId,
             endTime: { not: null }
@@ -48,7 +51,7 @@ async function checkCompleteSessions(userId, count) {
     return sessionsCount >= count;
 }
 async function checkNightDriving(userId) {
-    const nightSessionsCount = await prisma_1.prisma.session.count({
+    const nightSessionsCount = await prisma_1.default.session.count({
         where: {
             apprenticeId: userId,
             daylight: client_1.DaylightCondition.NIGHT
@@ -58,7 +61,7 @@ async function checkNightDriving(userId) {
 }
 async function checkHighwayDriving(userId) {
     // Check if the user has sessions with highway in roadTypes
-    const highwaySessionsCount = await prisma_1.prisma.session.count({
+    const highwaySessionsCount = await prisma_1.default.session.count({
         where: {
             apprenticeId: userId,
             roadTypes: { has: 'HIGHWAY' }
@@ -68,7 +71,7 @@ async function checkHighwayDriving(userId) {
 }
 async function checkMasterParking(userId) {
     // Check for mastery of parking competencies
-    const parkingCompetencies = await prisma_1.prisma.competencyProgress.count({
+    const parkingCompetencies = await prisma_1.default.competencyProgress.count({
         where: {
             apprenticeId: userId,
             status: client_1.CompetencyStatus.MASTERED,
@@ -82,13 +85,13 @@ async function checkMasterParking(userId) {
 }
 async function checkMasterEcoDriving(userId) {
     // Count eco-driving competencies
-    const ecoCompetencies = await prisma_1.prisma.competency.count({
+    const ecoCompetencies = await prisma_1.default.competency.count({
         where: {
             category: client_1.CompetencyCategory.ECOFRIENDLY_DRIVING
         }
     });
     // Count mastered eco-driving competencies for the user
-    const masteredEcoCompetencies = await prisma_1.prisma.competencyProgress.count({
+    const masteredEcoCompetencies = await prisma_1.default.competencyProgress.count({
         where: {
             apprenticeId: userId,
             status: client_1.CompetencyStatus.MASTERED,
@@ -102,7 +105,7 @@ async function checkMasterEcoDriving(userId) {
 }
 async function checkValidateSessions(userId, count) {
     // Check if user has validated at least 'count' sessions as a guide/instructor
-    const validatedSessionsCount = await prisma_1.prisma.session.count({
+    const validatedSessionsCount = await prisma_1.default.session.count({
         where: {
             validatorId: userId,
             validationDate: { not: null }
@@ -112,7 +115,7 @@ async function checkValidateSessions(userId, count) {
 }
 async function checkCompleteRoadbook(userId) {
     // Check if user has completed any roadbooks
-    const completedRoadbooksCount = await prisma_1.prisma.roadBook.count({
+    const completedRoadbooksCount = await prisma_1.default.roadBook.count({
         where: {
             apprenticeId: userId,
             status: 'COMPLETED'

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as notificationController from '../controllers/notification.controller';
 import * as notificationService from '../services/notification.service';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 
 // Mock notification service
 jest.mock('../services/notification.service');
