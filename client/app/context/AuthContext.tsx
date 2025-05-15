@@ -22,6 +22,7 @@ interface AuthContextType {
   refreshUserData: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
+  handleTokenError: (error: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -219,6 +220,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('User data refreshed successfully');
     } catch (err) {
       logger.error('Error refreshing user data:', err);
+      
+      // Check if this is a token error
+      if (err?.isRefreshError || 
+          (err?.originalError?.response?.status === 401) ||
+          (err?.response?.status === 401) ||
+          err.message?.includes('Session expirée')) {
+            
+        logger.warn('Token expired while refreshing user data, logging out');
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        await logout();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -245,6 +257,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const clearError = () => setError(null);
 
+  /**
+   * Handle token-related errors
+   * This function is especially useful when an API request fails due to token issues
+   */
+  const handleTokenError = async (error: any) => {
+    try {
+      // Check if this is a token-related error
+      if (error?.isRefreshError || 
+          (error?.originalError?.response?.status === 401) ||
+          (error?.response?.status === 401)) {
+        
+        logger.warn('Token error detected, logging out user');
+        
+        // If it's a refresh error, we should logout the user
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        await logout();
+        
+        return;
+      }
+      
+      // If it's not a token error, just set the general error
+      const errorMessage = error.message || 'Une erreur est survenue';
+      setError(errorMessage);
+    } catch (err) {
+      logger.error('Error handling token error:', err);
+      setError('Problème d\'authentification. Veuillez vous reconnecter.');
+      await logout();
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -256,6 +298,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshUserData,
     refreshToken,
     clearError,
+    handleTokenError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
