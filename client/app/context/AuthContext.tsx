@@ -172,38 +172,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       console.log('==== LOGOUT ATTEMPT ====');
 
+      // First try to invalidate the session on the server
       try {
-        const refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
-        if (refreshToken) {
-          console.log('Attempting to invalidate session on server');
-          await authApi.logout();
-          console.log('Server logout successful');
-        } else {
-          console.log('No refresh token found, skipping server logout');
-        }
+        // Skip the getItem call that was causing issues and use the authApi directly
+        // It has its own error handling for missing tokens
+        console.log('Attempting to invalidate session on server');
+        await authApi.logout();
+        console.log('Server logout successful');
       } catch (serverError) {
         logger.error('Server logout failed:', serverError);
         console.log('Continuing with client-side logout despite server error');
       }
 
+      // Then clear local auth data regardless of server success/failure
       try {
         console.log('Clearing authentication data from secure storage');
         await clearAuthData();
         console.log('Authentication data cleared successfully');
       } catch (storageError) {
         logger.error('Error clearing auth data from storage:', storageError);
+        // Try to clear individual items if the complete clear fails
+        try {
+          await Promise.all([
+            saveItem(STORAGE_KEYS.ACCESS_TOKEN, ''),
+            saveItem(STORAGE_KEYS.REFRESH_TOKEN, ''),
+            saveItem(STORAGE_KEYS.USER, ''),
+          ]);
+          console.log('Fallback clearing of auth data succeeded');
+        } catch (fallbackError) {
+          logger.error('Even fallback clearing failed:', fallbackError);
+        }
       }
 
+      // Always reset the user state
       console.log('Resetting user state');
       setUser(null);
 
     } catch (err) {
       logger.error('==== LOGOUT ERROR ====', err);
-
+      
+      // Always make sure to clear auth data and user state, even on errors
       try {
         await clearAuthData();
       } catch {}
-
+      
       setUser(null);
     } finally {
       setIsLoading(false);

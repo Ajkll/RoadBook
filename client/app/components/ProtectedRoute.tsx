@@ -92,6 +92,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   // Show error if there's an authentication problem
   if (authError) {
+    logger.warn('Auth error in ProtectedRoute:', authError);
     return (
       <View style={styles.container}>
         <Text style={styles.errorTitle}>Problème d'authentification</Text>
@@ -108,6 +109,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    logger.warn('Not authenticated in ProtectedRoute, redirecting to login');
     return <Redirect href="/auth/login" />;
   }
 

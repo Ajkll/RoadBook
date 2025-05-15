@@ -13,6 +13,7 @@ import {
 } from '../../store/slices/chronoSlice';
 import SessionEndModal from '../modals/SessionEndModal';
 import { useNotifications } from '../NotificationHandler';
+import { RootState } from '../../store/store';
 
 const BottomNavigation = () => {
   const router = useRouter();
