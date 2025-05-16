@@ -122,11 +122,30 @@ const refreshAuthToken = async (refreshToken: string): Promise<string> => {
       }
     );
 
-    if (!response.data.accessToken) {
-      throw new Error('Invalid refresh token response');
+    // Extract token with better error handling
+    let newAccessToken = null;
+    
+    try {
+      // Try both common response formats
+      if (response.data?.data?.accessToken && typeof response.data.data.accessToken === 'string') {
+        newAccessToken = response.data.data.accessToken;
+      } else if (response.data?.accessToken && typeof response.data.accessToken === 'string') {
+        newAccessToken = response.data.accessToken;
+      } else {
+        logger.error('Unexpected token response format:', 
+          JSON.stringify(response.data).substring(0, 100) + '...');
+        throw new Error('Invalid token response format');
+      }
+    } catch (parseError) {
+      logger.error('Error parsing token response:', parseError);
+      throw new Error('Error parsing token response');
     }
 
-    const newAccessToken = response.data.accessToken;
+    if (!newAccessToken) {
+      throw new Error('Invalid refresh token response - missing token');
+    }
+
+    // saveItem now handles null/undefined safely
     await saveItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
     
     // Update the auth header for future requests

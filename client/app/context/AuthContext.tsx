@@ -215,11 +215,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logger.error('Error clearing auth data from storage:', storageError);
         // Try to clear individual items if the complete clear fails
         try {
-          await Promise.all([
-            saveItem(STORAGE_KEYS.ACCESS_TOKEN, ''),
-            saveItem(STORAGE_KEYS.REFRESH_TOKEN, ''),
-            saveItem(STORAGE_KEYS.USER, ''),
-          ]);
+          // Execute each operation individually to maximize chances of success
+          try { await saveItem(STORAGE_KEYS.ACCESS_TOKEN, ''); } 
+          catch (e) { logger.error('Failed to clear ACCESS_TOKEN:', e); }
+          
+          try { await saveItem(STORAGE_KEYS.REFRESH_TOKEN, ''); } 
+          catch (e) { logger.error('Failed to clear REFRESH_TOKEN:', e); }
+          
+          try { await saveItem(STORAGE_KEYS.USER, ''); } 
+          catch (e) { logger.error('Failed to clear USER:', e); }
+          
           console.log('Fallback clearing of auth data succeeded');
         } catch (fallbackError) {
           logger.error('Even fallback clearing failed:', fallbackError);
@@ -290,14 +295,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Attempting to refresh access token');
       const response = await authApi.refreshToken();
 
-      if (response && response.accessToken) {
-        console.log('New access token received');
-        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
-        return true;
+      // Strict validation of response format
+      if (response && typeof response === 'object') {
+        if (response.accessToken && typeof response.accessToken === 'string') {
+          console.log('New access token received');
+          // Safe storage of token - saveItem now handles null/undefined
+          await saveItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
+          return true;
+        } else {
+          logger.error('Invalid access token in refresh response:', 
+            response.accessToken === undefined ? 'undefined' : 
+            response.accessToken === null ? 'null' : 
+            typeof response.accessToken);
+        }
       } else {
-        logger.error('No access token in refresh response');
-        return false;
+        logger.error('Invalid response format from refreshToken:', 
+          response === undefined ? 'undefined' : 
+          response === null ? 'null' : 
+          typeof response);
       }
+      
+      return false;
     } catch (err) {
       logger.error('Token refresh failed:', err);
       return false;

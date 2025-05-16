@@ -304,18 +304,35 @@ apiClient.interceptors.response.use(
             // Call the token refresh function
             return axios.post(`${API_URL}/auth/refresh-token`, { refreshToken })
               .then(response => {
-                const newToken = response.data.data?.accessToken || response.data.accessToken;
+                // Extract token with better error handling for varying response formats
+                let newToken = null;
+                try {
+                  // Try both common response formats
+                  if (response.data?.data?.accessToken && typeof response.data.data.accessToken === 'string') {
+                    newToken = response.data.data.accessToken;
+                  } else if (response.data?.accessToken && typeof response.data.accessToken === 'string') {
+                    newToken = response.data.accessToken;
+                  } else {
+                    logger.error('Unexpected token refresh response format:', 
+                      JSON.stringify(response.data).substring(0, 100) + '...');
+                  }
+                } catch (parseError) {
+                  logger.error('Error parsing refresh token response:', parseError);
+                }
+                
                 if (!newToken) {
-                  throw new Error('Invalid refresh token response');
+                  throw new Error('Invalid refresh token response - missing token');
                 }
 
-                // Save the new token
+                // Save the new token - saveItem now handles null values safely
                 saveItem(STORAGE_KEYS.ACCESS_TOKEN, newToken)
                   .then(() => {
                     logger.info('Token refreshed successfully');
                     
-                    // Update Authorization header for future requests
-                    apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    // Update Authorization header for future requests - with null check
+                    if (newToken) {
+                      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    }
                     
                     // Process all queued requests with the new token
                     processQueue(null, newToken);

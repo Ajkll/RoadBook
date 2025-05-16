@@ -35,21 +35,30 @@ export const STORAGE_KEYS = {
 };
 
 // Fonction pour sauvegarder une valeur
-export async function saveItem(key: string, value: string): Promise<void> {
+export async function saveItem(key: string, value: string | null | undefined): Promise<void> {
   try {
-    console.log(`Saving ${key} value with length: ${value?.length || 0}`);
+    // Validate inputs to prevent errors
+    if (!key) {
+      logger.error("saveItem: Key cannot be null or empty");
+      return;
+    }
+    
+    // Ensure value is always a string, even if null/undefined
+    const safeValue = value === null || value === undefined ? "" : String(value);
+    
+    console.log(`Saving ${key} value with length: ${safeValue.length}`);
 
     if (Platform.OS === 'web') {
       // Use localStorage for persistence in web environments if available
       if (useLocalStorage()) {
-        localStorage.setItem(key, value);
+        localStorage.setItem(key, safeValue);
         console.log(`Saved ${key} to localStorage`);
       } else {
-        inMemoryStorage.set(key, value);
+        inMemoryStorage.set(key, safeValue);
         console.log(`Saved ${key} to inMemoryStorage`);
       }
     } else {
-      await SecureStore.setItemAsync(key, value);
+      await SecureStore.setItemAsync(key, safeValue);
       console.log(`Saved ${key} to SecureStore`);
     }
   } catch (error) {
@@ -106,14 +115,25 @@ export async function removeItem(key: string): Promise<void> {
 
 // Fonctions d'aide spécifiques à l'authentification
 export async function saveAuthData(
-  accessToken: string,
-  refreshToken: string,
-  user: Record<string, unknown>
+  accessToken: string | null | undefined,
+  refreshToken: string | null | undefined,
+  user: Record<string, unknown> | null | undefined
 ): Promise<void> {
   console.log('=== SAVE AUTH DATA ===');
   console.log('Saving auth data for user:', user?.email || 'unknown');
 
   try {
+    // Validate all input parameters
+    if (!accessToken) {
+      logger.error('Missing access token in saveAuthData');
+      accessToken = ''; // Use empty string instead of null/undefined
+    }
+    
+    if (!refreshToken) {
+      logger.error('Missing refresh token in saveAuthData');
+      refreshToken = ''; // Use empty string instead of null/undefined
+    }
+    
     // Ensure user is an object before stringifying
     if (user && typeof user === 'object') {
       await saveItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
@@ -122,10 +142,26 @@ export async function saveAuthData(
       console.log('Auth data saved successfully');
     } else {
       logger.error('Invalid user object provided to saveAuthData:', user);
-      throw new Error('Invalid user object');
+      // Still save tokens even if user object is invalid
+      await saveItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      await saveItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      // Use empty object for user data if missing
+      await saveItem(STORAGE_KEYS.USER, JSON.stringify({}));
+      console.log('Saved tokens but user data was invalid');
     }
   } catch (error) {
     logger.error('Failed to save auth data:', error);
+    // Try individual saves to maximize chance of success
+    try {
+      await saveItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken || '');
+      await saveItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken || '');
+      if (user && typeof user === 'object') {
+        await saveItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      }
+      logger.info('Partially saved auth data during error recovery');
+    } catch (innerError) {
+      logger.error('Complete failure saving auth data:', innerError);
+    }
     throw error; // Re-throw to allow caller to handle
   }
 }

@@ -135,10 +135,37 @@ export const savePendingDriveSession = async (
   session: Omit<PendingDriveSession, 'id'>
 ): Promise<string> => {
   try {
+    // Validate session - throw specific errors for debugging
+    if (!session) {
+      logger.error('savePendingDriveSession: Null or undefined session provided');
+      throw new Error('Session cannot be null or undefined');
+    }
+    
+    // Ensure there's a valid ID
     let id = session.id;
-
     if (!id) {
       id = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    }
+
+    // Ensure we have valid data for required fields
+    if (!session.userId) {
+      logger.error(`savePendingDriveSession: Missing userId for session ${id}`);
+      session.userId = 'unknown-user'; // Fallback value
+    }
+    
+    if (!Array.isArray(session.path)) {
+      logger.error(`savePendingDriveSession: Missing path array for session ${id}`);
+      session.path = []; // Fallback empty array
+    }
+    
+    if (!session.createdAt || isNaN(session.createdAt)) {
+      logger.error(`savePendingDriveSession: Invalid createdAt timestamp for session ${id}`);
+      session.createdAt = Date.now(); // Use current time as fallback
+    }
+    
+    if (!session.locationTimestamp || isNaN(session.locationTimestamp)) {
+      logger.error(`savePendingDriveSession: Invalid locationTimestamp for session ${id}`);
+      session.locationTimestamp = Date.now(); // Use current time as fallback
     }
 
     const existingSessions = await getPendingDriveSessions();
@@ -146,13 +173,29 @@ export const savePendingDriveSession = async (
     const existingIndex = existingSessions.findIndex((s) => s.id === id);
 
     if (existingIndex >= 0) {
+      // Update existing session
       existingSessions[existingIndex] = { ...session, id };
-      await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(existingSessions));
+      const dataToStore = JSON.stringify(existingSessions);
+      
+      // Verify we have valid JSON before storing
+      if (!dataToStore) {
+        throw new Error('Failed to stringify session data');
+      }
+      
+      await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, dataToStore);
       console.log(' Session de conduite mise à jour localement:', id);
     } else {
+      // Create new session
       const newSession = { ...session, id };
       const updatedSessions = [...existingSessions, newSession];
-      await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify(updatedSessions));
+      const dataToStore = JSON.stringify(updatedSessions);
+      
+      // Verify we have valid JSON before storing
+      if (!dataToStore) {
+        throw new Error('Failed to stringify session data');
+      }
+      
+      await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, dataToStore);
       console.log(' Session de conduite sauvegardée localement:', id);
     }
 
@@ -166,9 +209,54 @@ export const savePendingDriveSession = async (
 export const getPendingDriveSessions = async (): Promise<PendingDriveSession[]> => {
   try {
     const sessionsString = await AsyncStorage.getItem(KEYS.PENDING_DRIVE_SESSIONS);
-    return sessionsString ? JSON.parse(sessionsString) : [];
+    
+    // Return empty array if no data found
+    if (!sessionsString) {
+      return [];
+    }
+    
+    // Try to parse the JSON with error handling
+    try {
+      const parsedData = JSON.parse(sessionsString);
+      
+      // Validate that we have an array (if not, log error and return empty array)
+      if (!Array.isArray(parsedData)) {
+        logger.error('getPendingDriveSessions: Stored data is not an array:', typeof parsedData);
+        return [];
+      }
+      
+      // Filter out any invalid sessions - this prevents crashes from bad data
+      return parsedData.filter(session => {
+        // Basic validation to ensure each item is a proper session object
+        const isValidSession = (
+          session && 
+          typeof session === 'object' &&
+          typeof session.id === 'string' &&
+          typeof session.userId === 'string'
+        );
+        
+        if (!isValidSession) {
+          logger.error('getPendingDriveSessions: Found invalid session in storage:', session);
+        }
+        
+        return isValidSession;
+      });
+    } catch (parseError) {
+      // If JSON parsing fails, log and return empty array
+      logger.error('getPendingDriveSessions: Failed to parse stored sessions:', parseError);
+      
+      // Try to recover by clearing corrupted data
+      try {
+        await AsyncStorage.setItem(KEYS.PENDING_DRIVE_SESSIONS, JSON.stringify([]));
+        logger.info('getPendingDriveSessions: Cleared corrupted sessions data');
+      } catch (clearError) {
+        logger.error('getPendingDriveSessions: Failed to clear corrupted data:', clearError);
+      }
+      
+      return [];
+    }
   } catch (error) {
-    logger.error(' Erreur lors de la récupération des sessions en attente:', error);
+    logger.error('getPendingDriveSessions: Error retrieving sessions:', error);
     return [];
   }
 };
