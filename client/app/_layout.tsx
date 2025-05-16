@@ -256,10 +256,12 @@ export default function RootLayout() {
             <NetworkSyncManager />
             <ThemeProvider>
               <AuthProvider>
-                <UserProvider>
-                  <RootNavigator />
-                  <NotificationHandler />
-                </UserProvider>
+                {isLoggerReady && (
+                  <UserProvider>
+                    <RootNavigator />
+                    <NotificationHandler />
+                  </UserProvider>
+                )}
               </AuthProvider>
             </ThemeProvider>
           </SoundProvider>

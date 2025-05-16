@@ -189,7 +189,7 @@ export default function ProfileScreen() {
       <View style={styles.profileHeader}>
         <TouchableOpacity 
           style={styles.profileImageContainer} 
-          onPress={() => router.push('/profile/edit')}
+          onPress={() => router.push('/(tabs)/profile/edit')}
         >
           {userData?.profilePicture ? (
             <Image source={{ uri: userData.profilePicture }} style={styles.profileImage} />
@@ -224,7 +224,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.navigate('/(tabs)/profile/edit')}
+          onPress={() => router.push('/(tabs)/profile/edit')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="person-circle-outline" size={24} color={colors.primary} />
@@ -240,7 +240,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.navigate('/(tabs)/profile/change-password')}
+          onPress={() => router.push('/(tabs)/profile/change-password')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="key-outline" size={24} color={colors.primary} />
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.navigate('/(tabs)/profile/sessions')}
+          onPress={() => router.push('/(tabs)/profile/sessions')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} />
@@ -277,7 +277,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.navigate('/PrivacyScreen')}
+          onPress={() => router.push('/PrivacyScreen')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
@@ -293,7 +293,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.actionItem} 
-          onPress={() => router.navigate('/HelpScreen')}
+          onPress={() => router.push('/HelpScreen')}
         >
           <View style={styles.actionIconContainer}>
             <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
@@ -312,7 +312,7 @@ export default function ProfileScreen() {
       <View style={styles.dangerZone}>
         <TouchableOpacity 
           style={[styles.dangerButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} 
-          onPress={() => router.navigate('/(tabs)/profile/delete-account')}
+          onPress={() => router.push('/(tabs)/profile/delete-account')}
         >
           <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
           <Text style={styles.dangerButtonText}>Supprimer mon compte</Text>

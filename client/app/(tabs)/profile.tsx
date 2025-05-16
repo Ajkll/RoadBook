@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { useUser } from '../context/UserContext';
 import { useTheme } from '../constants/theme';
 import { logger } from '../utils/logger';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,11 +25,13 @@ import * as ImagePicker from 'expo-image-picker';
  * Gère tous les aspects du profil en un seul composant avec état
  */
 export default function ProfileScreen() {
-  const { user, refreshUserData, logout, isLoading } = useAuth();
+  const { logout } = useAuth();
+  const { userData: user, refreshUserData, updateUserProfile, updateUserAvatar, isLoading: userDataLoading } = useUser();
   const { colors } = useTheme();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const isLoading = userDataLoading;
   
   // État pour gérer quelle vue est affichée
   const [activeScreen, setActiveScreen] = useState('main'); // 'main', 'edit', 'changePassword', 'sessions', 'deleteAccount'
@@ -174,7 +177,19 @@ export default function ProfileScreen() {
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setProfileImage(result.assets[0].uri);
-        // En production, nous téléchargerions l'image sur le serveur ici
+        
+        // Utiliser notre nouvelle fonction updateUserAvatar du UserContext
+        try {
+          setIsSaving(true);
+          await updateUserAvatar(result.assets[0].uri);
+          logger.info('Photo de profil mise à jour avec succès via UserContext');
+        } catch (updateError) {
+          logger.error('Erreur lors de la mise à jour de l\'avatar via UserContext', updateError);
+          // Continuer quand même car nous avons déjà mis à jour localement
+          Alert.alert('Avertissement', 'Votre photo a été mise à jour localement, mais il pourrait y avoir des problèmes lors de la synchronisation avec le serveur.');
+        } finally {
+          setIsSaving(false);
+        }
       }
     } catch (error) {
       logger.error('Erreur lors de la sélection d\'image', error);
@@ -233,22 +248,28 @@ export default function ProfileScreen() {
     try {
       setIsSaving(true);
       
-      // En production, nous enverrions ces données au serveur
-      // Pour l'instant, simulons une réussite
+      // Utiliser notre UserContext pour mettre à jour le profil
+      const profileData = {
+        displayName,
+        firstName,
+        lastName,
+        phoneNumber,
+        address,
+        bio
+      };
       
-      setTimeout(() => {
-        Alert.alert(
-          'Profil mis à jour',
-          'Vos informations ont été mises à jour avec succès.',
-          [
-            {
-              text: 'OK',
-              onPress: () => setActiveScreen('main'),
-            },
-          ]
-        );
-        setIsSaving(false);
-      }, 1000);
+      await updateUserProfile(profileData);
+      
+      Alert.alert(
+        'Profil mis à jour',
+        'Vos informations ont été mises à jour avec succès.',
+        [
+          {
+            text: 'OK',
+            onPress: () => setActiveScreen('main'),
+          },
+        ]
+      );
       
     } catch (error) {
       logger.error('Erreur lors de la mise à jour du profil', error);
@@ -256,6 +277,7 @@ export default function ProfileScreen() {
         'Erreur',
         'Impossible de mettre à jour votre profil. Veuillez réessayer plus tard.'
       );
+    } finally {
       setIsSaving(false);
     }
   };

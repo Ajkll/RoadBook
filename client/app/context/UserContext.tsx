@@ -4,6 +4,10 @@ import { useAuth } from './AuthContext';
 import { User } from '../types/auth.types';
 import apiClient from '../services/api/client';
 import { logger } from '../utils/logger';
+// Import these explicitly to avoid circular dependencies
+import { saveItem, getItem } from '../services/secureStorage';
+// Import API functions directly to avoid bundling issues
+import userApi from '../services/api/user.api';
 
 // Types étendus pour les données utilisateur
 interface UserStats {
@@ -249,8 +253,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // Charger les statistiques utilisateur
   const loadUserStats = async (): Promise<UserStats> => {
     try {
-      // Utiliser notre nouvelle API utilisateur dédiée
-      const { default: userApi } = await import('../services/api/user.api');
+      // API utilisateur importée directement pour éviter les problèmes de bundling
       const stats = await userApi.getUserStats();
       
       // Mettre à jour les données utilisateur avec les statistiques
@@ -283,8 +286,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   // Charger l'activité utilisateur
   const loadUserActivity = async (): Promise<UserActivity> => {
     try {
-      // Utiliser notre nouvelle API utilisateur dédiée
-      const { default: userApi } = await import('../services/api/user.api');
+      // API utilisateur importée directement pour éviter les problèmes de bundling
       const activity = await userApi.getUserActivity();
       
       // Mettre à jour les données utilisateur avec l'activité

@@ -42,7 +42,7 @@ export default function DebugMenu() {
               style={styles.menuButton}
               onPress={() => {
                 // Diagnostic de stockage
-                import('../services/secureStorage').then(async ({ diagnoseStorage }) => {
+                import('../../services/secureStorage').then(async ({ diagnoseStorage }) => {
                   try {
                     const result = await diagnoseStorage();
                     console.log('=== DIAGNOSTIC STOCKAGE ===', result);
