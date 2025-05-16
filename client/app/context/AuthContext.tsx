@@ -73,6 +73,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
+        // Initialiser le stockage sécurisé au démarrage
+        // Importer de manière dynamique pour éviter les problèmes de dépendances circulaires
+        const { initializeSecureStorage, diagnoseStorage } = await import('../services/secureStorage');
+        
+        // Vérifier et initialiser le stockage
+        try {
+          const storageStatus = await initializeSecureStorage();
+          console.log(`Storage initialization: ${storageStatus.success ? 'SUCCESS' : 'FAILED'}`);
+          console.log(`Using storage type: ${storageStatus.storageType}`);
+          
+          if (!storageStatus.success) {
+            logger.error(`Storage initialization failed: ${storageStatus.reason}`);
+            
+            // En cas d'échec, effectuer un diagnostic complet
+            const diagnosticResult = await diagnoseStorage();
+            logger.error('Storage diagnostic:', diagnosticResult);
+            
+            // Alerte l'utilisateur si nous sommes en mode production
+            if (process.env.NODE_ENV === 'production') {
+              console.log('WARNING: Secure storage initialization failed. Using fallback storage mechanism.');
+            }
+          }
+        } catch (storageInitError) {
+          logger.error('Storage initialization error:', storageInitError);
+        }
+        
         // Bypass désactivé pour forcer l'authentification réelle
         /*
         if (bypassLogin) {
@@ -96,7 +122,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (err) {
         logger.error('Error loading user from storage:', err);
-        await clearAuthData();
+        try {
+          await clearAuthData();
+        } catch (clearError) {
+          logger.error('Failed to clear auth data after load error:', clearError);
+        }
       } finally {
         setIsLoading(false);
       }

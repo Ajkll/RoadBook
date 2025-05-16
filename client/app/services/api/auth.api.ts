@@ -8,7 +8,7 @@ import {
   TokenRefreshResponse,
   User,
 } from '../../types/auth.types';
-import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
+import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS, saveItem } from '../secureStorage';
 import apiClient, { API_URL, API_CONFIG } from './client'; // Import our central API client and configuration
 import { logger } from '../../utils/logger';
 import { extractApiData, extractErrorMessage } from './utils';
@@ -360,11 +360,24 @@ export const authApi = {
           throw new Error('Invalid refresh token response');
         }
 
+        // Vérification supplémentaire de l'accessToken
+        if (!tokenData.accessToken || typeof tokenData.accessToken !== 'string') {
+          throw new Error('Invalid token format received from server');
+        }
+        
         const accessTokenPreview = `${tokenData.accessToken.substring(0, 10)}...`;
         logDebug(`Received new access token: ${accessTokenPreview}`);
 
-        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.accessToken);
-        logDebug('New access token stored securely');
+        try {
+          // Utiliser notre fonction saveItem importée avec validation
+          await saveItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.accessToken);
+          logDebug('New access token stored securely');
+        } catch (storageError) {
+          logError('Failed to save access token', storageError);
+          // Même en cas d'erreur, tenter de continuer avec le nouveau token en mémoire
+          // mais avertir que la persistance a échoué
+          logDebug('Continuing with new token in memory only (not persisted)');
+        }
 
         return tokenData;
       } catch (error) {
@@ -405,12 +418,35 @@ export const authApi = {
         });
 
         try {
-          // Update stored user information
-          await saveItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-          logDebug('User profile saved to secure storage');
+          // Vérifier que userData est valide avant de tenter de le sauvegarder
+          if (userData && typeof userData === 'object') {
+            const userDataString = JSON.stringify(userData);
+            if (userDataString) {
+              // Utiliser notre fonction saveItem importée
+              await saveItem(STORAGE_KEYS.USER, userDataString);
+              logDebug('User profile saved to secure storage');
+            } else {
+              logError('Failed to stringify user data');
+            }
+          } else {
+            logError('Invalid user data object for storage:', userData);
+          }
         } catch (storageError) {
           logError('Failed to save user profile to storage', storageError);
-          // Continue anyway - don't fail the getCurrentUser request because of storage issues
+          // Tentative de récupération en cas d'erreur
+          try {
+            // Stocker des données minimales pour éviter une erreur complète
+            const minimalUserData = {
+              id: userData?.id || 'unknown',
+              email: userData?.email || 'unknown',
+              role: userData?.role || 'user'
+            };
+            await saveItem(STORAGE_KEYS.USER, JSON.stringify(minimalUserData));
+            logDebug('Minimal user profile saved as fallback');
+          } catch (fallbackError) {
+            logError('Complete failure saving user profile', fallbackError);
+            // Continue anyway - don't fail the getCurrentUser request because of storage issues
+          }
         }
 
         return userData;
