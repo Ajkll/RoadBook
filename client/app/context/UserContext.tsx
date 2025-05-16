@@ -6,14 +6,14 @@ import apiClient from '../services/api/client';
 import { logger } from '../utils/logger';
 // Import these explicitly to avoid circular dependencies
 import { saveItem, getItem } from '../services/secureStorage';
-// Import API functions directly to avoid bundling issues
-import userApi from '../services/api/user.api';
 
-// Types étendus pour les données utilisateur
+// Types for user stats
 interface UserStats {
   totalSessions?: number;
   totalDistance?: number;
+  totalDrivingHours?: number;
   badgesCount?: number;
+  competenciesMastered?: number;
   competencyProgress?: {
     notStarted: number;
     inProgress: number;
@@ -21,6 +21,7 @@ interface UserStats {
   };
 }
 
+// Types for user activity
 interface UserActivity {
   lastSessionDate?: string;
   recentSessions?: {
@@ -28,20 +29,31 @@ interface UserActivity {
     date: string;
     duration: number;
     distance?: number;
+    startLocation?: string;
+    endLocation?: string;
   }[];
-  upcomingReminders?: {
+  upcomingSessions?: {
     id: string;
-    title: string;
     date: string;
+    duration?: number;
+    location?: string;
+  }[];
+  recentNotifications?: {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    date: string;
+    isRead: boolean;
   }[];
 }
 
-// Interface utilisateur complète
+// Extended user interface
 interface ExtendedUser extends User {
-  // Données enrichies qui seront chargées à la demande
+  // Enriched data that will be loaded on demand
   stats?: UserStats;
   activity?: UserActivity;
-  badge?: {
+  badges?: {
     id: string;
     name: string;
     imageUrl: string;
@@ -52,14 +64,14 @@ interface ExtendedUser extends User {
   };
 }
 
-// État global du contexte utilisateur
+// User context state
 interface UserContextState {
-  // Données utilisateur
+  // User data
   userData: ExtendedUser | null;
   isLoading: boolean;
   error: string | null;
   
-  // Fonctions pour manipuler les données
+  // Functions for manipulating data
   refreshUserData: () => Promise<void>;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
   updateUserAvatar: (imageUri: string) => Promise<void>;
@@ -69,43 +81,43 @@ interface UserContextState {
   clearError: () => void;
 }
 
-// Créer le contexte
+// Create the context
 const UserContext = createContext<UserContextState | undefined>(undefined);
 
-// Hook personnalisé pour utiliser le contexte
+// Custom hook to use the context
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
-    throw new Error('useUser doit être utilisé avec un UserProvider');
+    throw new Error('useUser must be used with a UserProvider');
   }
   return context;
 };
 
-// Props du provider
+// Provider props
 interface UserProviderProps {
   children: ReactNode;
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  // Utiliser le contexte d'authentification pour obtenir l'identité de base
+  // Use the auth context to get the basic identity
   const { user, refreshUserData: refreshAuthUser } = useAuth();
   
-  // État interne
+  // Internal state
   const [userData, setUserData] = useState<ExtendedUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mettre à jour les données utilisateur depuis le contexte d'authentification
+  // Update user data from the auth context
   useEffect(() => {
     if (user) {
-      // Initialiser avec les données de base de l'utilisateur
+      // Initialize with user basic data
       setUserData(prevData => ({
         ...user,
-        // Conserver les données enrichies si elles existent déjà
+        // Keep enriched data if they already exist
         ...(prevData && {
           stats: prevData.stats,
           activity: prevData.activity,
-          badge: prevData.badge,
+          badges: prevData.badges,
           notifications: prevData.notifications
         })
       }));
@@ -114,26 +126,25 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   }, [user]);
 
-  // Rafraîchir les données utilisateur complètes
+  // Refresh complete user data
   const refreshUserData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Utiliser la fonction de rafraîchissement du contexte d'auth
-      // Cela mettra à jour les données de base via l'effet ci-dessus
+      // Use auth context refresh function
+      // This will update the base data via the effect above
       await refreshAuthUser();
       
-      // Charger des données supplémentaires si nécessaire
-      // Par exemple, les statistiques et l'activité récente
+      // Load additional data if needed
       if (user) {
         try {
-          // Charger les statistiques utilisateur
+          // Load user statistics
           const stats = await loadUserStats();
-          // Charger l'activité utilisateur
+          // Load user activity
           const activity = await loadUserActivity();
           
-          // Mettre à jour l'état avec les données enrichies
+          // Update state with enriched data
           setUserData(prevData => {
             if (!prevData) return null;
             return {
@@ -143,30 +154,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
             };
           });
         } catch (enrichError) {
-          // Si l'enrichissement échoue, ce n'est pas critique
-          // On conserve les données de base
-          logger.warn('Erreur lors du chargement des données enrichies:', enrichError);
+          // If enrichment fails, it's not critical
+          // Keep the base data
+          logger.warn('Error loading enriched data:', enrichError);
         }
       }
     } catch (err) {
-      logger.error('Erreur lors du rafraîchissement des données utilisateur:', err);
-      setError('Impossible de charger les données utilisateur');
-      // Ne pas effacer userData - conserver ce qu'on a déjà
+      logger.error('Error refreshing user data:', err);
+      setError('Unable to load user data');
+      // Don't clear userData - keep what we already have
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mettre à jour le profil utilisateur
+  // Update user profile
   const updateUserProfile = async (data: Partial<User>) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Appel API pour mettre à jour le profil
+      // API call to update profile
       const response = await apiClient.put('/users/profile', data);
       
-      // Mettre à jour les données locales
+      // Update local data
       setUserData(prevData => {
         if (!prevData) return null;
         return {
@@ -175,41 +186,41 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         };
       });
       
-      // Rafraîchir les données utilisateur complètes
+      // Refresh complete user data
       await refreshAuthUser();
       
       return response.data;
     } catch (err) {
-      logger.error('Erreur lors de la mise à jour du profil:', err);
-      setError('Impossible de mettre à jour le profil');
+      logger.error('Error updating profile:', err);
+      setError('Unable to update profile');
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mettre à jour l'avatar utilisateur
+  // Update user avatar
   const updateUserAvatar = async (imageUri: string) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Créer un FormData pour téléverser l'image
+      // Create FormData to upload image
       const formData = new FormData();
       formData.append('avatar', {
         uri: imageUri,
         name: 'avatar.jpg',
         type: 'image/jpeg'
-      });
+      } as any);
       
-      // Appel API pour téléverser l'avatar
+      // API call to upload avatar
       const response = await apiClient.post('/users/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      // Mettre à jour les données locales
+      // Update local data
       setUserData(prevData => {
         if (!prevData) return null;
         return {
@@ -220,21 +231,21 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       return response.data;
     } catch (err) {
-      logger.error('Erreur lors de la mise à jour de l\'avatar:', err);
-      setError('Impossible de mettre à jour l\'avatar');
+      logger.error('Error updating avatar:', err);
+      setError('Unable to update avatar');
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mettre à jour le mot de passe utilisateur
+  // Update user password
   const updateUserPassword = async (currentPassword: string, newPassword: string) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Appel API pour mettre à jour le mot de passe
+      // API call to update password
       const response = await apiClient.put('/users/password', {
         currentPassword,
         newPassword
@@ -242,21 +253,22 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       return response.data;
     } catch (err) {
-      logger.error('Erreur lors de la mise à jour du mot de passe:', err);
-      setError('Impossible de mettre à jour le mot de passe');
+      logger.error('Error updating password:', err);
+      setError('Unable to update password');
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Charger les statistiques utilisateur
+  // Load user statistics
   const loadUserStats = async (): Promise<UserStats> => {
     try {
-      // API utilisateur importée directement pour éviter les problèmes de bundling
-      const stats = await userApi.getUserStats();
+      // Direct API call instead of using userApi
+      const response = await apiClient.get('/user/stats');
+      const stats = response.data;
       
-      // Mettre à jour les données utilisateur avec les statistiques
+      // Update user data with statistics
       if (userData) {
         const updatedUserData = {
           ...userData,
@@ -268,12 +280,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       return stats;
     } catch (err) {
-      logger.error('Erreur lors du chargement des statistiques:', err);
-      // Retourner des statistiques par défaut en cas d'erreur
+      logger.error('Error loading statistics:', err);
+      // Return default statistics in case of error
       return {
         totalSessions: 0,
         totalDistance: 0,
+        totalDrivingHours: 0,
         badgesCount: 0,
+        competenciesMastered: 0,
         competencyProgress: {
           notStarted: 0,
           inProgress: 0,
@@ -283,13 +297,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  // Charger l'activité utilisateur
+  // Load user activity
   const loadUserActivity = async (): Promise<UserActivity> => {
     try {
-      // API utilisateur importée directement pour éviter les problèmes de bundling
-      const activity = await userApi.getUserActivity();
+      // Direct API call instead of using userApi
+      const response = await apiClient.get('/user/activity');
+      const activity = response.data;
       
-      // Mettre à jour les données utilisateur avec l'activité
+      // Update user data with activity
       if (userData) {
         const updatedUserData = {
           ...userData,
@@ -301,8 +316,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       return activity;
     } catch (err) {
-      logger.error('Erreur lors du chargement de l\'activité:', err);
-      // Retourner des données par défaut en cas d'erreur
+      logger.error('Error loading activity:', err);
+      // Return default data in case of error
       return {
         recentSessions: [],
         upcomingSessions: [],
@@ -311,12 +326,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  // Effacer les erreurs
+  // Clear errors
   const clearError = () => {
     setError(null);
   };
 
-  // Valeur du contexte
+  // Context value
   const value: UserContextState = {
     userData,
     isLoading,
@@ -332,3 +347,5 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
+
+export default UserContext;
