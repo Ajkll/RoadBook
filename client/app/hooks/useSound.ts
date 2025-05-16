@@ -46,24 +46,35 @@ export const useSound = () => {
   useEffect(() => {
     const preloadSounds = async () => {
       try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          shouldDuckAndroid: true,
-        });
-
         const soundKeys = Object.keys(SOUNDS) as SoundKey[];
+        
+        // Charger les sons courts avec un délai pour éviter les surcharges
         for (const key of soundKeys) {
-          try {
-            if (!SOUNDS[key].soundObject) {
-              console.log(`Preloading sound ${key}...`);
-              const { sound } = await Audio.Sound.createAsync(SOUNDS[key].asset);
-              SOUNDS[key].soundObject = sound;
-              await new Promise((resolve) => setTimeout(resolve, 100)); // Petit délai entre chaque chargement
+          if (SOUNDS[key].isShortSound) {
+            try {
+              if (!SOUNDS[key].soundObject) {
+                // Vérifier si le son n'est pas déjà chargé
+                console.log(`Preloading short sound ${key}...`);
+                
+                // Utiliser try/catch pour chaque son
+                try {
+                  const { sound } = await Audio.Sound.createAsync(
+                    SOUNDS[key].asset,
+                    { shouldPlay: false }
+                  );
+                  
+                  // Sauvegarder la référence
+                  SOUNDS[key].soundObject = sound;
+                  
+                  // Délai entre chaque chargement
+                  await new Promise((resolve) => setTimeout(resolve, 200));
+                } catch (soundError) {
+                  console.warn(`Could not preload sound ${key}:`, soundError.message);
+                }
+              }
+            } catch (error) {
+              // Error silencieuse - continuer avec les autres sons
             }
-          } catch (error) {
-            logger.error(`Failed to preload sound ${key}:`, error);
           }
         }
       } catch (error) {
@@ -71,15 +82,32 @@ export const useSound = () => {
       }
     };
 
-    preloadSounds();
+    // Démarrer le préchargement après un court délai
+    const timer = setTimeout(() => {
+      preloadSounds();
+    }, 1000);
 
     return () => {
-      const soundKeys = Object.keys(SOUNDS) as SoundKey[];
-      soundKeys.forEach((key) => {
-        if (SOUNDS[key].soundObject) {
-          SOUNDS[key].soundObject.unloadAsync().catch(logger.error);
-        }
-      });
+      clearTimeout(timer);
+      
+      // Décharger proprement les sons
+      try {
+        const soundKeys = Object.keys(SOUNDS) as SoundKey[];
+        soundKeys.forEach((key) => {
+          if (SOUNDS[key].soundObject) {
+            try {
+              SOUNDS[key].soundObject?.unloadAsync().catch(() => {
+                // Ignorer les erreurs silencieusement pendant le nettoyage
+                SOUNDS[key].soundObject = undefined;
+              });
+            } catch (e) {
+              // Ignorer les erreurs de déchargement
+            }
+          }
+        });
+      } catch (e) {
+        // Ignorer les erreurs globales pendant le nettoyage
+      }
     };
   }, []);
 

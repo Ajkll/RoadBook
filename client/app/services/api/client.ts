@@ -133,14 +133,16 @@ export const API_CONFIG = {
 export const API_URL = API_CONFIG.API_URL;
 export const CODESPACE_BASE_URL = GITHUB_CODESPACE_URL;
 export const TUNNEL_MODE = API_CONFIG.IS_PHYSICAL_DEVICE;
-const DEBUG = true;
+const DEBUG = false;
 
-// Loguer la configuration finale
-console.log('🔧 API CLIENT CONFIGURATION:');
-console.log('🔧 API URL:', API_URL);
-console.log('🔧 Environment:', API_CONFIG.ENVIRONMENT);
-console.log('🔧 Using NGROK:', API_CONFIG.USING_NGROK ? 'YES' : 'NO');
-console.log('🔧 Platform:', Platform.OS);
+// Loguer la configuration finale une seule fois au démarrage
+if (__DEV__) {
+  console.log('🔧 API CLIENT CONFIGURATION:');
+  console.log('🔧 API URL:', API_URL);
+  console.log('🔧 Environment:', API_CONFIG.ENVIRONMENT);
+  console.log('🔧 Using NGROK:', API_CONFIG.USING_NGROK ? 'YES' : 'NO');
+  console.log('🔧 Platform:', Platform.OS);
+}
 
 // ===== CRÉATION DU CLIENT AXIOS =====
 // Créer une instance axios configurée
@@ -381,7 +383,7 @@ apiClient.interceptors.response.use(
     }
 
     interface ErrorWithDetails extends Error {
-      originalError: AxiosError;
+      originalError: any;
       response: unknown;
       isRefreshError?: boolean;
     }

@@ -1,1478 +1,1349 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
   ScrollView,
-  ActivityIndicator,
-  Alert,
-  Platform,
-  RefreshControl,
   TextInput,
+  Alert,
+  Switch,
+  Modal,
+  ActivityIndicator
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
-import { useUser } from '../context/UserContext';
-import { useTheme } from '../constants/theme';
-import { logger } from '../utils/logger';
-import * as ImagePicker from 'expo-image-picker';
+// Utiliser des chemins absolus pour éviter les problèmes avec les parenthèses dans les chemins
+import { authApi } from '../services/api/auth.api';
+import notificationApi, { Notification } from '../services/api/notification.api';
+import badgeApi, { UserBadge } from '../services/api/badge.api';
+import { User } from '../types/auth.types';
 
-/**
- * Écran consolidé du profil utilisateur
- * Gère tous les aspects du profil en un seul composant avec état
- */
+// Options de confidentialité par défaut
+const DEFAULT_PRIVACY_SETTINGS = {
+  shareProgress: true,
+  receiveNotifications: true,
+  publicProfile: false,
+  locationTracking: true,
+  dataCollection: true
+};
+
 export default function ProfileScreen() {
-  const { logout } = useAuth();
-  const { userData: user, refreshUserData, updateUserProfile, updateUserAvatar, isLoading: userDataLoading } = useUser();
-  const { colors } = useTheme();
-  const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const isLoading = userDataLoading;
-  
-  // État pour gérer quelle vue est affichée
-  const [activeScreen, setActiveScreen] = useState('main'); // 'main', 'edit', 'changePassword', 'sessions', 'deleteAccount'
-  
-  // États pour le formulaire d'édition
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [firstName, setFirstName] = useState(user?.firstName || '');
-  const [lastName, setLastName] = useState(user?.lastName || '');
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
-  const [address, setAddress] = useState(user?.address || '');
-  const [bio, setBio] = useState(user?.bio || '');
-  const [profileImage, setProfileImage] = useState(user?.profilePicture || null);
-  
-  // États pour le changement de mot de passe
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // États pour la suppression de compte
-  const [confirmDelete, setConfirmDelete] = useState('');
-  
-  // Erreurs de validation
-  const [errors, setErrors] = useState({});
+  // État local
+  const [user, setUser] = useState<User | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [currentSection, setCurrentSection] = useState('profile');
+  const [editedUser, setEditedUser] = useState<Partial<User>>({});
+  const [privacySettings, setPrivacySettings] = useState(DEFAULT_PRIVACY_SETTINGS);
+  // Initialize with empty arrays to prevent undefined errors
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [modalAction, setModalAction] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [loadingError, setLoadingError] = useState('');
 
-  // Récupérer les informations utilisateur au chargement
+  // Charger les données utilisateur au démarrage
   useEffect(() => {
-    handleRefresh();
-  }, []);
-
-  useEffect(() => {
-    // Mise à jour des données du formulaire quand l'utilisateur change
-    if (user) {
-      setDisplayName(user.displayName || '');
-      setFirstName(user.firstName || '');
-      setLastName(user.lastName || '');
-      setPhoneNumber(user.phoneNumber || '');
-      setAddress(user.address || '');
-      setBio(user.bio || '');
-      setProfileImage(user.profilePicture || null);
-    }
-  }, [user]);
-
-  /**
-   * Rafraîchit les données utilisateur depuis le serveur
-   */
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      logger.info('Refreshing user data in profile page');
+    const loadUserData = async () => {
+      setLoading(true);
+      setLoadingError('');
       
-      // Debug information
-      if (user) {
-        logger.info('Current user before refresh:', {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          displayName: user.displayName
-        });
-      } else {
-        logger.warn('No user data available before refresh');
-      }
+      // Données de test pour les cas où l'API n'est pas disponible
+      const mockNotifications = [
+        {
+          id: 'notif-1',
+          type: 'info',
+          title: 'Bienvenue sur RoadBook',
+          message: 'Merci d\'utiliser notre application. Découvrez toutes les fonctionnalités disponibles.',
+          isRead: false,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'notif-2',
+          type: 'achievement',
+          title: 'Première connexion',
+          message: 'Vous vous êtes connecté avec succès à votre compte RoadBook.',
+          isRead: true,
+          createdAt: new Date(Date.now() - 86400000).toISOString() // 1 jour avant
+        }
+      ];
+      
+      const mockBadges = [
+        {
+          id: 'badge-1',
+          userId: 'current-user',
+          badgeId: 'welcome',
+          awardedAt: new Date(Date.now() - 86400000).toISOString(),
+          name: '👋 Bienvenue',
+          description: 'Badge obtenu lors de votre inscription',
+          imageUrl: '👋'
+        }
+      ];
       
       try {
-        await refreshUserData();
-        logger.info('User data refreshed successfully');
-      } catch (refreshError) {
-        // Handle different types of errors
-        if (refreshError instanceof Error && 
-            (refreshError.message.includes('Session expirée') || 
-             refreshError.message.includes('401') ||
-             refreshError.message.includes('token'))) {
-          logger.warn('Auth error during refresh, handled by AuthContext', refreshError);
-          return;
+        // 1. Récupérer l'utilisateur actuel - si cela échoue, tout le reste est annulé
+        const userData = await authApi.getCurrentUser();
+        setUser(userData);
+        setEditedUser({...userData});
+        
+        // 2. Charger les autres données avec des essais indépendants
+        // Notifications
+        try {
+          const userNotifications = await notificationApi.getNotifications();
+          if (Array.isArray(userNotifications)) {
+            setNotifications(userNotifications);
+          } else {
+            console.log('Les notifications ne sont pas un tableau, utilisation de données simulées');
+            setNotifications(mockNotifications);
+          }
+        } catch (notificationError) {
+          console.log('Erreur lors de la récupération des notifications, utilisation de données simulées:', notificationError);
+          setNotifications(mockNotifications);
         }
         
-        if (refreshError instanceof Error && 
-            (refreshError.message.includes('saveItem') || 
-             refreshError.message.includes("doesn't exist"))) {
-          logger.warn('Storage error during refresh, but user data may be available', refreshError);
-        } else {
-          throw refreshError;
+        // Badges
+        try {
+          const userBadges = await badgeApi.getMyBadges();
+          if (Array.isArray(userBadges)) {
+            setBadges(userBadges);
+          } else {
+            console.log('Les badges ne sont pas un tableau, utilisation de données simulées');
+            setBadges(mockBadges);
+          }
+        } catch (badgeError) {
+          console.log('Erreur lors de la récupération des badges, utilisation de données simulées:', badgeError);
+          setBadges(mockBadges);
         }
+          
+        // Sessions - getUserSessions retourne maintenant toujours des données (réelles ou simulées)
+        const userSessions = await authApi.getUserSessions();
+        if (Array.isArray(userSessions) && userSessions.length > 0) {
+          setSessions(userSessions);
+        } else {
+          console.log('Sessions vides ou non valides, utilisation de sessions par défaut');
+          setSessions([{ 
+            id: 'session-current', 
+            device: 'Appareil actuel', 
+            location: 'Emplacement actuel', 
+            lastActive: new Date().toISOString(), 
+            current: true 
+          }]);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données utilisateur:', error);
+        setLoadingError('Impossible de charger vos données. Veuillez réessayer.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      logger.error('Erreur lors du rafraîchissement du profil', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de récupérer vos informations. Veuillez réessayer plus tard.'
-      );
-    } finally {
-      setRefreshing(false);
-    }
+    };
+    
+    loadUserData();
+  }, []);
+
+  // Fonction pour formater les dates
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Non disponible';
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
-  /**
-   * Gère la déconnexion de l'utilisateur
-   */
-  const handleLogout = async () => {
-    Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
-      [
-        {
-          text: 'Annuler',
-          style: 'cancel',
-        },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              logger.error('Erreur lors de la déconnexion', error);
-              Alert.alert('Erreur', 'Un problème est survenu lors de la déconnexion.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  /**
-   * Gère la sélection d'une image depuis la galerie
-   */
-  const handleImagePick = async () => {
+  // Gérer la sauvegarde du profil
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    
     try {
-      // Demander les permissions
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (!permissionResult.granted) {
-        Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie pour changer votre photo de profil.');
+      // Vérifier que les données sont valides
+      if (!editedUser.displayName || !editedUser.email) {
+        Alert.alert('Erreur', 'Le nom d\'affichage et l\'email sont requis.');
+        setLoading(false);
         return;
       }
       
-      // Lancer le sélecteur d'image
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+      // Appeler l'API pour mettre à jour le profil
+      const updatedUser = await authApi.updateUserProfile(editedUser);
       
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
-        
-        // Utiliser notre nouvelle fonction updateUserAvatar du UserContext
-        try {
-          setIsSaving(true);
-          await updateUserAvatar(result.assets[0].uri);
-          logger.info('Photo de profil mise à jour avec succès via UserContext');
-        } catch (updateError) {
-          logger.error('Erreur lors de la mise à jour de l\'avatar via UserContext', updateError);
-          // Continuer quand même car nous avons déjà mis à jour localement
-          Alert.alert('Avertissement', 'Votre photo a été mise à jour localement, mais il pourrait y avoir des problèmes lors de la synchronisation avec le serveur.');
-        } finally {
-          setIsSaving(false);
+      // Mettre à jour l'état local
+      setUser(updatedUser);
+      setEditing(false);
+      Alert.alert('Succès', 'Profil mis à jour avec succès');
+    } catch (error) {
+      Alert.alert('Erreur', error.message || 'Erreur lors de la mise à jour du profil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gérer la déconnexion
+  const handleLogout = () => {
+    setModalAction('logout');
+    setModalMessage('Êtes-vous sûr de vouloir vous déconnecter ?');
+    setShowConfirmModal(true);
+  };
+
+  // Gérer la suppression du compte
+  const handleDeleteAccount = () => {
+    setModalAction('delete');
+    setModalMessage('Cette action est irréversible. Toutes vos données seront définitivement supprimées. Pour confirmer, tapez "SUPPRIMER" ci-dessous.');
+    setShowConfirmModal(true);
+  };
+
+  // Gérer la déconnexion d'une session
+  const handleLogoutSession = async (sessionId) => {
+    setLoading(true);
+    
+    try {
+      // Tenter d'utiliser l'API si elle existe
+      await authApi.revokeSession(sessionId);
+      
+      // Mettre à jour la liste des sessions
+      setSessions(sessions.filter(session => session.id !== sessionId));
+      Alert.alert('Succès', 'Session déconnectée avec succès');
+    } catch (error) {
+      console.log('Erreur ou API de session non disponible:', error);
+      
+      // Simuler le comportement si l'API n'est pas encore implémentée
+      setSessions(sessions.filter(session => session.id !== sessionId));
+      Alert.alert('Succès', 'Session déconnectée avec succès (simulation)');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gérer la déconnexion de toutes les sessions
+  const handleLogoutAllSessions = async () => {
+    setLoading(true);
+    
+    try {
+      // Cette fonctionnalité n'existe probablement pas encore dans l'API
+      // Mais nous pouvons la simuler pour le moment
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mettre à jour l'état local
+      setSessions(sessions.filter(session => session.current));
+      Alert.alert('Succès', 'Toutes les autres sessions ont été déconnectées');
+    } catch (error) {
+      Alert.alert('Erreur', error.message || 'Une erreur s\'est produite');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gérer la modification des paramètres de confidentialité
+  const handleTogglePrivacy = (setting) => {
+    setPrivacySettings({
+      ...privacySettings,
+      [setting]: !privacySettings[setting]
+    });
+  };
+
+  // Gérer la confirmation modale
+  const handleConfirmAction = async () => {
+    setLoading(true);
+    
+    try {
+      if (modalAction === 'logout') {
+        console.log('==== LOGOUT ATTEMPT ====');
+        await authApi.logout();
+        Alert.alert('Déconnexion', 'Vous avez été déconnecté avec succès');
+      } else if (modalAction === 'delete') {
+        if (deleteConfirmText === 'SUPPRIMER') {
+          console.log('==== DELETE ACCOUNT ATTEMPT ====');
+          // Cette fonctionnalité n'existe probablement pas encore dans l'API
+          // Mais nous pouvons la simuler pour le moment
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          Alert.alert('Compte supprimé', 'Votre compte a été supprimé');
+        } else {
+          Alert.alert('Erreur', 'Veuillez taper exactement "SUPPRIMER" pour confirmer');
+          setLoading(false);
+          return;
         }
       }
     } catch (error) {
-      logger.error('Erreur lors de la sélection d\'image', error);
-      Alert.alert('Erreur', 'Impossible de sélectionner une image. Veuillez réessayer.');
-    }
-  };
-
-  /**
-   * Valide le formulaire d'édition de profil
-   */
-  const validateEditForm = () => {
-    const newErrors = {};
-    
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Le nom d\'utilisateur est requis';
-    } else if (displayName.length < 3) {
-      newErrors.displayName = 'Le nom d\'utilisateur doit contenir au moins 3 caractères';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  /**
-   * Valide le formulaire de changement de mot de passe
-   */
-  const validatePasswordForm = () => {
-    const newErrors = {};
-    
-    if (!currentPassword) {
-      newErrors.currentPassword = 'Le mot de passe actuel est requis';
-    }
-    
-    if (!newPassword) {
-      newErrors.newPassword = 'Le nouveau mot de passe est requis';
-    } else if (newPassword.length < 6) {
-      newErrors.newPassword = 'Le mot de passe doit contenir au moins 6 caractères';
-    }
-    
-    if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  /**
-   * Soumet le formulaire pour mettre à jour le profil
-   */
-  const handleSubmitEdit = async () => {
-    if (!validateEditForm()) {
-      return;
-    }
-    
-    try {
-      setIsSaving(true);
-      
-      // Utiliser notre UserContext pour mettre à jour le profil
-      const profileData = {
-        displayName,
-        firstName,
-        lastName,
-        phoneNumber,
-        address,
-        bio
-      };
-      
-      await updateUserProfile(profileData);
-      
-      Alert.alert(
-        'Profil mis à jour',
-        'Vos informations ont été mises à jour avec succès.',
-        [
-          {
-            text: 'OK',
-            onPress: () => setActiveScreen('main'),
-          },
-        ]
-      );
-      
-    } catch (error) {
-      logger.error('Erreur lors de la mise à jour du profil', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de mettre à jour votre profil. Veuillez réessayer plus tard.'
-      );
+      Alert.alert('Erreur', error.message || 'Une erreur s\'est produite');
     } finally {
-      setIsSaving(false);
+      setLoading(false);
+      setShowConfirmModal(false);
+      setDeleteConfirmText('');
     }
   };
 
-  /**
-   * Soumet le formulaire pour changer le mot de passe
-   */
-  const handleSubmitPasswordChange = async () => {
-    if (!validatePasswordForm()) {
-      return;
-    }
-    
-    try {
-      setIsSaving(true);
-      
-      // En production, nous enverrions ces données au serveur
-      // Pour l'instant, simulons une réussite
-      
-      setTimeout(() => {
-        Alert.alert(
-          'Mot de passe mis à jour',
-          'Votre mot de passe a été modifié avec succès.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setCurrentPassword('');
-                setNewPassword('');
-                setConfirmPassword('');
-                setActiveScreen('main');
-              },
-            },
-          ]
-        );
-        setIsSaving(false);
-      }, 1000);
-      
-    } catch (error) {
-      logger.error('Erreur lors du changement de mot de passe', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de changer votre mot de passe. Veuillez réessayer plus tard.'
-      );
-      setIsSaving(false);
+  // Rendu du contenu en fonction de la section active
+  const renderContent = () => {
+    switch(currentSection) {
+      case 'profile':
+        return renderProfileSection();
+      case 'security':
+        return renderSecuritySection();
+      case 'notifications':
+        return renderNotificationsSection();
+      case 'privacy':
+        return renderPrivacySection();
+      case 'badges':
+        return renderBadgesSection();
+      default:
+        return renderProfileSection();
     }
   };
 
-  /**
-   * Soumet la demande de suppression de compte
-   */
-  const handleDeleteAccount = async () => {
-    if (confirmDelete !== 'SUPPRIMER') {
-      setErrors({
-        confirmDelete: 'Veuillez taper "SUPPRIMER" pour confirmer'
-      });
-      return;
-    }
-    
-    try {
-      setIsSaving(true);
-      
-      // En production, nous enverrions cette demande au serveur
-      // Pour l'instant, simulons une réussite
-      
-      setTimeout(() => {
-        Alert.alert(
-          'Compte supprimé',
-          'Votre compte a été supprimé avec succès.',
-          [
-            {
-              text: 'OK',
-              onPress: () => logout(),
-            },
-          ]
-        );
-        setIsSaving(false);
-      }, 1500);
-      
-    } catch (error) {
-      logger.error('Erreur lors de la suppression du compte', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de supprimer votre compte. Veuillez réessayer plus tard.'
-      );
-      setIsSaving(false);
-    }
+  // Section profil
+  const renderProfileSection = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        {!editing ? (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nom d'affichage:</Text>
+              <Text style={styles.infoValue}>{user.displayName}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Prénom:</Text>
+              <Text style={styles.infoValue}>{user.firstName || '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nom:</Text>
+              <Text style={styles.infoValue}>{user.lastName || '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Email:</Text>
+              <Text style={styles.infoValue}>{user.email}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Téléphone:</Text>
+              <Text style={styles.infoValue}>{user.phoneNumber || '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Date de naissance:</Text>
+              <Text style={styles.infoValue}>{user.birthDate ? formatDate(user.birthDate) : '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Adresse:</Text>
+              <Text style={styles.infoValue}>{user.address || '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Rôle:</Text>
+              <Text style={styles.infoValue}>{user.role}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Bio:</Text>
+              <Text style={styles.infoValue}>{user.bio || '-'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Membre depuis:</Text>
+              <Text style={styles.infoValue}>{formatDate(user.createdAt)}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={[styles.button, styles.editButton]} 
+              onPress={() => setEditing(true)}
+            >
+              <Text style={styles.buttonText}>Modifier mon profil</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Nom d'affichage:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.displayName}
+                onChangeText={(text) => setEditedUser({...editedUser, displayName: text})}
+                placeholder="Nom d'affichage"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Prénom:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.firstName}
+                onChangeText={(text) => setEditedUser({...editedUser, firstName: text})}
+                placeholder="Prénom"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Nom:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.lastName}
+                onChangeText={(text) => setEditedUser({...editedUser, lastName: text})}
+                placeholder="Nom"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.email}
+                onChangeText={(text) => setEditedUser({...editedUser, email: text})}
+                placeholder="Email"
+                keyboardType="email-address"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Téléphone:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.phoneNumber}
+                onChangeText={(text) => setEditedUser({...editedUser, phoneNumber: text})}
+                placeholder="Téléphone"
+                keyboardType="phone-pad"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Adresse:</Text>
+              <TextInput
+                style={styles.input}
+                value={editedUser.address}
+                onChangeText={(text) => setEditedUser({...editedUser, address: text})}
+                placeholder="Adresse"
+                multiline
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Bio:</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput]}
+                value={editedUser.bio}
+                onChangeText={(text) => setEditedUser({...editedUser, bio: text})}
+                placeholder="Parlez-nous de vous..."
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+            
+            <View style={styles.buttonRow}>
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton]} 
+                onPress={() => {
+                  setEditedUser({...user});
+                  setEditing(false);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.button, styles.saveButton]} 
+                onPress={handleSaveProfile}
+              >
+                <Text style={styles.buttonText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    );
+  };
+
+  // Section sécurité
+  const renderSecuritySection = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Gestion du mot de passe</Text>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.securityButton]} 
+          onPress={() => Alert.alert('Simulation', 'Redirection vers la page de changement de mot de passe')}
+        >
+          <Ionicons name="lock-closed-outline" size={20} color="#fff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Changer mon mot de passe</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.sectionTitle}>Sessions actives</Text>
+        
+        {sessions && sessions.length > 0 ? (
+          sessions.map((session) => (
+            <View key={session.id} style={styles.sessionCard}>
+              <View style={styles.sessionInfo}>
+                <View style={styles.sessionHeader}>
+                  <Ionicons 
+                    name={session.device && session.device.toLowerCase().includes('iphone') || session.device && session.device.toLowerCase().includes('samsung') ? 'phone-portrait-outline' : 'desktop-outline'} 
+                    size={18} 
+                    color="#666" 
+                  />
+                  <Text style={styles.sessionDevice}>
+                    {session.device || 'Appareil inconnu'} {session.current && <Text style={styles.currentSession}>(Session actuelle)</Text>}
+                  </Text>
+                </View>
+                <Text style={styles.sessionDetail}>
+                  <Ionicons name="location-outline" size={14} color="#888" /> {session.location || 'Emplacement non disponible'}
+                </Text>
+                <Text style={styles.sessionDetail}>
+                  <Ionicons name="time-outline" size={14} color="#888" /> Dernière activité: {formatDate(session.lastActive)}
+                </Text>
+              </View>
+              
+              {!session.current && (
+                <TouchableOpacity 
+                  style={styles.logoutSessionButton}
+                  onPress={() => handleLogoutSession(session.id)}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyMessage}>Aucune session active trouvée</Text>
+        )}
+        
+        {sessions && sessions.filter(s => !s.current).length > 0 && (
+          <TouchableOpacity 
+            style={[styles.button, styles.logoutAllButton]}
+            onPress={handleLogoutAllSessions}
+          >
+            <Text style={styles.buttonText}>Déconnecter toutes les autres sessions</Text>
+          </TouchableOpacity>
+        )}
+        
+        <Text style={styles.sectionTitle}>Suppression du compte</Text>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.dangerButton]} 
+          onPress={handleDeleteAccount}
+        >
+          <Ionicons name="trash-outline" size={20} color="#fff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Supprimer mon compte</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Section notifications
+  const renderNotificationsSection = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Mes notifications</Text>
+        
+        {!notifications || notifications.length === 0 ? (
+          <Text style={styles.emptyMessage}>Vous n'avez pas de notifications</Text>
+        ) : (
+          notifications.map((notification) => (
+            <View key={notification.id} style={[styles.notificationCard, notification.isRead ? styles.notificationRead : styles.notificationUnread]}>
+              <View style={styles.notificationDot}>
+                {!notification.isRead && <View style={styles.unreadDot} />}
+              </View>
+              <View style={styles.notificationContent}>
+                <Text style={styles.notificationTitle}>{notification.title}</Text>
+                <Text style={styles.notificationMessage}>{notification.message}</Text>
+                <Text style={styles.notificationDate}>{formatDate(notification.createdAt)}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.notificationAction}
+                onPress={() => {
+                  // Marquer comme lu
+                  if (notifications) {
+                    setNotifications(notifications.map(n => 
+                      n.id === notification.id ? {...n, isRead: true} : n
+                    ));
+                  }
+                }}
+              >
+                <Ionicons name={notification.isRead ? "checkmark-done-outline" : "checkmark-outline"} size={20} color="#7CA7D8" />
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+        
+        {notifications && notifications.length > 0 && (
+          <TouchableOpacity 
+            style={[styles.button, styles.clearButton]}
+            onPress={() => {
+              setNotifications([]);
+              Alert.alert('Succès', 'Toutes les notifications ont été supprimées');
+            }}
+          >
+            <Text style={styles.buttonText}>Supprimer toutes les notifications</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // Section confidentialité
+  const renderPrivacySection = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Paramètres de confidentialité</Text>
+        
+        <View style={styles.privacyOption}>
+          <View style={styles.privacyText}>
+            <Text style={styles.privacyTitle}>Partager mes progrès</Text>
+            <Text style={styles.privacyDescription}>Autorise le partage de vos progrès avec votre guide/instructeur</Text>
+          </View>
+          <Switch
+            value={privacySettings.shareProgress}
+            onValueChange={() => handleTogglePrivacy('shareProgress')}
+            trackColor={{ false: "#dedede", true: "#b1cfed" }}
+            thumbColor={privacySettings.shareProgress ? "#7CA7D8" : "#f4f3f4"}
+          />
+        </View>
+        
+        <View style={styles.privacyOption}>
+          <View style={styles.privacyText}>
+            <Text style={styles.privacyTitle}>Recevoir des notifications</Text>
+            <Text style={styles.privacyDescription}>Active ou désactive toutes les notifications</Text>
+          </View>
+          <Switch
+            value={privacySettings.receiveNotifications}
+            onValueChange={() => handleTogglePrivacy('receiveNotifications')}
+            trackColor={{ false: "#dedede", true: "#b1cfed" }}
+            thumbColor={privacySettings.receiveNotifications ? "#7CA7D8" : "#f4f3f4"}
+          />
+        </View>
+        
+        <View style={styles.privacyOption}>
+          <View style={styles.privacyText}>
+            <Text style={styles.privacyTitle}>Profil public</Text>
+            <Text style={styles.privacyDescription}>Rend votre profil visible pour les autres utilisateurs</Text>
+          </View>
+          <Switch
+            value={privacySettings.publicProfile}
+            onValueChange={() => handleTogglePrivacy('publicProfile')}
+            trackColor={{ false: "#dedede", true: "#b1cfed" }}
+            thumbColor={privacySettings.publicProfile ? "#7CA7D8" : "#f4f3f4"}
+          />
+        </View>
+        
+        <View style={styles.privacyOption}>
+          <View style={styles.privacyText}>
+            <Text style={styles.privacyTitle}>Suivi de position</Text>
+            <Text style={styles.privacyDescription}>Autorise le suivi de votre position pendant les sessions de conduite</Text>
+          </View>
+          <Switch
+            value={privacySettings.locationTracking}
+            onValueChange={() => handleTogglePrivacy('locationTracking')}
+            trackColor={{ false: "#dedede", true: "#b1cfed" }}
+            thumbColor={privacySettings.locationTracking ? "#7CA7D8" : "#f4f3f4"}
+          />
+        </View>
+        
+        <View style={styles.privacyOption}>
+          <View style={styles.privacyText}>
+            <Text style={styles.privacyTitle}>Collecte de données</Text>
+            <Text style={styles.privacyDescription}>Autorise la collecte de données pour améliorer l'application</Text>
+          </View>
+          <Switch
+            value={privacySettings.dataCollection}
+            onValueChange={() => handleTogglePrivacy('dataCollection')}
+            trackColor={{ false: "#dedede", true: "#b1cfed" }}
+            thumbColor={privacySettings.dataCollection ? "#7CA7D8" : "#f4f3f4"}
+          />
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.saveButton]} 
+          onPress={() => Alert.alert('Succès', 'Paramètres de confidentialité enregistrés')}
+        >
+          <Text style={styles.buttonText}>Enregistrer les paramètres</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.downloadButton]}
+          onPress={() => Alert.alert('Simulation', 'Téléchargement de vos données personnelles')}
+        >
+          <Ionicons name="download-outline" size={20} color="#fff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Télécharger mes données</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Section badges
+  const renderBadgesSection = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Mes badges</Text>
+        
+        {!badges || badges.length === 0 ? (
+          <Text style={styles.emptyMessage}>Vous n'avez pas encore obtenu de badges</Text>
+        ) : (
+          badges.map((badge) => (
+            <View key={badge.id} style={styles.badgeCard}>
+              <View style={styles.badgeIcon}>
+                <Text style={styles.badgeEmoji}>{badge.imageUrl}</Text>
+              </View>
+              <View style={styles.badgeContent}>
+                <Text style={styles.badgeName}>{badge.name}</Text>
+                <Text style={styles.badgeDescription}>{badge.description}</Text>
+                <Text style={styles.badgeDate}>Obtenu le {formatDate(badge.awardedAt)}</Text>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+    );
   };
 
   // Afficher un indicateur de chargement pendant le chargement initial
-  if (isLoading && activeScreen === 'main') {
+  if (loading && !user) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ marginTop: 16, color: colors.text }}>Chargement du profil...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#7CA7D8" />
+        <Text style={styles.loadingText}>Chargement de votre profil...</Text>
       </View>
     );
   }
   
-  // Écran quand l'utilisateur n'est pas chargé
-  if (!user && activeScreen === 'main') {
+  // Afficher un message d'erreur si le chargement a échoué
+  if (loadingError && !user) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.error, marginBottom: 20, fontWeight: 'bold' }}>
-          Utilisateur non disponible
-        </Text>
-        <Text style={{ marginBottom: 20, color: colors.text }}>
-          Impossible de charger les données utilisateur. Veuillez vous reconnecter.
-        </Text>
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={60} color="#FF6B6B" />
+        <Text style={styles.errorText}>{loadingError}</Text>
         <TouchableOpacity 
-          style={[styles.retryButton, { backgroundColor: colors.primary }]}
-          onPress={handleRefresh}
+          style={styles.retryButton}
+          onPress={() => window.location.reload()} // Rafraîchir la page
         >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Réessayer</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.logoutButton, { backgroundColor: colors.card, marginTop: 16 }]}
-          onPress={logout}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.text} />
-          <Text style={[styles.logoutButtonText, { color: colors.text }]}>Déconnexion</Text>
+          <Text style={styles.retryButtonText}>Réessayer</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
-  // En-tête dynamique selon l'écran actif
-  const renderHeader = () => {
-    let title = '';
-    let showBackButton = activeScreen !== 'main';
-    
-    switch (activeScreen) {
-      case 'edit':
-        title = 'Modifier mon profil';
-        break;
-      case 'changePassword':
-        title = 'Changer de mot de passe';
-        break;
-      case 'sessions':
-        title = 'Sessions actives';
-        break;
-      case 'deleteAccount':
-        title = 'Supprimer mon compte';
-        break;
-      default:
-        title = 'Mon profil';
-        showBackButton = false;
-    }
-    
+  
+  // Utilisateur non chargé mais pas d'erreur (cas rare)
+  if (!user) {
     return (
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
-        {showBackButton && (
-          <TouchableOpacity 
-            style={styles.headerBackButton} 
-            onPress={() => setActiveScreen('main')}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-        )}
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
-        <View style={styles.headerRightPlaceholder} />
+      <View style={styles.loadingContainer}>
+        <Text>Données utilisateur non disponibles</Text>
       </View>
     );
-  };
+  }
 
-  // Écran principal du profil
-  const renderMainScreen = () => {
-    return (
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {refreshing && (
-          <View style={styles.refreshingBanner}>
-            <ActivityIndicator size="small" color={colors.background} />
-            <Text style={styles.refreshingText}>Actualisation...</Text>
-          </View>
-        )}
-        
-        {/* Section de l'en-tête du profil */}
-        <View style={styles.profileHeader}>
-          <TouchableOpacity 
-            style={styles.profileImageContainer} 
-            onPress={() => setActiveScreen('edit')}
-          >
-            {user?.profilePicture ? (
-              <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
-            ) : (
-              <View style={[styles.profileImagePlaceholder, { backgroundColor: colors.border }]}>
-                <Ionicons name="person" size={50} color={colors.background} />
-              </View>
-            )}
-            <View style={[styles.editIconContainer, { backgroundColor: colors.primary }]}>
-              <Ionicons name="camera" size={14} color="white" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: colors.text }]}>
-              {user?.displayName || 'Utilisateur'}
-            </Text>
-            <Text style={[styles.profileEmail, { color: colors.secondaryText }]}>
-              {user?.email || 'email@exemple.com'}
-            </Text>
-            <View style={styles.roleContainer}>
-              <Text style={[styles.roleLabel, { backgroundColor: colors.primary, color: colors.background }]}>
-                {user?.role || 'APPRENTICE'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Section des actions du profil */}
-        <View style={[styles.actionsContainer, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Mon Compte</Text>
-
-          <TouchableOpacity 
-            style={styles.actionItem} 
-            onPress={() => setActiveScreen('edit')}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="person-circle-outline" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionText, { color: colors.text }]}>Modifier mon profil</Text>
-              <Text style={[styles.actionSubtext, { color: colors.secondaryText }]}>
-                Nom, photo, informations personnelles
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionItem} 
-            onPress={() => setActiveScreen('changePassword')}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="key-outline" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionText, { color: colors.text }]}>Changer de mot de passe</Text>
-              <Text style={[styles.actionSubtext, { color: colors.secondaryText }]}>
-                Sécurité du compte
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionItem} 
-            onPress={() => setActiveScreen('sessions')}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionText, { color: colors.text }]}>Sessions actives</Text>
-              <Text style={[styles.actionSubtext, { color: colors.secondaryText }]}>
-                Gérer les appareils connectés
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Section pour le support et la sécurité */}
-        <View style={[styles.actionsContainer, { backgroundColor: colors.card, marginTop: 16 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support & Sécurité</Text>
-
-          <TouchableOpacity 
-            style={styles.actionItem} 
-            onPress={() => router.navigate('/PrivacyScreen')}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionText, { color: colors.text }]}>Confidentialité</Text>
-              <Text style={[styles.actionSubtext, { color: colors.secondaryText }]}>
-                Paramètres de confidentialité
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionItem} 
-            onPress={() => router.navigate('/HelpScreen')}
-          >
-            <View style={styles.actionIconContainer}>
-              <Ionicons name="help-circle-outline" size={24} color={colors.primary} />
-            </View>
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionText, { color: colors.text }]}>Aide & Support</Text>
-              <Text style={[styles.actionSubtext, { color: colors.secondaryText }]}>
-                FAQ, contact assistance
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Section des actions dangereuses */}
-        <View style={styles.dangerZone}>
-          <TouchableOpacity 
-            style={[styles.dangerButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} 
-            onPress={() => setActiveScreen('deleteAccount')}
-          >
-            <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
-            <Text style={styles.dangerButtonText}>Supprimer mon compte</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.logoutButton, { backgroundColor: colors.card }]} 
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={20} color={colors.text} />
-            <Text style={[styles.logoutButtonText, { color: colors.text }]}>Déconnexion</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={[styles.versionText, { color: colors.secondaryText }]}>
-            Version 1.0.0
-          </Text>
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Écran d'édition du profil
-  const renderEditScreen = () => {
-    return (
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]} 
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* Photo de profil */}
-        <View style={styles.imageContainer}>
-          <TouchableOpacity style={styles.imageWrapper} onPress={handleImagePick}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
-            ) : (
-              <View style={[styles.profilePlaceholder, { backgroundColor: colors.border }]}>
-                <Ionicons name="person" size={60} color={colors.background} />
-              </View>
-            )}
-            <View style={[styles.cameraIconContainer, { backgroundColor: colors.primary }]}>
-              <Ionicons name="camera" size={18} color="white" />
-            </View>
-          </TouchableOpacity>
-          <Text style={[styles.imageHelperText, { color: colors.secondaryText }]}>
-            Touchez la photo pour la modifier
-          </Text>
-        </View>
-
-        {/* Champs du formulaire */}
-        <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Nom d'utilisateur</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: errors.displayName ? '#ef4444' : colors.border },
-              ]}
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="Nom d'utilisateur"
-              placeholderTextColor={colors.secondaryText}
-            />
-            {errors.displayName && (
-              <Text style={styles.errorText}>{errors.displayName}</Text>
-            )}
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Prénom</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
-                ]}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Prénom"
-                placeholderTextColor={colors.secondaryText}
-              />
-            </View>
-
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Nom</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
-                ]}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Nom"
-                placeholderTextColor={colors.secondaryText}
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Téléphone</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
-              ]}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="Numéro de téléphone"
-              placeholderTextColor={colors.secondaryText}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Adresse</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
-              ]}
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Adresse postale"
-              placeholderTextColor={colors.secondaryText}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>À propos de moi</Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
-              ]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Quelques mots à propos de vous..."
-              placeholderTextColor={colors.secondaryText}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.saveButton, { backgroundColor: colors.primary }]} 
-              onPress={handleSubmitEdit}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.cancelButton, { backgroundColor: colors.card }]} 
-              onPress={() => setActiveScreen('main')}
-              disabled={isSaving}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>Annuler</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Écran de changement de mot de passe
-  const renderPasswordScreen = () => {
-    return (
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]} 
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.formContainer}>
-          <View style={styles.passwordInfoBox}>
-            <Text style={[styles.passwordInfoText, { color: colors.text }]}>
-              Pour changer votre mot de passe, veuillez entrer votre mot de passe actuel puis votre nouveau mot de passe.
-            </Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Mot de passe actuel</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: errors.currentPassword ? '#ef4444' : colors.border },
-              ]}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="Entrez votre mot de passe actuel"
-              placeholderTextColor={colors.secondaryText}
-              secureTextEntry
-            />
-            {errors.currentPassword && (
-              <Text style={styles.errorText}>{errors.currentPassword}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Nouveau mot de passe</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: errors.newPassword ? '#ef4444' : colors.border },
-              ]}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="Entrez votre nouveau mot de passe"
-              placeholderTextColor={colors.secondaryText}
-              secureTextEntry
-            />
-            {errors.newPassword && (
-              <Text style={styles.errorText}>{errors.newPassword}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Confirmer le mot de passe</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: colors.card, color: colors.text, borderColor: errors.confirmPassword ? '#ef4444' : colors.border },
-              ]}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirmez votre nouveau mot de passe"
-              placeholderTextColor={colors.secondaryText}
-              secureTextEntry
-            />
-            {errors.confirmPassword && (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            )}
-          </View>
-
-          <View style={styles.passwordHintContainer}>
-            <Text style={[styles.passwordHintText, { color: colors.secondaryText }]}>
-              • Votre mot de passe doit comporter au moins 6 caractères
-            </Text>
-            <Text style={[styles.passwordHintText, { color: colors.secondaryText }]}>
-              • Nous vous recommandons d'utiliser des chiffres et des caractères spéciaux
-            </Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.saveButton, { backgroundColor: colors.primary }]} 
-              onPress={handleSubmitPasswordChange}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.saveButtonText}>Changer le mot de passe</Text>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.cancelButton, { backgroundColor: colors.card }]} 
-              onPress={() => setActiveScreen('main')}
-              disabled={isSaving}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>Annuler</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Écran des sessions actives
-  const renderSessionsScreen = () => {
-    // Sessions fictives pour la démo
-    const sessions = [
-      { id: 1, device: 'iPhone 12', location: 'Bruxelles, BE', lastActive: '15 mai 2025', isCurrent: true },
-      { id: 2, device: 'Samsung Galaxy S20', location: 'Namur, BE', lastActive: '10 mai 2025', isCurrent: false },
-      { id: 3, device: 'Chrome (Windows)', location: 'Liège, BE', lastActive: '2 mai 2025', isCurrent: false },
-    ];
-
-    return (
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]} 
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.sessionsContainer}>
-          <Text style={[styles.sessionsInfoText, { color: colors.text }]}>
-            Voici la liste des appareils où vous êtes actuellement connecté. Vous pouvez déconnecter un appareil spécifique ou tous les appareils sauf celui-ci.
-          </Text>
-
-          {sessions.map((session) => (
-            <View 
-              key={session.id} 
-              style={[
-                styles.sessionItem, 
-                { backgroundColor: colors.card },
-                session.isCurrent && styles.currentSessionItem
-              ]}
-            >
-              <View style={styles.sessionIconContainer}>
-                <Ionicons 
-                  name={session.device.includes('iPhone') || session.device.includes('Samsung') ? 'phone-portrait' : 'laptop'}
-                  size={24} 
-                  color={colors.primary} 
-                />
-              </View>
-              <View style={styles.sessionInfo}>
-                <Text style={[styles.sessionDevice, { color: colors.text }]}>
-                  {session.device} {session.isCurrent && '(Cet appareil)'}
-                </Text>
-                <Text style={[styles.sessionLocation, { color: colors.secondaryText }]}>
-                  {session.location}
-                </Text>
-                <Text style={[styles.sessionDate, { color: colors.secondaryText }]}>
-                  Dernière activité: {session.lastActive}
-                </Text>
-              </View>
-              {!session.isCurrent && (
-                <TouchableOpacity 
-                  style={[styles.sessionLogoutButton, { backgroundColor: colors.border }]}
-                  onPress={() => Alert.alert('Déconnexion', `Déconnecté de ${session.device}`)}
-                >
-                  <Text style={[styles.sessionLogoutText, { color: colors.text }]}>Déconnecter</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-
-          <TouchableOpacity 
-            style={[styles.logoutAllButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
-            onPress={() => Alert.alert(
-              'Déconnexion de tous les appareils',
-              'Êtes-vous sûr de vouloir déconnecter tous les autres appareils ?',
-              [
-                { text: 'Annuler', style: 'cancel' },
-                { 
-                  text: 'Déconnecter', 
-                  style: 'destructive',
-                  onPress: () => Alert.alert('Déconnexion', 'Tous les autres appareils ont été déconnectés.')
-                }
-              ]
-            )}
-          >
-            <MaterialIcons name="logout" size={18} color="#ef4444" />
-            <Text style={styles.logoutAllButtonText}>Déconnecter tous les autres appareils</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Écran de suppression de compte
-  const renderDeleteAccountScreen = () => {
-    return (
-      <ScrollView 
-        style={[styles.container, { backgroundColor: colors.background }]} 
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.deleteAccountContainer}>
-          <View style={styles.warningBox}>
-            <MaterialIcons name="warning" size={36} color="#ef4444" style={styles.warningIcon} />
-            <Text style={styles.warningTitle}>Attention: Action irréversible</Text>
-            <Text style={[styles.warningText, { color: colors.text }]}>
-              Vous êtes sur le point de supprimer définitivement votre compte. Cette action ne peut pas être annulée et entraînera la perte de toutes vos données, y compris:
-            </Text>
-            <View style={styles.bulletPointList}>
-              <Text style={[styles.bulletPoint, { color: colors.text }]}>• Tous vos trajets enregistrés</Text>
-              <Text style={[styles.bulletPoint, { color: colors.text }]}>• Votre historique d'apprentissage</Text>
-              <Text style={[styles.bulletPoint, { color: colors.text }]}>• Vos statistiques et performances</Text>
-              <Text style={[styles.bulletPoint, { color: colors.text }]}>• Votre profil et informations personnelles</Text>
-            </View>
-          </View>
-
-          <View style={styles.confirmDeleteContainer}>
-            <Text style={[styles.confirmDeleteText, { color: colors.text }]}>
-              Pour confirmer la suppression, veuillez taper "SUPPRIMER" ci-dessous:
-            </Text>
-            <TextInput
-              style={[
-                styles.confirmDeleteInput,
-                { 
-                  backgroundColor: colors.card, 
-                  color: colors.text, 
-                  borderColor: errors.confirmDelete ? '#ef4444' : colors.border 
-                },
-              ]}
-              value={confirmDelete}
-              onChangeText={setConfirmDelete}
-              placeholder="Tapez SUPPRIMER"
-              placeholderTextColor={colors.secondaryText}
-            />
-            {errors.confirmDelete && (
-              <Text style={styles.errorText}>{errors.confirmDelete}</Text>
-            )}
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.deleteConfirmButton} 
-              onPress={handleDeleteAccount}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.deleteConfirmButtonText}>Supprimer définitivement mon compte</Text>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.cancelButton, { backgroundColor: colors.card, marginTop: 12 }]} 
-              onPress={() => setActiveScreen('main')}
-              disabled={isSaving}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>Annuler</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    );
-  };
-
-  // Afficher l'écran actif
   return (
-    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
-      {renderHeader()}
-      
-      {activeScreen === 'main' && renderMainScreen()}
-      {activeScreen === 'edit' && renderEditScreen()}
-      {activeScreen === 'changePassword' && renderPasswordScreen()}
-      {activeScreen === 'sessions' && renderSessionsScreen()}
-      {activeScreen === 'deleteAccount' && renderDeleteAccountScreen()}
+    <View style={styles.container}>
+      {/* Header avec photo de profil */}
+      <View style={styles.header}>
+        <View style={styles.profileImageContainer}>
+          {user.profilePicture ? (
+            <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.profileInitials}>
+              <Text style={styles.initialsText}>
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : '?'}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.userName}>{user.displayName}</Text>
+        <Text style={styles.userRole}>{user.role}</Text>
+      </View>
+
+      {/* Navigation entre sections */}
+      <View style={styles.tabsContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+          <TouchableOpacity 
+            style={[styles.tab, currentSection === 'profile' && styles.activeTab]} 
+            onPress={() => setCurrentSection('profile')}
+          >
+            <Ionicons name="person-outline" size={18} color={currentSection === 'profile' ? "#7CA7D8" : "#666"} />
+            <Text style={[styles.tabText, currentSection === 'profile' && styles.activeTabText]}>Profil</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, currentSection === 'security' && styles.activeTab]} 
+            onPress={() => setCurrentSection('security')}
+          >
+            <Ionicons name="lock-closed-outline" size={18} color={currentSection === 'security' ? "#7CA7D8" : "#666"} />
+            <Text style={[styles.tabText, currentSection === 'security' && styles.activeTabText]}>Sécurité</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, currentSection === 'notifications' && styles.activeTab]} 
+            onPress={() => setCurrentSection('notifications')}
+          >
+            <Ionicons name="notifications-outline" size={18} color={currentSection === 'notifications' ? "#7CA7D8" : "#666"} />
+            <Text style={[styles.tabText, currentSection === 'notifications' && styles.activeTabText]}>Notifications</Text>
+            {notifications && notifications.filter(n => !n.isRead).length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notifications && notifications.filter(n => !n.isRead).length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, currentSection === 'privacy' && styles.activeTab]} 
+            onPress={() => setCurrentSection('privacy')}
+          >
+            <Ionicons name="shield-outline" size={18} color={currentSection === 'privacy' ? "#7CA7D8" : "#666"} />
+            <Text style={[styles.tabText, currentSection === 'privacy' && styles.activeTabText]}>Confidentialité</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, currentSection === 'badges' && styles.activeTab]} 
+            onPress={() => setCurrentSection('badges')}
+          >
+            <Ionicons name="ribbon-outline" size={18} color={currentSection === 'badges' ? "#7CA7D8" : "#666"} />
+            <Text style={[styles.tabText, currentSection === 'badges' && styles.activeTabText]}>Badges</Text>
+            <View style={styles.badgeCount}>
+              <Text style={styles.badgeCountText}>{badges ? badges.length : 0}</Text>
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Contenu principal */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {renderContent()}
+      </ScrollView>
+
+      {/* Bouton de déconnexion */}
+      {!editing && (
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Modal de confirmation */}
+      <Modal
+        visible={showConfirmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>
+              {modalAction === 'logout' ? 'Déconnexion' : 'Suppression du compte'}
+            </Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            
+            {modalAction === 'delete' && (
+              <TextInput
+                style={styles.confirmInput}
+                value={deleteConfirmText}
+                onChangeText={setDeleteConfirmText}
+                placeholder="Tapez SUPPRIMER"
+              />
+            )}
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  setDeleteConfirmText('');
+                }}
+              >
+                <Text style={styles.modalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.modalConfirmButton, 
+                  modalAction === 'delete' ? styles.modalDeleteButton : {}
+                ]}
+                onPress={handleConfirmAction}
+              >
+                <Text style={styles.modalConfirmText}>
+                  {modalAction === 'logout' ? 'Se déconnecter' : 'Supprimer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Indicateur de chargement */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#7CA7D8" />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 40,
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     padding: 20,
   },
-  retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  refreshingBanner: {
-    backgroundColor: '#3498db',
-    padding: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshingText: {
-    color: 'white',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  
-  // Header styles
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    position: 'relative',
-  },
-  headerBackButton: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  headerRightPlaceholder: {
-    width: 40,
-  },
-  
-  // Main profile styles
-  profileHeader: {
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileImageContainer: {
-    position: 'relative',
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  profileImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editIconContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  profileInfo: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-  },
-  roleLabel: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontSize: 12,
-    fontWeight: '600',
-    overflow: 'hidden',
-  },
-  actionsContainer: {
-    borderRadius: 10,
-    marginHorizontal: 16,
-    padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  sectionTitle: {
+  errorText: {
+    marginTop: 20,
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e5e5',
-  },
-  actionIconContainer: {
-    width: 40,
-    alignItems: 'center',
-  },
-  actionTextContainer: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  actionText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  actionSubtext: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  dangerZone: {
-    marginTop: 24,
-    marginHorizontal: 16,
+    color: '#666',
+    textAlign: 'center',
     marginBottom: 30,
   },
-  dangerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  retryButton: {
+    backgroundColor: '#7CA7D8',
     paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    paddingHorizontal: 30,
+    borderRadius: 5,
   },
-  dangerButtonText: {
-    color: '#ef4444',
-    fontWeight: '600',
-    marginLeft: 8,
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
-  logoutButton: {
-    flexDirection: 'row',
+  header: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  profileImageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  profileInitials: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#7CA7D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialsText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  userRole: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 5,
+  },
+  tabsContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  tabs: {
+    paddingHorizontal: 10,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginHorizontal: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  logoutButtonText: {
-    fontWeight: '600',
-    marginLeft: 8,
+  activeTab: {
+    borderBottomColor: '#7CA7D8',
   },
-  footer: {
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 40,
+  tabText: {
+    marginLeft: 5,
+    color: '#666',
+    fontSize: 14,
   },
-  versionText: {
-    fontSize: 12,
+  activeTabText: {
+    color: '#7CA7D8',
+    fontWeight: '500',
   },
-  
-  // Edit profile styles
-  imageContainer: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  imageWrapper: {
-    position: 'relative',
-  },
-  profilePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  badge: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 10,
+    width: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 5,
   },
-  cameraIconContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  imageHelperText: {
-    marginTop: 8,
-    fontSize: 13,
+  badgeCount: {
+    backgroundColor: '#7CA7D8',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 5,
   },
-  formContainer: {
-    paddingHorizontal: 16,
+  badgeCountText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  inputGroup: {
-    marginBottom: 16,
+  content: {
+    flex: 1,
+    padding: 15,
   },
-  row: {
+  sectionContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  halfWidth: {
-    width: '48%',
+  infoLabel: {
+    width: 130,
+    fontWeight: '500',
+    color: '#666',
+  },
+  infoValue: {
+    flex: 1,
+    color: '#333',
+  },
+  inputContainer: {
+    marginBottom: 15,
   },
   inputLabel: {
-    marginBottom: 6,
-    fontSize: 14,
+    marginBottom: 5,
     fontWeight: '500',
+    color: '#666',
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: '#ddd',
+    borderRadius: 5,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
   },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  bioInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    flexDirection: 'row',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16,
-    minHeight: 100,
   },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
+  buttonIcon: {
+    marginRight: 10,
   },
-  buttonContainer: {
-    marginTop: 24,
+  editButton: {
+    backgroundColor: '#7CA7D8',
   },
   saveButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
+    backgroundColor: '#7CA7D8',
+    flex: 1,
+    marginLeft: 10,
   },
   cancelButton: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    flex: 1,
+    marginRight: 10,
   },
   cancelButtonText: {
-    fontWeight: '600',
+    color: '#666',
+    fontWeight: 'bold',
     fontSize: 16,
   },
-  
-  // Password change styles
-  passwordInfoBox: {
-    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-    borderRadius: 8,
-    padding: 16,
+  dangerButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  securityButton: {
+    backgroundColor: '#7CA7D8',
     marginBottom: 20,
   },
-  passwordInfoText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  passwordHintContainer: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  passwordHintText: {
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  
-  // Sessions styles
-  sessionsContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  sessionsInfoText: {
-    marginBottom: 16,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  sessionItem: {
+  sessionCard: {
     flexDirection: 'row',
-    alignItems: 'center',
     padding: 12,
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  currentSessionItem: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#10b981',
-  },
-  sessionIconContainer: {
-    width: 40,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   sessionInfo: {
     flex: 1,
-    marginLeft: 8,
+  },
+  sessionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
   },
   sessionDevice: {
     fontWeight: '500',
     fontSize: 15,
-    marginBottom: 2,
+    marginLeft: 6,
+    color: '#333',
   },
-  sessionLocation: {
+  currentSession: {
+    color: '#7CA7D8',
+    fontWeight: 'normal',
     fontSize: 13,
-    marginBottom: 2,
   },
-  sessionDate: {
-    fontSize: 12,
+  sessionDetail: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 3,
   },
-  sessionLogoutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  sessionLogoutText: {
-    fontSize: 12,
-    fontWeight: '500',
+  logoutSessionButton: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 5,
+    padding: 8,
+    marginLeft: 10,
   },
   logoutAllButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  notificationCard: {
     flexDirection: 'row',
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
     alignItems: 'center',
+  },
+  notificationUnread: {
+    backgroundColor: '#f0f7ff',
+  },
+  notificationRead: {
+    backgroundColor: '#fff',
+  },
+  notificationDot: {
+    width: 20,
     justifyContent: 'center',
-    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#7CA7D8',
+  },
+  notificationContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  notificationTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#333',
+  },
+  notificationMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  notificationDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  notificationAction: {
+    padding: 5,
+  },
+  clearButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  privacyOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  privacyText: {
+    flex: 1,
+  },
+  privacyTitle: {
+    fontWeight: '500',
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#333',
+  },
+  privacyDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  downloadButton: {
+    backgroundColor: '#666',
+  },
+  badgeCard: {
+    flexDirection: 'row',
+    padding: 15,
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
-    marginTop: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    alignItems: 'center',
   },
-  logoutAllButtonText: {
-    color: '#ef4444',
-    fontWeight: '600',
-    marginLeft: 8,
+  badgeIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  
-  // Delete account styles
-  deleteAccountContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+  badgeEmoji: {
+    fontSize: 30,
   },
-  warningBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
+  badgeContent: {
+    flex: 1,
+    marginLeft: 15,
   },
-  warningIcon: {
-    alignSelf: 'center',
-    marginBottom: 8,
+  badgeName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#333',
   },
-  warningTitle: {
+  badgeDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  badgeDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyMessage: {
     textAlign: 'center',
+    color: '#666',
+    marginVertical: 20,
+    fontStyle: 'italic',
+  },
+  logoutButton: {
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 15,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginRight: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ef4444',
-    marginBottom: 12,
+    marginBottom: 10,
+    color: '#333',
   },
-  warningText: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
+  modalMessage: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
   },
-  bulletPointList: {
-    marginLeft: 8,
-  },
-  bulletPoint: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  confirmDeleteContainer: {
-    marginBottom: 24,
-  },
-  confirmDeleteText: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  confirmDeleteInput: {
+  confirmInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderColor: '#ddd',
+    borderRadius: 5,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    textAlign: 'center',
+    marginBottom: 20,
   },
-  deleteConfirmButton: {
-    backgroundColor: '#ef4444',
-    paddingVertical: 12,
-    borderRadius: 8,
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    padding: 10,
+    flex: 1,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    marginRight: 10,
   },
-  deleteConfirmButtonText: {
+  modalCancelText: {
+    color: '#666',
+    fontWeight: '500',
+  },
+  modalConfirmButton: {
+    padding: 10,
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#7CA7D8',
+    borderRadius: 5,
+  },
+  modalDeleteButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  modalConfirmText: {
     color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
+    fontWeight: '500',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
