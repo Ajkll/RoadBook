@@ -13,6 +13,7 @@ import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './constants/theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { UserProvider } from './context/UserContext'; // Ajout du UserContext
 import { Provider } from 'react-redux';
 import store from './store/store';
 import { apiProxy } from './api-proxy';
@@ -192,6 +193,32 @@ export default function RootLayout() {
           await initLogger();
           setIsLoggerReady(true);
 
+          // Initialisation du stockage sécurisé
+          try {
+            const { initializeSecureStorage, diagnoseStorage } = await import('./services/secureStorage');
+            
+            // Vérifier que le stockage sécurisé fonctionne correctement
+            const storageStatus = await initializeSecureStorage();
+            logger.info(`Storage initialization: ${storageStatus.success ? 'SUCCESS' : 'FAILED'}`);
+            logger.info(`Using storage type: ${storageStatus.storageType}`);
+            
+            // En cas d'échec, diagnostiquer le problème
+            if (!storageStatus.success) {
+              logger.error(`Storage initialization failed: ${storageStatus.reason}`);
+              
+              // Faire un diagnostic complet
+              const diagnosticResult = await diagnoseStorage();
+              logger.error('Storage diagnostic:', diagnosticResult);
+              
+              // Alerte en mode développement
+              if (__DEV__) {
+                console.warn('Secure storage initialization failed - using fallback mechanism', 
+                  storageStatus.reason);
+              }
+            }
+          } catch (storageError) {
+            logger.error('Storage initialization error:', storageError);
+          }
 
           console.log(`App started on Platform: ${Platform.OS}`);
           console.log(`API URL: ${apiProxy.getBaseUrl()}`);
@@ -229,8 +256,10 @@ export default function RootLayout() {
             <NetworkSyncManager />
             <ThemeProvider>
               <AuthProvider>
-                <RootNavigator />
-                <NotificationHandler />
+                <UserProvider>
+                  <RootNavigator />
+                  <NotificationHandler />
+                </UserProvider>
               </AuthProvider>
             </ThemeProvider>
           </SoundProvider>

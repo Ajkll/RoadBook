@@ -417,64 +417,64 @@ export const authApi = {
           role: userData.role,
         });
 
-        try {
-          // Vérifier que userData est valide avant de tenter de le sauvegarder
-          if (userData && typeof userData === 'object') {
-            const userDataString = JSON.stringify(userData);
-            if (userDataString) {
-              // Utiliser notre fonction saveItem importée
-              await saveItem(STORAGE_KEYS.USER, userDataString);
-              logDebug('User profile saved to secure storage');
-            } else {
-              logError('Failed to stringify user data');
-            }
-          } else {
-            logError('Invalid user data object for storage:', userData);
-          }
-        } catch (storageError) {
-          logError('Failed to save user profile to storage', storageError);
-          // Tentative de récupération en cas d'erreur
-          try {
-            // Stocker des données minimales pour éviter une erreur complète
-            const minimalUserData = {
-              id: userData?.id || 'unknown',
-              email: userData?.email || 'unknown',
-              role: userData?.role || 'user'
-            };
-            await saveItem(STORAGE_KEYS.USER, JSON.stringify(minimalUserData));
-            logDebug('Minimal user profile saved as fallback');
-          } catch (fallbackError) {
-            logError('Complete failure saving user profile', fallbackError);
-            // Continue anyway - don't fail the getCurrentUser request because of storage issues
-          }
-        }
+        // Désactiver temporairement le stockage pour éviter les erreurs
+        // Nous retournons simplement l'utilisateur sans essayer de le sauvegarder
+        logDebug('Skipping user profile storage to avoid errors - using in-memory only');
+        
+        // Pour déboguer, sauvons les données dans une variable globale
+        const globalAny = global as any;
+        globalAny.currentUserData = userData;
+        logDebug('User profile saved to global variable for debugging');
 
         return userData;
       } catch (error) {
+        // Amélioration de la gestion d'erreur
+        let errorMessage = 'Impossible de récupérer votre profil. Veuillez réessayer plus tard.';
+        let shouldLogout = false;
+        
         // Check if it's a token error
         if (error.response?.status === 401 || error.message?.includes('expirée')) {
-          throw new Error('Session expirée. Veuillez vous reconnecter.');
+          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+          shouldLogout = true;
         } 
         // Check if it's a network error
         else if (!error.response && error.message?.includes('network')) {
-          throw new Error(
-            'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
-          );
+          errorMessage = 'Problème de connexion réseau. Veuillez vérifier votre connexion internet.';
         }
         // Check if response exists but has an unexpected format
         else if (error.response?.data && error.response.status !== 200) {
-          const errorMessage = error.response.data.message || 'Erreur serveur';
-          throw new Error(`Erreur du serveur: ${errorMessage}`);
+          errorMessage = error.response.data.message || 'Erreur serveur';
         }
         // Default error when response data format is unexpected
         else if (error.message?.includes('manquantes') || error.message?.includes('invalide')) {
-          throw error; // Rethrow our validation errors
+          errorMessage = error.message;
         }
-        // Default fallback error
+        // Si l'erreur est liée au stockage, on peut essayer de récupérer l'utilisateur précédent
+        else if (error.message?.includes('saveItem') || 
+                error.message?.includes("doesn't exist") ||
+                error.message?.includes("cannot read property") ||
+                error.message?.includes("undefined is not an object")) {
+          
+          logError('Storage-related error in getCurrentUser:', error);
+          
+          // Essayer d'utiliser les données en mémoire si disponibles
+          const globalAny = global as any;
+          if (globalAny.currentUserData) {
+            logDebug('Returning cached user data from memory', globalAny.currentUserData.email);
+            return globalAny.currentUserData;
+          }
+          
+          errorMessage = 'Erreur de stockage. Essayez de vous reconnecter.';
+        }
         else {
           console.error('Unexpected error in getCurrentUser:', error);
-          throw new Error('Impossible de récupérer votre profil. Veuillez réessayer plus tard.');
         }
+        
+        // Créer une erreur enrichie avec des informations sur la nécessité de se déconnecter
+        const enhancedError: any = new Error(errorMessage);
+        enhancedError.shouldLogout = shouldLogout;
+        enhancedError.originalError = error;
+        throw enhancedError;
       }
     });
   },

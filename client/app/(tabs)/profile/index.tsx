@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useUser } from '../../context/UserContext';
 import { useTheme } from '../../constants/theme';
 import { logger } from '../../utils/logger';
 
@@ -22,7 +23,8 @@ import { logger } from '../../utils/logger';
  * Affiche les informations de l'utilisateur et donne accès aux autres pages de gestion du compte
  */
 export default function ProfileScreen() {
-  const { user, refreshUserData, logout, isLoading } = useAuth();
+  const { logout } = useAuth();
+  const { userData, refreshUserData, isLoading } = useUser();
   const { colors } = useTheme();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -41,12 +43,12 @@ export default function ProfileScreen() {
       logger.info('Refreshing user data in profile page');
       
       // Add more debug information
-      if (user) {
+      if (userData) {
         logger.info('Current user before refresh:', {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          displayName: user.displayName
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
+          displayName: userData.displayName
         });
       } else {
         logger.warn('No user data available before refresh');
@@ -129,7 +131,7 @@ export default function ProfileScreen() {
   }
   
   // Vérifier si l'utilisateur est bien chargé
-  if (!user) {
+  if (!userData) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <Text style={{ color: colors.error, marginBottom: 20, fontWeight: 'bold' }}>
@@ -189,8 +191,8 @@ export default function ProfileScreen() {
           style={styles.profileImageContainer} 
           onPress={() => router.push('/profile/edit')}
         >
-          {user?.profilePicture ? (
-            <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+          {userData?.profilePicture ? (
+            <Image source={{ uri: userData.profilePicture }} style={styles.profileImage} />
           ) : (
             <View style={[styles.profileImagePlaceholder, { backgroundColor: colors.border }]}>
               <Ionicons name="person" size={50} color={colors.background} />
@@ -203,14 +205,14 @@ export default function ProfileScreen() {
 
         <View style={styles.profileInfo}>
           <Text style={[styles.profileName, { color: colors.text }]}>
-            {user?.displayName || 'Utilisateur'}
+            {userData?.displayName || 'Utilisateur'}
           </Text>
           <Text style={[styles.profileEmail, { color: colors.secondaryText }]}>
-            {user?.email || 'email@exemple.com'}
+            {userData?.email || 'email@exemple.com'}
           </Text>
           <View style={styles.roleContainer}>
             <Text style={[styles.roleLabel, { backgroundColor: colors.primary, color: colors.background }]}>
-              {user?.role || 'APPRENTICE'}
+              {userData?.role || 'APPRENTICE'}
             </Text>
           </View>
         </View>

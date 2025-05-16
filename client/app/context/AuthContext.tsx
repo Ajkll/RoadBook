@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const storageStatus = await initializeSecureStorage();
           console.log(`Storage initialization: ${storageStatus.success ? 'SUCCESS' : 'FAILED'}`);
-          console.log(`Using storage type: ${storageStatus.storageType}`);
+          console.log(`Using storage type: ${storageStatus.storageType}`);;
           
           if (!storageStatus.success) {
             logger.error(`Storage initialization failed: ${storageStatus.reason}`);
@@ -284,37 +284,74 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       console.log('Refreshing user profile data');
 
-      const updatedUser = await authApi.getCurrentUser();
-      
-      // Update the user state regardless of storage success
-      setUser(updatedUser);
-      console.log('User data refreshed successfully');
-      return updatedUser;
-    } catch (err) {
-      logger.error('Error refreshing user data:', err);
-      
-      // Check if this is a token error
-      if (err?.isRefreshError || 
-          (err?.originalError?.response?.status === 401) ||
-          (err?.response?.status === 401) ||
-          err.message?.includes('Session expirée')) {
-            
-        logger.warn('Token expired while refreshing user data, logging out');
-        setError('Votre session a expiré. Veuillez vous reconnecter.');
+      try {
+        const updatedUser = await authApi.getCurrentUser();
         
-        try {
-          // Attempt graceful logout
-          await logout();
-        } catch (logoutError) {
-          logger.error('Error during auto-logout:', logoutError);
-          // Force state reset as a last resort
-          setUser(null);
-          await clearAuthData().catch(e => logger.error('Failed to clear auth data:', e));
+        // Mise à jour en mémoire du state React seulement (évite le stockage)
+        setUser(updatedUser);
+        console.log('User data refreshed successfully');
+        
+        // Sauvegarde en mémoire globale pour résistance aux erreurs
+        (global as any).lastKnownUser = updatedUser;
+        
+        return updatedUser;
+      } catch (err) {
+        logger.error('Error refreshing user data:', err);
+        
+        // Si l'erreur suggère de se déconnecter
+        if (err?.shouldLogout === true || 
+            err?.isRefreshError || 
+            (err?.originalError?.response?.status === 401) ||
+            (err?.response?.status === 401) ||
+            err.message?.includes('Session expirée')) {
+              
+          logger.warn('Token expired while refreshing user data, logging out');
+          setError('Votre session a expiré. Veuillez vous reconnecter.');
+          
+          try {
+            // Attempt graceful logout
+            await logout();
+          } catch (logoutError) {
+            logger.error('Error during auto-logout:', logoutError);
+            // Force state reset as a last resort
+            setUser(null);
+            try {
+              await clearAuthData();
+            } catch (clearError) {
+              logger.error('Failed to clear auth data:', clearError);
+            }
+          }
+        } 
+        // Si c'est une erreur liée au stockage, on peut essayer de garder l'utilisateur actuel
+        else if (err.message?.includes('saveItem') || 
+                err.message?.includes("doesn't exist") ||
+                err.message?.includes('storage') ||
+                err.message?.includes('property') ||
+                err.message?.includes('undefined')) {
+          
+          logger.warn('Storage error during profile refresh, attempting to continue with current user');
+          
+          // Si on a un utilisateur en mémoire, on le garde
+          if (user) {
+            logger.info('Keeping current user in memory:', user.email);
+            return user;
+          }
+          
+          // Essayer d'utiliser la dernière valeur connue globale
+          const globalLastUser = (global as any).lastKnownUser;
+          if (globalLastUser) {
+            logger.info('Using last known user from global memory:', globalLastUser.email);
+            setUser(globalLastUser);
+            return globalLastUser;
+          }
+          
+          // On rethrow l'erreur si on n'a pas pu récupérer l'utilisateur
+          throw err;
+        } else {
+          // Autres types d'erreurs
+          throw err;
         }
       }
-      
-      // Rethrow the error so callers can handle it
-      throw err;
     } finally {
       setIsLoading(false);
     }
