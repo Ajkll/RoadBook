@@ -21,7 +21,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
-import prisma from '../config/prisma';
+import { executeDbOperation } from '../config/prisma';
 import logger from '../utils/logger';
 
 // Interfaces pour les types de données
@@ -84,15 +84,17 @@ export const login = async (email: string, password: string): Promise<LoginResul
     }
     
     // Trouver l'utilisateur par email
-    const user = await prisma.user.findUnique({ 
-      where: { email },
-      include: {
-        refreshTokens: {
-          where: { revoked: false },
-          orderBy: { createdAt: 'desc' },
-          take: 1
+    const user = await executeDbOperation(async (prisma) => {
+      return prisma.user.findUnique({ 
+        where: { email },
+        include: {
+          refreshTokens: {
+            where: { revoked: false },
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
         }
-      }
+      });
     });
     
     if (!user) {
@@ -112,9 +114,11 @@ export const login = async (email: string, password: string): Promise<LoginResul
     
     // Révoquer les anciens tokens s'ils existent
     if (user.refreshTokens && user.refreshTokens.length > 0) {
-      await prisma.refreshToken.update({
-        where: { id: user.refreshTokens[0].id },
-        data: { revoked: true }
+      await executeDbOperation(async (prisma) => {
+        return prisma.refreshToken.update({
+          where: { id: user.refreshTokens[0].id },
+          data: { revoked: true }
+        });
       });
     }
     
@@ -125,12 +129,14 @@ export const login = async (email: string, password: string): Promise<LoginResul
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7); // 7 jours
     
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: expiryDate
-      }
+    await executeDbOperation(async (prisma) => {
+      return prisma.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: user.id,
+          expiresAt: expiryDate
+        }
+      });
     });
     
     // Retourner les informations utilisateur sans données sensibles
@@ -161,9 +167,11 @@ export const refreshToken = async (token: string): Promise<TokenResult> => {
     const decoded = jwt.verify(token, refreshSecret) as JwtPayload;
     
     // Vérifier que le token existe en base de données et n'est pas révoqué
-    const tokenRecord = await prisma.refreshToken.findUnique({
-      where: { token },
-      include: { user: true }
+    const tokenRecord = await executeDbOperation(async (prisma) => {
+      return prisma.refreshToken.findUnique({
+        where: { token },
+        include: { user: true }
+      });
     });
     
     if (!tokenRecord) {
@@ -173,9 +181,11 @@ export const refreshToken = async (token: string): Promise<TokenResult> => {
     if (tokenRecord.revoked) {
       // Si le token a été révoqué, c'est potentiellement une tentative de réutilisation
       // On révoque tous les tokens de cet utilisateur par sécurité
-      await prisma.refreshToken.updateMany({
-        where: { userId: decoded.userId },
-        data: { revoked: true }
+      await executeDbOperation(async (prisma) => {
+        return prisma.refreshToken.updateMany({
+          where: { userId: decoded.userId },
+          data: { revoked: true }
+        });
       });
       
       logger.warn(`Token reuse detected for user ${decoded.userId}`);
@@ -189,9 +199,11 @@ export const refreshToken = async (token: string): Promise<TokenResult> => {
     // Tout est OK, on va générer de nouveaux tokens
     
     // 1. Révoquer le token actuel (rotation de tokens)
-    await prisma.refreshToken.update({
-      where: { id: tokenRecord.id },
-      data: { revoked: true }
+    await executeDbOperation(async (prisma) => {
+      return prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: { revoked: true }
+      });
     });
     
     // 2. Générer de nouveaux tokens
@@ -201,12 +213,14 @@ export const refreshToken = async (token: string): Promise<TokenResult> => {
     const newExpiryDate = new Date();
     newExpiryDate.setDate(newExpiryDate.getDate() + 7);
     
-    await prisma.refreshToken.create({
-      data: {
-        token: newTokens.refreshToken,
-        userId: tokenRecord.userId,
-        expiresAt: newExpiryDate
-      }
+    await executeDbOperation(async (prisma) => {
+      return prisma.refreshToken.create({
+        data: {
+          token: newTokens.refreshToken,
+          userId: tokenRecord.userId,
+          expiresAt: newExpiryDate
+        }
+      });
     });
     
     // 4. Retourner les nouveaux tokens
@@ -290,17 +304,21 @@ export const revokeRefreshTokens = async (options: { token?: string, userId?: st
     
     if (token) {
       // Révoquer un token spécifique
-      await prisma.refreshToken.updateMany({
-        where: { token },
-        data: { revoked: true }
+      await executeDbOperation(async (prisma) => {
+        return prisma.refreshToken.updateMany({
+          where: { token },
+          data: { revoked: true }
+        });
       });
     }
     
     if (userId) {
       // Révoquer tous les tokens d'un utilisateur
-      await prisma.refreshToken.updateMany({
-        where: { userId },
-        data: { revoked: true }
+      await executeDbOperation(async (prisma) => {
+        return prisma.refreshToken.updateMany({
+          where: { userId },
+          data: { revoked: true }
+        });
       });
     }
     
@@ -341,7 +359,9 @@ export const initiatePasswordReset = async (email: string): Promise<string> => {
     email = email.toLowerCase().trim();
     
     // Vérifier si l'utilisateur existe
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await executeDbOperation(async (prisma) => {
+      return prisma.user.findUnique({ where: { email } });
+    });
     if (!user) {
       // Pour des raisons de sécurité, on ne révèle pas si l'email existe ou non
       // mais on log l'erreur côté serveur
@@ -350,9 +370,11 @@ export const initiatePasswordReset = async (email: string): Promise<string> => {
     }
     
     // Révoquer tous les tokens de réinitialisation précédents pour cet utilisateur
-    await prisma.passwordReset.updateMany({
-      where: { userId: user.id },
-      data: { revoked: true }
+    await executeDbOperation(async (prisma) => {
+      return prisma.passwordReset.updateMany({
+        where: { userId: user.id },
+        data: { revoked: true }
+      });
     });
     
     // Générer un token cryptographiquement sécurisé
@@ -364,12 +386,14 @@ export const initiatePasswordReset = async (email: string): Promise<string> => {
     expiryDate.setHours(expiryDate.getHours() + 1);
     
     // Stocker le token hashé en base de données dans le modèle PasswordReset
-    await prisma.passwordReset.create({
-      data: {
-        token: hashedToken,
-        userId: user.id,
-        expiresAt: expiryDate
-      }
+    await executeDbOperation(async (prisma) => {
+      return prisma.passwordReset.create({
+        data: {
+          token: hashedToken,
+          userId: user.id,
+          expiresAt: expiryDate
+        }
+      });
     });
     
     // En réalité, on enverrait un email avec un lien contenant ce token
@@ -393,12 +417,14 @@ export const initiatePasswordReset = async (email: string): Promise<string> => {
 export const completePasswordReset = async (token: string, newPassword: string): Promise<boolean> => {
   try {
     // Récupérer tous les tokens de réinitialisation non-expirés et non-révoqués
-    const resetRequests = await prisma.passwordReset.findMany({
-      where: {
-        expiresAt: { gt: new Date() },
-        revoked: false
-      },
-      include: { user: true }
+    const resetRequests = await executeDbOperation(async (prisma) => {
+      return prisma.passwordReset.findMany({
+        where: {
+          expiresAt: { gt: new Date() },
+          revoked: false
+        },
+        include: { user: true }
+      });
     });
     
     if (resetRequests.length === 0) {
@@ -425,21 +451,27 @@ export const completePasswordReset = async (token: string, newPassword: string):
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Mettre à jour le mot de passe
-    await prisma.user.update({
-      where: { id: validResetRequest.userId },
-      data: { passwordHash: hashedPassword }
+    await executeDbOperation(async (prisma) => {
+      return prisma.user.update({
+        where: { id: validResetRequest.userId },
+        data: { passwordHash: hashedPassword }
+      });
     });
     
     // Révoquer tous les tokens de rafraîchissement existants pour des raisons de sécurité
-    await prisma.refreshToken.updateMany({
-      where: { userId: validResetRequest.userId },
-      data: { revoked: true }
+    await executeDbOperation(async (prisma) => {
+      return prisma.refreshToken.updateMany({
+        where: { userId: validResetRequest.userId },
+        data: { revoked: true }
+      });
     });
     
     // Marquer tous les tokens de réinitialisation comme utilisés pour cet utilisateur
-    await prisma.passwordReset.updateMany({
-      where: { userId: validResetRequest.userId },
-      data: { revoked: true }
+    await executeDbOperation(async (prisma) => {
+      return prisma.passwordReset.updateMany({
+        where: { userId: validResetRequest.userId },
+        data: { revoked: true }
+      });
     });
     
     logger.info(`Password reset completed successfully for user: ${validResetRequest.userId}`);
