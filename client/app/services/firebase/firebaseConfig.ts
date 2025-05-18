@@ -1,5 +1,4 @@
-// app/services/firebase/firebaseConfig.ts
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { ENV } from '../config/env';
@@ -14,8 +13,11 @@ const firebaseConfig = {
   measurementId: 'G-TPBQCVKT71',
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// -------- Correction ici ---------
+const app = getApps().length === 0
+  ? initializeApp(firebaseConfig)
+  : getApp();
+// ---------------------------------
 
 // Initialize Firestore with settings for Expo Go compatibility
 const db = initializeFirestore(app, {
