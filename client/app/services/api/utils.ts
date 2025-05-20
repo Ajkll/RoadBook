@@ -1,5 +1,6 @@
 // client/app/services/api/utils.ts
 import { AxiosResponse } from 'axios';
+import { logger } from '../../utils/logger';
 
 /**
  * Helper function to extract data from API responses
@@ -76,4 +77,35 @@ export function extractErrorMessage(error: any): string {
   
   // Default fallback message
   return 'Une erreur est survenue. Veuillez réessayer.';
+}
+
+/**
+ * Fonction utilitaire pour la gestion des endpoints absents
+ * Permet d'exécuter une fonction API et de fournir des données de fallback 
+ * en cas d'erreur 404 ou autre problème
+ * 
+ * @param apiCall Fonction à exécuter pour appeler l'API
+ * @param fallbackData Données à utiliser en cas d'échec de l'API
+ * @param endpointName Nom de l'endpoint pour le logging
+ * @returns Résultat de l'API ou les données de fallback
+ */
+export async function withFallback<T>(
+  apiCall: () => Promise<T>,
+  fallbackData: T,
+  endpointName: string
+): Promise<T> {
+  try {
+    // Tentative d'appel de l'API
+    return await apiCall();
+  } catch (error) {
+    // Vérifier si c'est une erreur 404 (endpoint non disponible)
+    if (error.response?.status === 404) {
+      logger.warn(`${endpointName} endpoint not available, using fallback data:`, error);
+    } else {
+      logger.error(`Error calling ${endpointName}:`, error);
+    }
+    
+    // Retourner les données de fallback
+    return fallbackData;
+  }
 }

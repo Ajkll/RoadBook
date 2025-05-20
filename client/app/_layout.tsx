@@ -29,8 +29,21 @@ import { SoundProvider } from './components/SoundProvider';
 import { NotificationHandler } from './components/NotificationHandler';
 import { logger, initLogger } from './utils/logger';
 
+// Pas besoin d'importer ProfileSyncProvider pour l'instant,
+// car nous résoudrons d'abord les erreurs de base
+
+// Vérifier si useAuth est disponible (pour éviter l'erreur dans RootNavigator)
+function useOptionalAuth() {
+  try {
+    return useAuth();
+  } catch (error) {
+    logger.warn('Auth provider not available');
+    return { isAuthenticated: false, isLoading: false, user: null };
+  }
+}
+
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useOptionalAuth();
   const { colors, dark } = useTheme();
   const { isConnected, isInternetReachable } = useNetworkStatus();
 
