@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setComment, setShouldAskForComment } from '../../store/slices/commentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootState } from '../../store/store';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface SessionEndModalProps {
   visible: boolean;
@@ -34,168 +35,25 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
   onConfirmNoSave,
 }) => {
   const theme = useTheme();
-  const styles = createStyles(theme);
   const dispatch = useDispatch();
   const { shouldAskForComment } = useSelector((state: RootState) => state.comment);
   const { elapsedTime } = useSelector((state: RootState) => state.chrono);
   const { path, tracking } = useSelector((state: RootState) => state.location);
   const { mapReady } = useSelector((state: RootState) => state.location);
 
+  // Refs pour les animations
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+  const overlayAnim = useRef(new Animated.Value(0)).current;
+
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [dontAskAgain, setDontAskAgain] = useState(false);
 
-  const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
-  const overlayAnim = useRef(new Animated.Value(0)).current;
-
-  // Vérifie si les conditions de sauvegarde sont remplies
   const canSaveSession = mapReady && tracking && elapsedTime > 60 && path.length >= 3;
 
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayAnim, {
-          toValue: 0.35,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: SCREEN_WIDTH,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(overlayAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
-
-  const handleConfirmSavePress = async () => {
-    if (!canSaveSession) {
-      onConfirmNoSave();
-      return;
-    }
-
-    if (shouldAskForComment) {
-      const dontAsk = await AsyncStorage.getItem(DONT_ASK_KEY);
-      if (dontAsk !== 'true') {
-        setShowCommentInput(true);
-        return;
-      }
-    }
-    handleFinalSave();
-  };
-
-  const handleFinalSave = async () => {
-    if (dontAskAgain) {
-      await AsyncStorage.setItem(DONT_ASK_KEY, 'true');
-      dispatch(setShouldAskForComment(false));
-    }
-
-    dispatch(setComment(commentText));
-    onConfirmSave();
-  };
-
-  const handleCommentSubmit = () => {
-    handleFinalSave();
-    setShowCommentInput(false);
-  };
-
-  return (
-    <Modal transparent visible={visible} animationType="none">
-      <Animated.View style={[styles.overlay, { opacity: overlayAnim }]}>
-        <Pressable style={{ flex: 1 }} onPress={onCancel} />
-      </Animated.View>
-
-      <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
-        {!showCommentInput ? (
-          <>
-            <Text style={styles.title}>Fin de session</Text>
-            <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
-
-            {!canSaveSession && (
-              <View style={styles.warningContainer}>
-                <Text style={styles.warningText}>
-                  Cette session ne sera pas enregistrée car :
-                  {elapsedTime <= 60 && '\n- La durée est inférieure à 60 secondes'}
-                  {path.length < 3 && '\n- Le trajet est trop court'}
-                </Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={[styles.button, canSaveSession ? styles.primaryButton : styles.disabledButton]}
-              onPress={handleConfirmSavePress}
-              disabled={!canSaveSession}
-            >
-              <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.dangerButton]}
-              onPress={onConfirmNoSave}
-            >
-              <Text style={styles.buttonText}>Terminer sans sauvegarder</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelText}>Continuer</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.title}>Commentaire</Text>
-            <Text style={styles.subtitle}>Ajoutez un commentaire sur votre session</Text>
-
-            <TextInput
-              style={styles.commentInput}
-              multiline
-              placeholder="Votre commentaire..."
-              value={commentText}
-              onChangeText={setCommentText}
-            />
-
-            <View style={styles.switchContainer}>
-              <Switch
-                value={dontAskAgain}
-                onValueChange={setDontAskAgain}
-              />
-              <Text style={styles.switchText}>Ne plus demander</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={handleCommentSubmit}
-            >
-              <Text style={styles.buttonText}>Valider</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setShowCommentInput(false)}
-            >
-              <Text style={styles.cancelText}>Retour</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </Animated.View>
-    </Modal>
-  );
-};
-
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
+  const styles = StyleSheet.create({
     overlay: {
       position: 'absolute',
       top: 0,
@@ -276,14 +134,205 @@ const createStyles = (theme: Theme) =>
     },
     warningContainer: {
       backgroundColor: theme.colors.ui.status.errorBg,
+      alignItems: 'center',
       padding: theme.spacing.md,
       borderRadius: theme.borderRadius.medium,
       marginBottom: theme.spacing.lg,
+      opacity: blinkAnim,
+      transform: [{ scale: pulseAnim }],
+    },
+    icon: {
+      marginRight: 8,
+      marginTop: 4,
     },
     warningText: {
       color: theme.colors.ui.status.error,
       ...theme.typography.body,
     },
   });
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayAnim, {
+          toValue: 0.35,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: SCREEN_WIDTH,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(overlayAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || canSaveSession) return;
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, {
+          toValue: 0.5,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(blinkAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: 3 }
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    return () => {
+      blinkAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, [visible, canSaveSession]);
+
+  const handleConfirmSavePress = async () => {
+    if (!canSaveSession) {
+      onConfirmNoSave();
+      return;
+    }
+
+    if (shouldAskForComment) {
+      const dontAsk = await AsyncStorage.getItem(DONT_ASK_KEY);
+      if (dontAsk !== 'true') {
+        setShowCommentInput(true);
+        return;
+      }
+    }
+    handleFinalSave();
+  };
+
+  const handleFinalSave = async () => {
+    if (dontAskAgain) {
+      await AsyncStorage.setItem(DONT_ASK_KEY, 'true');
+      dispatch(setShouldAskForComment(false));
+    }
+
+    dispatch(setComment(commentText));
+    onConfirmSave();
+  };
+
+  const handleCommentSubmit = () => {
+    handleFinalSave();
+    setShowCommentInput(false);
+  };
+
+  return (
+    <Modal transparent visible={visible} animationType="none">
+      <Animated.View style={[styles.overlay, { opacity: overlayAnim }]}>
+        <Pressable style={{ flex: 1 }} onPress={onCancel} />
+      </Animated.View>
+
+      <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
+        {!showCommentInput ? (
+          <>
+            <Text style={styles.title}>Fin de session</Text>
+            <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
+
+            {!canSaveSession && (
+              <Animated.View style={styles.warningContainer}>
+                <Ionicons name="warning" size={24} color="red" style={styles.icon} />
+                <Text style={styles.warningText}>
+                  Cette session ne sera pas enregistrée car :
+                  {elapsedTime <= 60 && '\n- La durée est inférieure à 60 secondes'}
+                  {path.length < 3 && '\n- Le trajet est trop court'}
+                </Text>
+              </Animated.View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.button, canSaveSession ? styles.primaryButton : styles.disabledButton]}
+              onPress={handleConfirmSavePress}
+              disabled={!canSaveSession}
+            >
+              <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.dangerButton]}
+              onPress={onConfirmNoSave}
+            >
+              <Text style={styles.buttonText}>Terminer sans sauvegarder</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+              <Text style={styles.cancelText}>Continuer</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>Commentaire</Text>
+            <Text style={styles.subtitle}>Ajoutez un commentaire sur votre session</Text>
+
+            <TextInput
+              style={styles.commentInput}
+              multiline
+              placeholder="Votre commentaire..."
+              value={commentText}
+              onChangeText={setCommentText}
+            />
+
+            <View style={styles.switchContainer}>
+              <Switch
+                value={dontAskAgain}
+                onValueChange={setDontAskAgain}
+              />
+              <Text style={styles.switchText}>Ne plus demander</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleCommentSubmit}
+            >
+              <Text style={styles.buttonText}>Valider</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowCommentInput(false)}
+            >
+              <Text style={styles.cancelText}>Retour</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </Animated.View>
+    </Modal>
+  );
+};
 
 export default SessionEndModal;

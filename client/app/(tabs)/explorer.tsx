@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, ScrollView, StyleSheet, TextInput, Alert } from 'react-native';
 import sessionApi from '../services/api/session.api';
+import { Session } from '../types/session.types';
 
 const TestSessionsPage = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -16,7 +17,9 @@ const TestSessionsPage = () => {
     setLoading(true);
     setError('');
     try {
+      console.log('Loading all sessions...');
       const allSessions = await sessionApi.getUserSessions();
+      console.log('Sessions loaded:', allSessions.length);
       setSessions(allSessions);
       if (allSessions.length > 0) {
         setSessionIdInput(allSessions[0].id); // Pré-remplir avec le premier ID
@@ -39,7 +42,9 @@ const TestSessionsPage = () => {
     setLoading(true);
     setError('');
     try {
+      console.log('Loading session with ID:', sessionIdInput);
       const session = await sessionApi.getSessionById(sessionIdInput);
+      console.log('Session details loaded:', session);
       setSelectedSession(session);
     } catch (err) {
       setError('Failed to load session: ' + err.message);
@@ -68,6 +73,21 @@ const TestSessionsPage = () => {
     }
   };
 
+  // Format date function to handle different date formats
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'None';
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  // Helper to handle undefined or null values safely
+  const displayValue = (value: any, defaultValue = 'None') => {
+    return value !== undefined && value !== null ? value : defaultValue;
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Session API Test Page</Text>
@@ -89,9 +109,10 @@ const TestSessionsPage = () => {
             {sessions.map(session => (
               <View key={session.id} style={styles.sessionItem}>
                 <Text>ID: {session.id}</Text>
-                <Text>Date: {new Date(session.date).toLocaleDateString()}</Text>
-                <Text>Type: {session.sessionType}</Text>
-                <Text>Status: {session.status}</Text>
+                <Text>Title: {displayValue(session.title)}</Text>
+                <Text>Date: {formatDate(session.date)}</Text>
+                <Text>Type: {displayValue(session.sessionType)}</Text>
+                <Text>Status: {displayValue(session.status)}</Text>
               </View>
             ))}
           </View>
@@ -120,24 +141,41 @@ const TestSessionsPage = () => {
           <View style={styles.results}>
             <Text style={styles.resultTitle}>Session Details</Text>
             <Text>ID: {selectedSession.id}</Text>
-            <Text>Title: {selectedSession.title || 'None'}</Text>
-            <Text>Date: {new Date(selectedSession.date).toLocaleDateString()}</Text>
-            <Text>Start: {new Date(selectedSession.startTime).toLocaleString()}</Text>
-            <Text>End: {selectedSession.endTime ? new Date(selectedSession.endTime).toLocaleString() : 'None'}</Text>
-            <Text>Type: {selectedSession.sessionType}</Text>
-            <Text>Duration: {selectedSession.duration} minutes</Text>
-            <Text>Distance: {selectedSession.distance} km</Text>
-            <Text>Status: {selectedSession.status}</Text>
-            <Text>Weather: {selectedSession.weather}</Text>
-            <Text>Daylight: {selectedSession.daylight}</Text>
-            <Text>Start Location: {selectedSession.startLocation || 'None'}</Text>
-            <Text>End Location: {selectedSession.endLocation || 'None'}</Text>
+            <Text>Title: {displayValue(selectedSession.title)}</Text>
+            <Text>Date: {formatDate(selectedSession.date)}</Text>
+            <Text>Start: {formatDate(selectedSession.startTime)}</Text>
+            <Text>End: {formatDate(selectedSession.endTime)}</Text>
+            <Text>Type: {displayValue(selectedSession.sessionType)}</Text>
+            <Text>Duration: {displayValue(selectedSession.duration)} minutes</Text>
+            <Text>Distance: {displayValue(selectedSession.distance)} km</Text>
+            <Text>Status: {displayValue(selectedSession.status)}</Text>
+            <Text>Weather: {displayValue(selectedSession.weather)}</Text>
+            <Text>Daylight: {displayValue(selectedSession.daylight)}</Text>
+            <Text>Start Location: {displayValue(selectedSession.startLocation)}</Text>
+            <Text>End Location: {displayValue(selectedSession.endLocation)}</Text>
             <Text>Road Types: {selectedSession.roadTypes?.join(', ') || 'None'}</Text>
-            <Text>Description: {selectedSession.description || 'None'}</Text>
-            <Text>Notes: {selectedSession.notes || 'None'}</Text>
-            <Text>Apprentice: {selectedSession.apprentice?.displayName || selectedSession.apprenticeId}</Text>
-            <Text>Validator: {selectedSession.validator?.displayName || selectedSession.validatorId || 'None'}</Text>
-            <Text>Waypoints: {selectedSession.routeData?.waypoints?.length || 0}</Text>
+
+            <Text style={styles.sectionSubtitle}>Description:</Text>
+            <Text style={styles.textBlock}>{displayValue(selectedSession.description)}</Text>
+
+            <Text style={styles.sectionSubtitle}>Notes:</Text>
+            <Text style={styles.textBlock}>{displayValue(selectedSession.notes)}</Text>
+
+            <Text>Apprentice: {displayValue(selectedSession.apprentice?.displayName || selectedSession.apprenticeId)}</Text>
+            <Text>Validator: {displayValue(selectedSession.validator?.displayName || selectedSession.validatorId)}</Text>
+
+            <Text style={styles.sectionSubtitle}>Waypoints:</Text>
+            <Text>Count: {selectedSession.routeData?.waypoints?.length || 0}</Text>
+            {selectedSession.routeData?.path && selectedSession.routeData.path.length > 0 ? (
+              <View style={styles.waypointsContainer}>
+                <Text>First: {JSON.stringify(selectedSession.routeData.path[0])}</Text>
+                {selectedSession.routeData.path.length > 1 && (
+                  <Text>Last: {JSON.stringify(selectedSession.routeData.path[selectedSession.routeData.path.length - 1])}</Text>
+                )}
+              </View>
+            ) : (
+              <Text>No waypoints available</Text>
+            )}
 
             <Button
               title="Delete This Session"
@@ -154,7 +192,6 @@ const TestSessionsPage = () => {
         <TextInput
           style={styles.input}
           placeholder="Number of sessions to delete (or 'all')"
-          keyboardType="numeric"
           value={deleteCountInput}
           onChangeText={setDeleteCountInput}
           editable={!loading}
@@ -222,6 +259,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#444',
   },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 8,
+    marginBottom: 4,
+    color: '#444',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -250,6 +294,18 @@ const styles = StyleSheet.create({
     color: 'red',
     marginTop: 5,
   },
+  textBlock: {
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  waypointsContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  }
 });
 
 export default TestSessionsPage;

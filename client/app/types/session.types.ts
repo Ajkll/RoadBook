@@ -12,13 +12,16 @@ export interface Waypoint {
 }
 
 export interface RouteData {
-  waypoints: Waypoint[];
+  startPoint?: string | null;
+  endPoint?: string | null;
+  path?: Waypoint[];
+  waypoints?: Waypoint[];
 }
 
 export interface SessionData {
   id?: string;
   title?: string;
-  description?: string;
+  description?: string; // Note: Non supporté par l'API pour l'instant (future ajout), utiliser notes à la place
   date: string;  // Format YYYY-MM-DD
   startTime: string;  // ISO string
   endTime?: string;   // ISO string

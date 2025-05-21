@@ -98,6 +98,11 @@ export const validateSessionData = (sessionData: SessionData): { valid: boolean;
 export const formatSessionData = (sessionData: SessionData): SessionData => {
   const formattedData = { ...sessionData };
 
+  // Handle description -> notes conversion
+  if (sessionData.description && !sessionData.notes) {
+    formattedData.notes = sessionData.description;
+  }
+
   // Ensure proper date formatting (YYYY-MM-DD)
   if (sessionData.date && sessionData.date instanceof Date) {
     formattedData.date = sessionData.date.toISOString().split('T')[0];
@@ -130,6 +135,19 @@ export const formatSessionData = (sessionData: SessionData): SessionData => {
 
   if (sessionData.validatorId) {
     formattedData.validatorId = String(sessionData.validatorId);
+  }
+
+  // Important: Properly format routeData for API
+  if (sessionData.routeData) {
+    // If we have path data, convert it to waypoints format for the API
+    if (sessionData.routeData.path && Array.isArray(sessionData.routeData.path)) {
+      formattedData.routeData = {
+        ...sessionData.routeData,
+        waypoints: sessionData.routeData.path
+      };
+      // Remove the path property as API doesn't expect it
+      delete formattedData.routeData.path;
+    }
   }
 
   return formattedData;
@@ -525,6 +543,9 @@ export const mapDriveSessionToSessionData = async ({
     console.error('Failed to get roadbooks:', error);
   }
 
+  // Convert path to waypoints
+  const waypoints = pathToWaypoints(path);
+
   // Construire l'objet SessionData
   const sessionData: SessionData = {
     title: generateSessionTitle(startTime),
@@ -541,7 +562,9 @@ export const mapDriveSessionToSessionData = async ({
     sessionType: 'PRACTICE', // Par défaut
     roadTypes: roadTypes,
     routeData: {
-      waypoints: pathToWaypoints(path)
+        startPoint: startLocation,
+        endPoint: endLocation,
+        waypoints: waypoints // IMPORTANT: Use waypoints here, not path
     },
     apprenticeId: userId,
     roadbookId: roadbookId,
