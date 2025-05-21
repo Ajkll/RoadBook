@@ -13,6 +13,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { RegisterRequest, UserRole } from '../../types/auth.types';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from '../../store/slices/networkSlice';
+import { logger } from '../../utils/logger';
 
 // Regex patterns pour la validation
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -21,6 +24,7 @@ const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 
 const RegisterForm = ({ navigation }) => {
   const { register, isLoading, error, clearError } = useAuth();
+  const isOnline = useSelector(selectIsInternetReachable);
   
   // État pour les champs du formulaire
   const [formData, setFormData] = useState<RegisterRequest>({
@@ -101,6 +105,15 @@ const RegisterForm = ({ navigation }) => {
   
   // Gérer la soumission du formulaire
   const handleSubmit = async () => {
+    // Vérifier si l'utilisateur est en ligne
+    if (!isOnline) {
+      Alert.alert(
+        "Mode hors ligne",
+        "L'inscription nécessite une connexion internet. Veuillez vous connecter à Internet et réessayer."
+      );
+      return;
+    }
+    
     // Valider le formulaire avant de soumettre
     if (!validateForm()) {
       return;
@@ -110,7 +123,12 @@ const RegisterForm = ({ navigation }) => {
       // Supprimer le champ confirmPassword avant d'envoyer à l'API
       const { confirmPassword, ...registerData } = formData;
       
+      logger.info("Tentative d'inscription d'un nouvel utilisateur");
+      
       await register(registerData);
+      
+      logger.info("Inscription réussie pour l'utilisateur avec l'email: " + registerData.email);
+      
       Alert.alert(
         'Inscription réussie', 
         'Votre compte a été créé avec succès. Bienvenue sur RoadBook!',
@@ -118,7 +136,7 @@ const RegisterForm = ({ navigation }) => {
       );
     } catch (err) {
       // L'erreur est déjà gérée par le contexte d'authentification
-      console.error('Registration error:', err);
+      logger.error('Erreur lors de l\'inscription:', err);
       
       // Si l'erreur concerne l'email déjà utilisé
       if (err.message?.toLowerCase().includes('email') && err.message?.toLowerCase().includes('déjà utilisé')) {
@@ -126,6 +144,20 @@ const RegisterForm = ({ navigation }) => {
           ...prev,
           email: 'Cette adresse email est déjà utilisée. Veuillez en choisir une autre ou vous connecter.'
         }));
+      } 
+      // Améliorer les messages d'erreur pour les problèmes de mot de passe
+      else if (err.message?.toLowerCase().includes('mot de passe')) {
+        setValidationErrors(prev => ({
+          ...prev,
+          password: err.message || 'Problème avec le mot de passe. Veuillez vérifier qu\'il respecte les critères de sécurité.'
+        }));
+      }
+      // Messages génériques pour d'autres erreurs
+      else if (err.message) {
+        Alert.alert(
+          "Erreur d'inscription",
+          "Une erreur est survenue lors de votre inscription: " + err.message
+        );
       }
     }
   };
@@ -321,6 +353,16 @@ const RegisterForm = ({ navigation }) => {
           )}
         </View>
         
+        {/* Message d'avertissement hors ligne */}
+        {!isOnline && (
+          <View style={styles.offlineWarning}>
+            <Ionicons name="wifi-off" size={20} color="#fff" />
+            <Text style={styles.offlineWarningText}>
+              Mode hors ligne. L'inscription nécessite une connexion Internet.
+            </Text>
+          </View>
+        )}
+        
         {/* Afficher l'erreur globale */}
         {error && <Text style={styles.globalError}>{error}</Text>}
         
@@ -328,7 +370,7 @@ const RegisterForm = ({ navigation }) => {
         <TouchableOpacity
           style={styles.button}
           onPress={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || !isOnline}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -426,6 +468,19 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
     borderRadius: 8,
+  },
+  offlineWarning: {
+    backgroundColor: '#FF6B6B',
+    padding: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  offlineWarningText: {
+    color: 'white',
+    marginLeft: 10,
+    flex: 1,
   },
   button: {
     backgroundColor: '#7CA7D8',

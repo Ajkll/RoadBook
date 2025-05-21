@@ -13,6 +13,18 @@ jest.mock('../../app/services/api/client', () => ({
     put: jest.fn(() => new Promise(resolve => 
       setTimeout(() => resolve({ data: { profilePicture: 'https://example.com/avatar.jpg' } }), 5)
     )),
+  },
+  API_URL: 'https://mock-api.test/api',
+  API_CONFIG: {
+    API_URL: 'https://mock-api.test/api',
+    ENVIRONMENT: 'test',
+    USING_PRODUCTION: false,
+    IS_PHYSICAL_DEVICE: false
+  },
+  authEvents: {
+    emit: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn()
   }
 }));
 
@@ -46,8 +58,9 @@ describe('Profile Service Performance Tests', () => {
     const utils = require('../../app/services/api/utils');
     utils.extractApiData = jest.fn(response => response.data);
 
-    // Importer après les mocks
-    usersApi = require('../../app/services/api/users.api').usersApi;
+    // Importer après les mocks - utiliser l'import centralisé
+    const api = require('../../app/services/api');
+    usersApi = api.usersApi;
   });
 
   const measureTime = async (fn: () => Promise<any>) => {

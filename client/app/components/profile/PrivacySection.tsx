@@ -18,6 +18,10 @@ export default function PrivacySection({
   handleRequestDataExport,
   sectionLoading = false
 }: PrivacySectionProps) {
+  // Ensure we have profile visibility property for compatibility with API
+  if (!privacySettings.profileVisibility) {
+    privacySettings.profileVisibility = 'PRIVATE';
+  }
   return (
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>Paramètres de confidentialité</Text>

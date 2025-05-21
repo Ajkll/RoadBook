@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { User } from '../../types/auth.types';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from '../../store/slices/networkSlice';
+import { logger } from '../../utils/logger';
 
 interface ProfileInformationProps {
   user: User;
@@ -24,12 +27,24 @@ export default function ProfileInformation({
 }: ProfileInformationProps) {
   const [savingChanges, setSavingChanges] = useState(false);
   const [fieldChanges, setFieldChanges] = useState<Record<string, boolean>>({});
+  const isOnline = useSelector(selectIsInternetReachable);
 
   // Fonction pour sauvegarder un champ individuel
   const saveField = async (fieldName: string, value: any) => {
+    // Vérifier si l'utilisateur est en ligne
+    if (!isOnline) {
+      Alert.alert(
+        "Mode hors ligne",
+        "Les modifications de profil ne sont pas disponibles en mode hors ligne. Veuillez vous connecter à Internet pour effectuer cette action."
+      );
+      return;
+    }
+    
     try {
       setSavingChanges(true);
       setFieldChanges(prev => ({ ...prev, [fieldName]: true }));
+      
+      logger.info(`Tentative de mise à jour du champ "${fieldName}" du profil`);
 
       // Construire un objet avec seulement le champ modifié
       const updateData = {
@@ -42,9 +57,12 @@ export default function ProfileInformation({
       // Si tout va bien, mettre à jour le champ dans notre état local
       setEditedUser(prev => ({ ...prev, [fieldName]: value }));
       
+      logger.info(`Mise à jour réussie du champ "${fieldName}" du profil`);
+      
       // Afficher un message de succès
       Alert.alert("Mise à jour réussie", `Le champ "${fieldName}" a été mis à jour avec succès.`);
     } catch (error) {
+      logger.error(`Erreur lors de la mise à jour du champ "${fieldName}" du profil:`, error);
       Alert.alert(
         "Erreur de mise à jour",
         error.message || `Une erreur est survenue lors de la mise à jour du champ "${fieldName}".`
@@ -63,16 +81,17 @@ export default function ProfileInformation({
 
   return (
     <View style={styles.sectionContainer}>
-      {/* Section photo de profil */}
-      <View style={styles.profileImageSection}>
-        <Image 
-          source={{ uri: user.profilePicture || 'https://via.placeholder.com/150' }} 
-          style={styles.profileImage} 
-        />
-        <TouchableOpacity style={styles.changePhotoButton}>
-          <Text style={styles.changePhotoText}>Changer la photo</Text>
-        </TouchableOpacity>
-      </View>
+      {/* La section photo de profil est maintenant gérée par le composant ProfileHeader */}
+      
+      {/* Message d'information en mode hors ligne */}
+      {!isOnline && (
+        <View style={styles.offlineWarning}>
+          <MaterialIcons name="wifi-off" size={20} color="#fff" />
+          <Text style={styles.offlineWarningText}>
+            Mode hors ligne. Les modifications du profil sont désactivées.
+          </Text>
+        </View>
+      )}
 
       {!editing ? (
         /* Mode Lecture avec boutons de modification individuels */
@@ -380,20 +399,32 @@ export default function ProfileInformation({
               <Text style={styles.cancelButtonText}>Annuler</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.button, styles.saveButton, savingChanges && styles.disabledButton]} 
+              style={[
+                styles.button, 
+                styles.saveButton, 
+                (savingChanges || !isOnline) && styles.disabledButton
+              ]} 
               onPress={async () => {
+                if (!isOnline) {
+                  Alert.alert(
+                    "Mode hors ligne",
+                    "Les modifications de profil ne sont pas disponibles en mode hors ligne. Veuillez vous connecter à Internet pour enregistrer vos modifications."
+                  );
+                  return;
+                }
+                
                 setSavingChanges(true);
                 try {
                   await handleSaveProfile();
                   setEditing(false);
                 } catch (error) {
                   // Erreur déjà gérée dans handleSaveProfile
-                  console.error(error);
+                  logger.error('Erreur lors de la sauvegarde du profil:', error);
                 } finally {
                   setSavingChanges(false);
                 }
               }}
-              disabled={savingChanges}
+              disabled={savingChanges || !isOnline}
             >
               {savingChanges ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -412,26 +443,19 @@ const styles = StyleSheet.create({
   sectionContainer: {
     marginBottom: 20,
   },
-  profileImageSection: {
+  // Les styles de la section photo de profil ont été supprimés car ils sont maintenant gérés par ProfileHeader
+  offlineWarning: {
+    backgroundColor: '#FF6B6B',
+    padding: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
-  },
-  changePhotoButton: {
-    backgroundColor: '#7CA7D8',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  changePhotoText: {
+  offlineWarningText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
+    marginLeft: 10,
+    flex: 1,
   },
   infoRow: {
     flexDirection: 'row',

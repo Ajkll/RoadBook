@@ -4,6 +4,7 @@ import { User } from '../../types/auth.types';
 import { useAuth } from '../../context/AuthContext';
 import usersApi from '../../services/api/users.api';
 import { logger } from '../../utils/logger';
+import { apiClient } from '../../services/api/client';
 
 // Type definitions for the profile sync context
 interface ProfileSyncContextType {
@@ -185,8 +186,14 @@ export const ProfileSyncProvider: React.FC<ProfileSyncProviderProps> = ({ childr
         // Use AuthContext's updateProfile to ensure everything stays in sync
         updatedUser = await authUpdateProfile(fields);
       } else {
-        // Direct API call if AuthContext is not available
-        updatedUser = await usersApi.updateProfile(fields);
+        try {
+          // Direct API call if AuthContext is not available
+          logger.info('ProfileSyncManager: Making direct API call to update profile');
+          updatedUser = await usersApi.updateProfile(fields);
+        } catch (directApiError) {
+          logger.error('ProfileSyncManager: Direct API call failed:', directApiError);
+          throw directApiError;
+        }
       }
       
       // Update our local state

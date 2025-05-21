@@ -1,10 +1,9 @@
-/*import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
-import { apiProxy, testApiConnection } from '../api-proxy';
 import NetInfo from '@react-native-community/netinfo';
 import Constants from 'expo-constants';
 // Import centralized API configuration
-import { API_URL, TUNNEL_MODE, CODESPACE_BASE_URL } from '../services/api/client';
+import { apiClient, API_URL, API_CONFIG, testApiConnection } from '../services/api/client';
 
 const ApiTest = () => {
   const [testResults, setTestResults] = useState([]);
@@ -12,9 +11,8 @@ const ApiTest = () => {
   const [networkInfo, setNetworkInfo] = useState(null);
   const [connectionInfo, setConnectionInfo] = useState({
     platform: Platform.OS,
-    baseUrl: API_URL, // Use centralized API configuration directly
-    codespaceUrl: CODESPACE_BASE_URL,
-    tunnelMode: TUNNEL_MODE,
+    baseUrl: API_URL,
+    tunnelMode: API_CONFIG.IS_PHYSICAL_DEVICE,
     hostUri: Constants.expoConfig?.hostUri || 'non disponible'
   });
 
@@ -24,8 +22,7 @@ const ApiTest = () => {
     setConnectionInfo({
       platform: Platform.OS,
       baseUrl: API_URL,
-      codespaceUrl: CODESPACE_BASE_URL,
-      tunnelMode: TUNNEL_MODE,
+      tunnelMode: API_CONFIG.IS_PHYSICAL_DEVICE,
       hostUri: Constants.expoConfig?.hostUri || 'non disponible'
     });
     
@@ -39,10 +36,9 @@ const ApiTest = () => {
         // Log detailed connection info for debugging
         console.log('===== DETAILED CONNECTION INFO =====');
         console.log('Platform:', Platform.OS);
-        console.log('API URL:', apiProxy.getBaseUrl());
-        console.log('Tunnel Mode:', apiProxy.isTunnelMode());
+        console.log('API URL:', API_URL);
+        console.log('Tunnel Mode:', API_CONFIG.IS_PHYSICAL_DEVICE);
         console.log('Expo Host URI:', Constants.expoConfig?.hostUri);
-        console.log('Codespace URL:', apiProxy.getCodespaceUrl());
         console.log('Network Type:', state.type);
         console.log('Is Connected:', state.isConnected);
         console.log('Is Internet Reachable:', state.isInternetReachable);
@@ -58,15 +54,15 @@ const ApiTest = () => {
   // Tests à effectuer
   const testEndpoints = [
     { name: 'Santé du serveur', path: '/health' },
-    { name: 'Statut d\'authentification', path: '/auth/status' },
-    { name: 'Info utilisateur', path: '/users/me' }
+    { name: 'Statut API', path: '/status' },
+    { name: 'Documentation API', path: '/' }
   ];
 
   // Fonction pour faire un test d'API
   const testEndpoint = async (path) => {
     try {
       setIsLoading(true);
-      const fullUrl = apiProxy.getUrl(path);
+      const fullUrl = `${API_URL}${path}`;
       console.log(`Testing endpoint: ${fullUrl}`);
       
       const response = await fetch(fullUrl, {
@@ -110,8 +106,8 @@ const ApiTest = () => {
       Alert.alert(
         result.success ? 'Connexion réussie' : 'Erreur de connexion',
         result.success 
-          ? `Connexion établie à ${apiProxy.getBaseUrl()}\nStatus: ${result.status}` 
-          : `Erreur: ${result.error}`
+          ? `Connexion établie à ${API_URL}\nStatus: ${result.status}` 
+          : `Erreur: ${result.message || 'Connexion impossible'}`
       );
       console.log('Quick connection test result:', result);
     } catch (err) {
@@ -122,45 +118,21 @@ const ApiTest = () => {
     }
   };
   
-  // Test direct de l'URL Codespace (utilisant notre configuration centralisée)
-  const testCodespaceUrl = async () => {
-    if (!CODESPACE_BASE_URL) {
-      Alert.alert('Info', 'Pas d\'URL Codespace configurée');
-      return;
-    }
-    
+  // Test authentifié avec token (après login)
+  const testAuthenticatedEndpoint = async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 Testing direct Codespace URL:', CODESPACE_BASE_URL);
-      console.log('🔍 Tunnel mode:', TUNNEL_MODE ? 'ENABLED' : 'DISABLED');
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      const response = await fetch(`${CODESPACE_BASE_URL}/api/health`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'X-Client-Platform': Platform.OS,
-          'X-Tunnel-Mode': TUNNEL_MODE ? 'true' : 'false'
-        },
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      
-      const data = await response.json();
+      // Exemple de test avec le client API configuré
+      const response = await apiClient.get('/health');
       Alert.alert(
-        'Test Codespace URL',
-        `Succès: ${response.ok}\nStatus: ${response.status}\nRéponse: ${JSON.stringify(data)}`
+        'Test API avec client',
+        `Succès: ${response.status === 200}\nStatus: ${response.status}\nRéponse: ${JSON.stringify(response.data)}`
       );
-      console.log('Direct Codespace test result:', { status: response.status, data });
     } catch (err) {
-      console.error('Error in Codespace URL test:', err);
+      console.error('Error in authenticated test:', err);
       Alert.alert(
-        'Erreur Codespace URL',
-        `Erreur lors du test de l'URL Codespace: ${err.message}`
+        'Erreur test authentifié',
+        `Erreur: ${err.message}`
       );
     } finally {
       setIsLoading(false);
@@ -191,9 +163,8 @@ const ApiTest = () => {
         <Text style={styles.infoTitle}>Informations de connexion:</Text>
         <Text>Plateforme: {connectionInfo.platform}</Text>
         <Text>URL API: {connectionInfo.baseUrl}</Text>
-        <Text>Mode Tunnel: {connectionInfo.tunnelMode ? '✓ Actif' : '✗ Inactif'}</Text>
+        <Text>Mode Appareil: {connectionInfo.tunnelMode ? '✓ Actif' : '✗ Inactif'}</Text>
         <Text>Host URI: {connectionInfo.hostUri}</Text>
-        <Text>URL Codespace: {connectionInfo.codespaceUrl}</Text>
         {networkInfo && (
           <>
             <Text style={styles.infoTitle}>Réseau:</Text>
@@ -228,17 +199,15 @@ const ApiTest = () => {
         </TouchableOpacity>
       </View>
       
-      {Platform.OS === 'android' && (
-        <TouchableOpacity
-          style={[styles.button, styles.codespaceButton]}
-          onPress={testCodespaceUrl}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            Test direct URL Codespace
-          </Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={[styles.button, styles.codespaceButton]}
+        onPress={testAuthenticatedEndpoint}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          Test avec client API
+        </Text>
+      </TouchableOpacity>
       
       <ScrollView style={styles.results}>
         {testResults.map((result, index) => (
@@ -350,4 +319,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ApiTest;*/
+export default ApiTest;
