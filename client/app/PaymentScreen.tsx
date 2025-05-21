@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   View,
   Text,
@@ -15,7 +15,6 @@ import { useSound } from './hooks/useSound';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
-import OfflineContent from './components/ui/OfflineContent';
 
 const PaymentScreen: React.FC = () => {
   const theme = useTheme();
@@ -33,29 +32,14 @@ const PaymentScreen: React.FC = () => {
   const [expiryError, setExpiryError] = useState('');
   const router = useRouter();
 
-  const products = [
-    { name: 'T-shirt', price: 15.00 },
-    { name: 'Pantalon', price: 20.00 },
-    { name: 'Casquette', price: 10.00 },
-  ];
+  const { product = '{}', sellerId } = useLocalSearchParams();
+  const parsedProduct = JSON.parse(product as string);
 
-  if (!isConnected) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Paiement</Text>
-          <OfflineContent message="Impossible de procéder au paiement. Vérifiez votre connexion internet." />
-          <GoBackHomeButton
-            containerStyle={{
-              marginBottom: theme.spacing.md,
-              marginTop: theme.spacing.xxl,
-              alignSelf: 'flex-start'
-            }}
-          />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+  const products = [{
+    name: parsedProduct.title,
+    price: parsedProduct.price,
+    sellerId
+  }];
 
   const validateCardNumber = (value: string) => {
     const cardRegex = /^\d{16}$/;
@@ -84,7 +68,7 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setIsLoading(true);
     setErrorMessage('');
     setCardNumberError('');
@@ -120,7 +104,11 @@ const PaymentScreen: React.FC = () => {
         return;
       }
     }
-    setTimeout(() => {
+
+    try {
+      // Ici vous devriez implémenter votre logique de paiement réelle
+      // await processPayment(paymentMethod, { cardNumber, expiry, cvc });
+
       play('SUCCESS_SOUND');
       router.push({
         pathname: '/paymentConfirmation',
@@ -129,8 +117,12 @@ const PaymentScreen: React.FC = () => {
           totalPrice: products.reduce((acc, product) => acc + product.price, 0).toFixed(2),
         },
       });
+    } catch (error) {
+      play('ERROR_SOUND');
+      setErrorMessage((error as Error).message || 'Une erreur est survenue lors du paiement');
+    } finally {
       setIsLoading(false);
-    }, 5000);
+    }
   };
 
   return (
@@ -268,7 +260,7 @@ const PaymentScreen: React.FC = () => {
   );
 };
 
-const makeStyles = (theme) => StyleSheet.create({
+const makeStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,

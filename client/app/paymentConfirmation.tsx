@@ -10,6 +10,7 @@ const PaymentConfirmation: React.FC = () => {
   const theme = useTheme();
   const { products = '[]', totalPrice } = useLocalSearchParams();
   const [showCopied, setShowCopied] = useState(false);
+  const { sellerId } = useLocalSearchParams();
 
   let parsedProducts = [];
 
@@ -132,6 +133,11 @@ const PaymentConfirmation: React.FC = () => {
         }]}>
           Merci pour votre commande, vous allez recevoir un email de confirmation.
         </Text>
+
+        <View style={styles.sellerInfo}>
+          <Text style={styles.sellerLabel}>Vendeur:</Text>
+          <Text style={styles.sellerName}>{parsedProducts[0]?.sellerName || 'Inconnu'}</Text>
+        </View>
 
         <View style={[styles.bottomButtons, {backgroundColor: theme.colors.background}]}>
           <View style={styles.buttonContainer}>
