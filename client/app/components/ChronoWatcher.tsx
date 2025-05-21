@@ -16,6 +16,7 @@ import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
 import { useNotifications } from './NotificationHandler';
 import { logger } from '../utils/logger';
+import { resetCommentState } from '../store/slices/commentSlice';
 
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
@@ -40,6 +41,8 @@ export default function ChronoWatcher() {
   const isProcessing = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+
+  const comment = useSelector((state: RootState) => state.comment.comment);
 
   useEffect(() => {
     console.log(`[${instanceId}] chrono monter`);
@@ -200,11 +203,14 @@ export default function ChronoWatcher() {
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
 
+          const sessionComment = comment;
+
           console.log(`[${instanceId}] User ID:`, userId);
           console.log(`[${instanceId}] Elapsedtime:`, finalElapsedTime);
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
+          console.log(`[${instanceId}] Commentaire:`, sessionComment)
 
           if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
             console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
@@ -233,12 +239,13 @@ export default function ChronoWatcher() {
               await saveDriveSession({
                 elapsedTime: finalElapsedTime,
                 userId,
+                userComment: sessionComment,
                 path: finalPath,
                 weather,
                 roadInfo,
                 vehicle,
               });
-
+              dispatch(resetCommentState());
               console.log(`[${instanceId}] session sauvegardée `);
             } catch (error) {
               logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);

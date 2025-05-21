@@ -9,6 +9,7 @@ import { saveSessionWithOfflineSupport, DriveSessionData } from '../sync/syncMan
 export async function saveDriveSession({
   elapsedTime,
   userId,
+  userComment,
   path,
   weather,
   roadInfo,
@@ -16,6 +17,7 @@ export async function saveDriveSession({
 }: {
   elapsedTime: number;
   userId: string;
+  userComment: string;
   path: { latitude: number; longitude: number }[];
   weather?: {
     temperature: number;
@@ -55,6 +57,7 @@ export async function saveDriveSession({
   return saveSessionWithOfflineSupport({
     elapsedTime,
     userId,
+    userComment,
     path,
     weather,
     roadInfo,

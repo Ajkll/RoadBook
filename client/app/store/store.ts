@@ -8,6 +8,7 @@ import networkSlice from './slices/networkSlice';
 import syncSlice from './slices/syncSlice';
 import videoReducer from './slices/videoSlice';
 import soundReducer from './slices/appSoundSlice';
+import commentReducer from './slices/commentSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     sync: syncSlice,
     video: videoReducer,
     sound: soundReducer,
+    comment: commentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

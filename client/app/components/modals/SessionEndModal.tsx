@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,13 @@ import {
   Animated,
   Dimensions,
   Pressable,
+  TextInput,
+  Switch,
 } from 'react-native';
 import { useTheme } from '../../constants/theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { setComment, setShouldAskForComment } from '../../store/slices/commentSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SessionEndModalProps {
   visible: boolean;
@@ -19,6 +24,7 @@ interface SessionEndModalProps {
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const DONT_ASK_KEY = '@dontAskForComments';
 
 const SessionEndModal: React.FC<SessionEndModalProps> = ({
   visible,
@@ -28,6 +34,12 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
 }) => {
   const theme = useTheme();
   const styles = createStyles(theme);
+  const dispatch = useDispatch();
+  const { shouldAskForComment } = useSelector((state: RootState) => state.comment);
+
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [dontAskAgain, setDontAskAgain] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
@@ -62,6 +74,32 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
     }
   }, [visible]);
 
+  const handleConfirmSavePress = async () => {
+    if (shouldAskForComment) {
+      const dontAsk = await AsyncStorage.getItem(DONT_ASK_KEY);
+      if (dontAsk !== 'true') {
+        setShowCommentInput(true);
+        return;
+      }
+    }
+    handleFinalSave();
+  };
+
+  const handleFinalSave = async () => {
+    if (dontAskAgain) {
+      await AsyncStorage.setItem(DONT_ASK_KEY, 'true');
+      dispatch(setShouldAskForComment(false));
+    }
+
+    dispatch(setComment(commentText));
+    onConfirmSave();
+  };
+
+  const handleCommentSubmit = () => {
+    handleFinalSave();
+    setShowCommentInput(false);
+  };
+
   return (
     <Modal transparent visible={visible} animationType="none">
       <Animated.View style={[styles.overlay, { opacity: overlayAnim }]}>
@@ -69,20 +107,65 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
       </Animated.View>
 
       <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
-        <Text style={styles.title}>Fin de session</Text>
-        <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
+        {!showCommentInput ? (
+          <>
+            <Text style={styles.title}>Fin de session</Text>
+            <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
 
-        <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={onConfirmSave}>
-          <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleConfirmSavePress}
+            >
+              <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={onConfirmNoSave}>
-          <Text style={styles.buttonText}>Terminer sans sauvegarder</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.dangerButton]}
+              onPress={onConfirmNoSave}
+            >
+              <Text style={styles.buttonText}>Terminer sans sauvegarder</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-          <Text style={styles.cancelText}>Continuer</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+              <Text style={styles.cancelText}>Continuer</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>Commentaire</Text>
+            <Text style={styles.subtitle}>Ajoutez un commentaire sur votre session</Text>
+
+            <TextInput
+              style={styles.commentInput}
+              multiline
+              placeholder="Votre commentaire..."
+              value={commentText}
+              onChangeText={setCommentText}
+            />
+
+            <View style={styles.switchContainer}>
+              <Switch
+                value={dontAskAgain}
+                onValueChange={setDontAskAgain}
+              />
+              <Text style={styles.switchText}>Ne plus demander</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleCommentSubmit}
+            >
+              <Text style={styles.buttonText}>Valider</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowCommentInput(false)}
+            >
+              <Text style={styles.cancelText}>Retour</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </Animated.View>
     </Modal>
   );
@@ -140,6 +223,24 @@ const createStyles = (theme: Theme) =>
     },
     cancelButton: {
       marginTop: theme.spacing.xs,
+    },
+    commentInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.secondary,
+      borderRadius: theme.borderRadius.medium,
+      padding: 12,
+      marginBottom: 16,
+      minHeight: 100,
+      textAlignVertical: 'top',
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    switchText: {
+      marginLeft: 8,
+      color: theme.colors.backgroundText,
     },
     cancelText: {
       color: theme.colors.primary,

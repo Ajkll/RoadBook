@@ -26,6 +26,7 @@ import { logger } from '../../utils/logger';
 interface DriveSessionData {
   elapsedTime: number;
   userId: string;
+  userComment: string;
   path: { latitude: number; longitude: number }[];
   weather?: {
     temperature: number;
@@ -99,6 +100,7 @@ async function saveOnlineSession(data: DriveSessionData): Promise<string> {
   const docRef = await addDoc(collection(db, 'driveSessions'), {
     userId: data.userId,
     elapsedTime: data.elapsedTime,
+    userComment: data.userComment || null,
     path: data.path,
     weather: weather || null,
     roadInfo: roadInfo || null,
@@ -131,6 +133,7 @@ async function createPendingSessionPackage(
   const session: PendingDriveSession = {
     id: sessionId,
     elapsedTime: data.elapsedTime,
+    userComment: data.userComment || null,
     userId: data.userId,
     path: data.path,
     weather: data.weather || null,
@@ -266,6 +269,7 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
         const docRef = await addDoc(collection(db, 'driveSessions'), {
           userId: session.userId,
           elapsedTime: session.elapsedTime,
+          userComment: session.userComment || null,
           path: session.path,
           weather: session.weather || null,
           roadInfo: session.roadInfo || null,
@@ -446,6 +450,7 @@ async function saveSessionToFirebase(session: PendingDriveSession): Promise<void
   await addDoc(collection(db, 'driveSessions'), {
     userId: session.userId,
     elapsedTime: session.elapsedTime,
+    userComment: session.userComment || null,
     path: session.path,
     weather: session.weather || null,
     roadInfo: session.roadInfo || null,

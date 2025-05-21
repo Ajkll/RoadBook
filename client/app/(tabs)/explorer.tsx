@@ -1,18 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { roadbookApi } from '../services/api/roadbook.api';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  TextInput,
+  Modal,
+  Pressable
+} from 'react-native';
+import { sessionApi } from '../services/api/session.api';
 import secureStorage from '../services/secureStorage';
-import { useNavigation } from '@react-navigation/native';
+import { formatSessionData, validateSessionData, SESSION_CONSTRAINTS } from '../utils/UtilsSessionApi';
+import { roadbookApi } from '../services/api/roadbook.api';
 
-export default function ExplorerScreen() {
+// Types pour les sélecteurs
+type SelectorOption = {
+  label: string;
+  value: string;
+};
+
+export default function SessionTesterScreen() {
+  // États pour les données de session
+  const [sessionData, setSessionData] = useState({
+    title: "Session de test",
+    description: "Session créée depuis l'explorateur",
+    date: new Date().toISOString().split('T')[0],
+    startTime: new Date().toISOString(),
+    endTime: new Date(Date.now() + 3600000).toISOString(),
+    startLocation: "Paris, France",
+    endLocation: "Lyon, France",
+    weather: "CLEAR" as WeatherType,
+    daylight: "DAY" as DaylightType,
+    sessionType: "PRACTICE" as SessionType,
+    roadTypes: ["URBAN"] as RoadType[],
+    distance: 50,
+    duration: 60,
+    notes: "Notes de test",
+    roadbookId: "",
+    apprenticeId: ""
+  });
+
+  // États pour l'UI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [roadbookId, setRoadbookId] = useState<string | null>(null);
-  const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentSelector, setCurrentSelector] = useState<keyof typeof sessionData | null>(null);
 
-  // Load user data on component mount
+  // Charger les données utilisateur au montage
   useEffect(() => {
     loadUserData();
   }, []);
@@ -21,188 +59,187 @@ export default function ExplorerScreen() {
     try {
       const { user } = await secureStorage.getAuthData();
       setCurrentUser(user);
+      setSessionData(prev => ({
+        ...prev,
+        apprenticeId: user?.id || ""
+      }));
 
-      // Get the user's first active roadbook (if any)
-      if (user) {
-        const roadbooks = await roadbookApi.getUserRoadbooks('ACTIVE');
-        if (roadbooks && roadbooks.length > 0) {
-          setRoadbookId(roadbooks[0].id);
-          console.log('Found active roadbook:', roadbooks[0].id);
-        } else {
-          console.log('No active roadbooks found');
-        }
-      }
+      // Récupérer ou créer un roadbook
+      const roadbookId = await sessionApi._ensureRoadbookId();
+      setSessionData(prev => ({
+        ...prev,
+        roadbookId
+      }));
     } catch (err) {
       console.error('Failed to load user data:', err);
       setError('Failed to load user data. Please ensure you are logged in.');
     }
   }
 
-  const createRoadbook = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Hardcoded roadbook data
-      const roadbookData = {
-        title: "Test Roadbook " + new Date().toISOString().substring(0, 10),
-        description: "Created from Explorer screen for testing",
-        targetHours: 50
-      };
-
-      const newRoadbook = await roadbookApi.createRoadbook(roadbookData);
-      console.log('Roadbook created successfully:', newRoadbook);
-      setRoadbookId(newRoadbook.id);
-      setSuccess(`Roadbook created successfully with ID: ${newRoadbook.id}`);
-
-      // Refresh roadbooks list
-      await loadUserData();
-    } catch (err) {
-      console.error('Failed to create roadbook:', err);
-      setError(`Failed to create roadbook: ${err.message || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+  // Gestion des changements de texte
+  const handleChange = (field: keyof typeof sessionData, value: string) => {
+    setSessionData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const sendHardcodedSession = async () => {
-    if (!roadbookId) {
-      Alert.alert(
-        'No Roadbook Found',
-        'Would you like to create a new roadbook first?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel'
-          },
-          {
-            text: 'Create Roadbook',
-            onPress: createRoadbook
-          }
-        ]
-      );
-      return;
+  // Gestion des changements numériques
+  const handleNumberChange = (field: keyof typeof sessionData, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setSessionData(prev => ({
+      ...prev,
+      [field]: numValue
+    }));
+  };
+
+  // Gestion des sélecteurs
+  const showSelector = (field: keyof typeof sessionData) => {
+    setCurrentSelector(field);
+    setModalVisible(true);
+  };
+
+  const handleSelect = (value: string) => {
+    if (!currentSelector) return;
+
+    if (currentSelector === 'roadTypes') {
+      // Gestion spéciale pour les roadTypes (tableau)
+      setSessionData(prev => ({
+        ...prev,
+        roadTypes: [value as RoadType]
+      }));
+    } else {
+      setSessionData(prev => ({
+        ...prev,
+        [currentSelector]: value
+      }));
     }
 
+    setModalVisible(false);
+  };
+
+  // Envoi de la session
+  const sendSession = async () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Données de session corrigées selon le format attendu par l'API et le fichier seed
-      const sessionData = {
-        date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-        startTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        endTime: new Date().toISOString(), // Current time
-        duration: 60, // Duration in minutes
-        startLocation: "Rue de la Station 1, 1300 Wavre", // Adresse formatée comme dans le seed
-        endLocation: "Avenue des Combattants 10, 1340 Ottignies", // Adresse formatée comme dans le seed
-        distance: 4.5, // Distance in km
-        weather: "CLEAR", // Valeur d'énumération correcte
-        daylight: "DAY", // Valeur d'énumération correcte
-        roadTypes: ["URBAN", "HIGHWAY"],
-        notes: "This is a test session created from explorer.tsx",
-        sessionType: "PRACTICE", // Type de session
-        // Ajout des champs manquants d'après le fichier seed
-        routeData: {
-          waypoints: [
-            { lat: 48.856614, lng: 2.3522219, name: "Paris" },
-            { lat: 48.858844, lng: 2.294351, name: "Eiffel Tower" },
-          ],
-        },
-        apprenticeId: currentUser?.id, // ID de l'apprenti (utilisateur courant)
-        // Si vous avez un ID de validateur/guide, vous pouvez l'ajouter ici
-        // validatorId: "GUIDE_ID",
-      };
+      // Valider les données
+      const validation = validateSessionData(sessionData);
+      if (!validation.valid) {
+        throw new Error(validation.errors.join('\n'));
+      }
 
-      console.log(`Creating session for roadbook ID: ${roadbookId}`);
-      const response = await roadbookApi.createSession(roadbookId, sessionData);
+      // Formater les données
+      const formattedData = formatSessionData(sessionData);
+      console.log('Formatted session data:', formattedData);
 
-      console.log('Session created successfully:', response);
-      setSuccess(`Session created successfully with ID: ${response.id}`);
+      // Envoyer à l'API
+      const session = await sessionApi.createSession(sessionData.roadbookId, formattedData);
+
+      console.log('Session created successfully:', session);
+      setSuccess(`Session créée avec succès! ID: ${session.id}`);
     } catch (err) {
       console.error('Failed to create session:', err);
-      setError(`Failed to create session: ${err.message || 'Unknown error'}`);
+      setError(err.message || 'Failed to create session. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  const testApiConnection = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+  // Options pour les sélecteurs
+  const getSelectorOptions = (): SelectorOption[] => {
+    if (!currentSelector) return [];
 
-    try {
-      const result = await roadbookApi.testConnection();
-      console.log('API connection test result:', result);
-
-      if (result.status === 'success') {
-        setSuccess(`API Connection Successful! Ping time: ${result.details.pingTime}`);
-      } else {
-        setError(`API Connection Failed: ${result.details.message}`);
-      }
-    } catch (err) {
-      console.error('API test failed:', err);
-      setError(`API test failed: ${err.message || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
+    switch(currentSelector) {
+      case 'weather':
+        return SESSION_CONSTRAINTS.WEATHER_TYPES.map(type => ({ label: type, value: type }));
+      case 'daylight':
+        return SESSION_CONSTRAINTS.DAYLIGHT_TYPES.map(type => ({ label: type, value: type }));
+      case 'sessionType':
+        return SESSION_CONSTRAINTS.SESSION_TYPES.map(type => ({ label: type, value: type }));
+      case 'roadTypes':
+        return SESSION_CONSTRAINTS.ROAD_TYPES.map(type => ({ label: type, value: type }));
+      default:
+        return [];
     }
   };
+
+  // Rendu des champs de saisie
+  const renderInputField = (label: string, field: keyof typeof sessionData, numeric = false) => (
+    <View style={styles.inputContainer}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        value={String(sessionData[field])}
+        onChangeText={text => numeric ? handleNumberChange(field, text) : handleChange(field, text)}
+        keyboardType={numeric ? 'numeric' : 'default'}
+      />
+    </View>
+  );
+
+  // Rendu des sélecteurs
+  const renderSelectorField = (label: string, field: keyof typeof sessionData, value: string) => (
+    <View style={styles.inputContainer}>
+      <Text style={styles.label}>{label}</Text>
+      <TouchableOpacity
+        style={styles.selectorButton}
+        onPress={() => showSelector(field)}
+      >
+        <Text style={styles.selectorButtonText}>{value}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Explorer</Text>
-        <Text style={styles.subtitle}>Test API Functionality</Text>
+        <Text style={styles.title}>Testeur de Session</Text>
+        <Text style={styles.subtitle}>Envoyer des données de session à la DB</Text>
       </View>
 
       {currentUser ? (
         <View style={styles.userInfo}>
-          <Text style={styles.infoText}>Logged in as: {currentUser.displayName || currentUser.email}</Text>
-          {roadbookId ? (
-            <Text style={styles.infoText}>Using Roadbook ID: {roadbookId}</Text>
-          ) : (
-            <Text style={styles.warningText}>No active roadbook found. You can create one below.</Text>
-          )}
+          <Text style={styles.infoText}>Connecté en tant que: {currentUser.displayName || currentUser.email}</Text>
+          <Text style={styles.infoText}>Roadbook ID: {sessionData.roadbookId || 'Chargement...'}</Text>
         </View>
       ) : (
-        <Text style={styles.warningText}>Not logged in. Please log in to use this feature.</Text>
+        <Text style={styles.warningText}>Non connecté. Veuillez vous connecter pour utiliser cette fonctionnalité.</Text>
       )}
 
-      <View style={styles.buttonContainer}>
-        {!roadbookId && currentUser && (
-          <TouchableOpacity
-            style={[styles.button, styles.warningButton, loading && styles.disabledButton]}
-            onPress={createRoadbook}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'Creating Roadbook...' : 'Create Test Roadbook'}
-            </Text>
-          </TouchableOpacity>
-        )}
+      {/* Formulaire de session */}
+      <View style={styles.formContainer}>
+        {renderInputField('Titre', 'title')}
+        {renderInputField('Description', 'description')}
+        {renderInputField('Date (YYYY-MM-DD)', 'date')}
+        {renderInputField('Heure de début', 'startTime')}
+        {renderInputField('Heure de fin', 'endTime')}
+        {renderInputField('Lieu de départ', 'startLocation')}
+        {renderInputField('Lieu d\'arrivée', 'endLocation')}
 
-        <TouchableOpacity
-          style={[styles.button, styles.primaryButton, (!currentUser) && styles.disabledButton]}
-          onPress={sendHardcodedSession}
-          disabled={!currentUser || loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Creating Session...' : 'Create Hardcoded Session'}
-          </Text>
-        </TouchableOpacity>
+        {renderSelectorField('Météo', 'weather', sessionData.weather)}
+        {renderSelectorField('Luminosité', 'daylight', sessionData.daylight)}
+        {renderSelectorField('Type de session', 'sessionType', sessionData.sessionType)}
+        {renderSelectorField('Type de route', 'roadTypes', sessionData.roadTypes[0])}
 
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton, loading && styles.disabledButton]}
-          onPress={testApiConnection}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>Test API Connection</Text>
-        </TouchableOpacity>
+        {renderInputField('Distance (km)', 'distance', true)}
+        {renderInputField('Durée (minutes)', 'duration', true)}
+        {renderInputField('Notes', 'notes')}
       </View>
 
+      {/* Bouton d'envoi */}
+      <TouchableOpacity
+        style={[styles.button, loading && styles.disabledButton]}
+        onPress={sendSession}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Envoi en cours...' : 'Envoyer la Session'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Messages d'erreur/succès */}
       {error && (
         <View style={styles.messageContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -215,19 +252,36 @@ export default function ExplorerScreen() {
         </View>
       )}
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.sectionTitle}>Session Details (Hardcoded)</Text>
-        <Text style={styles.infoText}>• Date: Today's date</Text>
-        <Text style={styles.infoText}>• Duration: 60 minutes</Text>
-        <Text style={styles.infoText}>• Start Location: Rue de la Station 1, 1300 Wavre</Text>
-        <Text style={styles.infoText}>• End Location: Avenue des Combattants 10, 1340 Ottignies</Text>
-        <Text style={styles.infoText}>• Distance: 4.5 km</Text>
-        <Text style={styles.infoText}>• Weather: CLEAR</Text>
-        <Text style={styles.infoText}>• Daylight: DAY</Text>
-        <Text style={styles.infoText}>• Road Types: URBAN, HIGHWAY</Text>
-        <Text style={styles.infoText}>• Session Type: PRACTICE</Text>
-        <Text style={styles.infoText}>• Route Data: Includes waypoints with lat/lng coordinates</Text>
-      </View>
+      {/* Modal pour les sélecteurs */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sélectionner une option</Text>
+
+            {getSelectorOptions().map(option => (
+              <Pressable
+                key={option.value}
+                style={styles.optionButton}
+                onPress={() => handleSelect(option.value)}
+              >
+                <Text style={styles.optionText}>{option.label}</Text>
+              </Pressable>
+            ))}
+
+            <Pressable
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>Annuler</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -235,88 +289,135 @@ export default function ExplorerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
     backgroundColor: '#f5f5f5',
-    padding: 16,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginTop: 4,
   },
   userInfo: {
-    backgroundColor: '#e8f4f8',
-    padding: 16,
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#e9f7ef',
     borderRadius: 8,
-    marginBottom: 16,
-  },
-  buttonContainer: {
-    marginVertical: 16,
-  },
-  button: {
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  primaryButton: {
-    backgroundColor: '#3498db',
-  },
-  secondaryButton: {
-    backgroundColor: '#2ecc71',
-  },
-  warningButton: {
-    backgroundColor: '#f39c12',
-  },
-  disabledButton: {
-    backgroundColor: '#95a5a6',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  messageContainer: {
-    padding: 16,
-    borderRadius: 8,
-    marginVertical: 8,
-  },
-  errorText: {
-    color: '#e74c3c',
-    fontSize: 16,
-  },
-  successText: {
-    color: '#27ae60',
-    fontSize: 16,
   },
   warningText: {
-    color: '#e67e22',
-    fontSize: 16,
-    marginVertical: 8,
+    color: '#d32f2f',
+    marginBottom: 20,
   },
   infoText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  formContainer: {
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 5,
+    color: '#333',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 16,
+  },
+  selectorButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    padding: 12,
+  },
+  selectorButtonText: {
     fontSize: 16,
     color: '#333',
-    marginVertical: 4,
   },
-  infoContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    marginBottom: 32,
+  button: {
+    backgroundColor: '#4a90e2',
+    padding: 15,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 80,
   },
-  sectionTitle: {
+  disabledButton: {
+    backgroundColor: '#a0c4ff',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  messageContainer: {
+    padding: 15,
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  errorText: {
+    color: '#d32f2f',
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 6,
+  },
+  successText: {
+    color: '#388e3c',
+    backgroundColor: '#e8f5e9',
+    padding: 10,
+    borderRadius: 6,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  optionButton: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  optionText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  cancelButton: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    textAlign: 'center',
     color: '#333',
   },
 });
