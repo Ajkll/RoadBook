@@ -212,9 +212,9 @@ export default function ChronoWatcher() {
           console.log(`[${instanceId}] Véhicule:`, vehicle);
           console.log(`[${instanceId}] Commentaire:`, sessionComment)
 
-          if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
-            console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré.", {
+          if (finalElapsedTime <= 60 || !finalPath || finalPath.length < 3) {
+            console.log(`[${instanceId}] session ignorée : aucune donnée utile (chemins\\durée trop court\\(es))`);
+            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré; aucune donnée utile (chemins\\durée trop court\\(es))", {
               position: 'center',
             });
           } else {
@@ -233,10 +233,10 @@ export default function ChronoWatcher() {
               );
             }
 
-            // sauvegarde vers firebase
+            // sauvegarde vers la DB
             try {
               console.log(`[${instanceId}] tentative de sauvegarde de la session`);
-              await saveDriveSession({
+              const savedSession = await saveDriveSession({
                 elapsedTime: finalElapsedTime,
                 userId,
                 userComment: sessionComment,
@@ -246,7 +246,7 @@ export default function ChronoWatcher() {
                 vehicle,
               });
               dispatch(resetCommentState());
-              console.log(`[${instanceId}] session sauvegardée `);
+              console.log(`[${instanceId}] session sauvegardée avec ID: ${savedSession.id}`);
             } catch (error) {
               logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
               showWarning(

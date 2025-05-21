@@ -1,423 +1,255 @@
+// TestSessionsPage.tsx
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  TextInput,
-  Modal,
-  Pressable
-} from 'react-native';
-import { sessionApi } from '../services/api/session.api';
-import secureStorage from '../services/secureStorage';
-import { formatSessionData, validateSessionData, SESSION_CONSTRAINTS } from '../utils/UtilsSessionApi';
-import { roadbookApi } from '../services/api/roadbook.api';
+import { View, Text, Button, ScrollView, StyleSheet, TextInput, Alert } from 'react-native';
+import sessionApi from '../services/api/session.api';
 
-// Types pour les sélecteurs
-type SelectorOption = {
-  label: string;
-  value: string;
-};
-
-export default function SessionTesterScreen() {
-  // États pour les données de session
-  const [sessionData, setSessionData] = useState({
-    title: "Session de test",
-    description: "Session créée depuis l'explorateur",
-    date: new Date().toISOString().split('T')[0],
-    startTime: new Date().toISOString(),
-    endTime: new Date(Date.now() + 3600000).toISOString(),
-    startLocation: "Paris, France",
-    endLocation: "Lyon, France",
-    weather: "CLEAR" as WeatherType,
-    daylight: "DAY" as DaylightType,
-    sessionType: "PRACTICE" as SessionType,
-    roadTypes: ["URBAN"] as RoadType[],
-    distance: 50,
-    duration: 60,
-    notes: "Notes de test",
-    roadbookId: "",
-    apprenticeId: ""
-  });
-
-  // États pour l'UI
+const TestSessionsPage = () => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionIdInput, setSessionIdInput] = useState('');
+  const [deleteCountInput, setDeleteCountInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentSelector, setCurrentSelector] = useState<keyof typeof sessionData | null>(null);
+  const [error, setError] = useState('');
 
-  // Charger les données utilisateur au montage
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  async function loadUserData() {
-    try {
-      const { user } = await secureStorage.getAuthData();
-      setCurrentUser(user);
-      setSessionData(prev => ({
-        ...prev,
-        apprenticeId: user?.id || ""
-      }));
-
-      // Récupérer ou créer un roadbook
-      const roadbookId = await sessionApi._ensureRoadbookId();
-      setSessionData(prev => ({
-        ...prev,
-        roadbookId
-      }));
-    } catch (err) {
-      console.error('Failed to load user data:', err);
-      setError('Failed to load user data. Please ensure you are logged in.');
-    }
-  }
-
-  // Gestion des changements de texte
-  const handleChange = (field: keyof typeof sessionData, value: string) => {
-    setSessionData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Gestion des changements numériques
-  const handleNumberChange = (field: keyof typeof sessionData, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setSessionData(prev => ({
-      ...prev,
-      [field]: numValue
-    }));
-  };
-
-  // Gestion des sélecteurs
-  const showSelector = (field: keyof typeof sessionData) => {
-    setCurrentSelector(field);
-    setModalVisible(true);
-  };
-
-  const handleSelect = (value: string) => {
-    if (!currentSelector) return;
-
-    if (currentSelector === 'roadTypes') {
-      // Gestion spéciale pour les roadTypes (tableau)
-      setSessionData(prev => ({
-        ...prev,
-        roadTypes: [value as RoadType]
-      }));
-    } else {
-      setSessionData(prev => ({
-        ...prev,
-        [currentSelector]: value
-      }));
-    }
-
-    setModalVisible(false);
-  };
-
-  // Envoi de la session
-  const sendSession = async () => {
+  // Charger toutes les sessions
+  const loadAllSessions = async () => {
     setLoading(true);
-    setError(null);
-    setSuccess(null);
-
+    setError('');
     try {
-      // Valider les données
-      const validation = validateSessionData(sessionData);
-      if (!validation.valid) {
-        throw new Error(validation.errors.join('\n'));
+      const allSessions = await sessionApi.getUserSessions();
+      setSessions(allSessions);
+      if (allSessions.length > 0) {
+        setSessionIdInput(allSessions[0].id); // Pré-remplir avec le premier ID
       }
-
-      // Formater les données
-      const formattedData = formatSessionData(sessionData);
-      console.log('Formatted session data:', formattedData);
-
-      // Envoyer à l'API
-      const session = await sessionApi.createSession(sessionData.roadbookId, formattedData);
-
-      console.log('Session created successfully:', session);
-      setSuccess(`Session créée avec succès! ID: ${session.id}`);
     } catch (err) {
-      console.error('Failed to create session:', err);
-      setError(err.message || 'Failed to create session. Please try again later.');
+      setError('Failed to load sessions: ' + err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Options pour les sélecteurs
-  const getSelectorOptions = (): SelectorOption[] => {
-    if (!currentSelector) return [];
+  // Charger une session spécifique
+  const loadSpecificSession = async () => {
+    if (!sessionIdInput) {
+      setError('Please enter a session ID');
+      return;
+    }
 
-    switch(currentSelector) {
-      case 'weather':
-        return SESSION_CONSTRAINTS.WEATHER_TYPES.map(type => ({ label: type, value: type }));
-      case 'daylight':
-        return SESSION_CONSTRAINTS.DAYLIGHT_TYPES.map(type => ({ label: type, value: type }));
-      case 'sessionType':
-        return SESSION_CONSTRAINTS.SESSION_TYPES.map(type => ({ label: type, value: type }));
-      case 'roadTypes':
-        return SESSION_CONSTRAINTS.ROAD_TYPES.map(type => ({ label: type, value: type }));
-      default:
-        return [];
+    setLoading(true);
+    setError('');
+    try {
+      const session = await sessionApi.getSessionById(sessionIdInput);
+      setSelectedSession(session);
+    } catch (err) {
+      setError('Failed to load session: ' + err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Rendu des champs de saisie
-  const renderInputField = (label: string, field: keyof typeof sessionData, numeric = false) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={String(sessionData[field])}
-        onChangeText={text => numeric ? handleNumberChange(field, text) : handleChange(field, text)}
-        keyboardType={numeric ? 'numeric' : 'default'}
-      />
-    </View>
-  );
+  // Supprimer une session
+  const deleteSession = async (id: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await sessionApi.deleteSession(id);
+      Alert.alert('Success', 'Session deleted successfully');
 
-  // Rendu des sélecteurs
-  const renderSelectorField = (label: string, field: keyof typeof sessionData, value: string) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity
-        style={styles.selectorButton}
-        onPress={() => showSelector(field)}
-      >
-        <Text style={styles.selectorButtonText}>{value}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+      // Recharger la liste
+      await loadAllSessions();
+      setSelectedSession(null);
+    } catch (err) {
+      setError('Failed to delete session: ' + err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Testeur de Session</Text>
-        <Text style={styles.subtitle}>Envoyer des données de session à la DB</Text>
-      </View>
+      <Text style={styles.title}>Session API Test Page</Text>
 
-      {currentUser ? (
-        <View style={styles.userInfo}>
-          <Text style={styles.infoText}>Connecté en tant que: {currentUser.displayName || currentUser.email}</Text>
-          <Text style={styles.infoText}>Roadbook ID: {sessionData.roadbookId || 'Chargement...'}</Text>
-        </View>
-      ) : (
-        <Text style={styles.warningText}>Non connecté. Veuillez vous connecter pour utiliser cette fonctionnalité.</Text>
-      )}
+      {/* Section pour charger toutes les sessions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>1. Load All Sessions</Text>
+        <Button
+          title={loading ? 'Loading...' : 'Load All Sessions'}
+          onPress={loadAllSessions}
+          disabled={loading}
+        />
 
-      {/* Formulaire de session */}
-      <View style={styles.formContainer}>
-        {renderInputField('Titre', 'title')}
-        {renderInputField('Description', 'description')}
-        {renderInputField('Date (YYYY-MM-DD)', 'date')}
-        {renderInputField('Heure de début', 'startTime')}
-        {renderInputField('Heure de fin', 'endTime')}
-        {renderInputField('Lieu de départ', 'startLocation')}
-        {renderInputField('Lieu d\'arrivée', 'endLocation')}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        {renderSelectorField('Météo', 'weather', sessionData.weather)}
-        {renderSelectorField('Luminosité', 'daylight', sessionData.daylight)}
-        {renderSelectorField('Type de session', 'sessionType', sessionData.sessionType)}
-        {renderSelectorField('Type de route', 'roadTypes', sessionData.roadTypes[0])}
-
-        {renderInputField('Distance (km)', 'distance', true)}
-        {renderInputField('Durée (minutes)', 'duration', true)}
-        {renderInputField('Notes', 'notes')}
-      </View>
-
-      {/* Bouton d'envoi */}
-      <TouchableOpacity
-        style={[styles.button, loading && styles.disabledButton]}
-        onPress={sendSession}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Envoi en cours...' : 'Envoyer la Session'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Messages d'erreur/succès */}
-      {error && (
-        <View style={styles.messageContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-
-      {success && (
-        <View style={styles.messageContainer}>
-          <Text style={styles.successText}>{success}</Text>
-        </View>
-      )}
-
-      {/* Modal pour les sélecteurs */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sélectionner une option</Text>
-
-            {getSelectorOptions().map(option => (
-              <Pressable
-                key={option.value}
-                style={styles.optionButton}
-                onPress={() => handleSelect(option.value)}
-              >
-                <Text style={styles.optionText}>{option.label}</Text>
-              </Pressable>
+        {sessions.length > 0 && (
+          <View style={styles.results}>
+            <Text style={styles.resultTitle}>Sessions Found: {sessions.length}</Text>
+            {sessions.map(session => (
+              <View key={session.id} style={styles.sessionItem}>
+                <Text>ID: {session.id}</Text>
+                <Text>Date: {new Date(session.date).toLocaleDateString()}</Text>
+                <Text>Type: {session.sessionType}</Text>
+                <Text>Status: {session.status}</Text>
+              </View>
             ))}
-
-            <Pressable
-              style={styles.cancelButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.cancelButtonText}>Annuler</Text>
-            </Pressable>
           </View>
-        </View>
-      </Modal>
+        )}
+      </View>
+
+      {/* Section pour charger une session spécifique */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>2. Load Specific Session</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Session ID"
+          value={sessionIdInput}
+          onChangeText={setSessionIdInput}
+          editable={!loading}
+        />
+
+        <Button
+          title={loading ? 'Loading...' : 'Load Session'}
+          onPress={loadSpecificSession}
+          disabled={loading || !sessionIdInput}
+        />
+
+        {selectedSession && (
+          <View style={styles.results}>
+            <Text style={styles.resultTitle}>Session Details</Text>
+            <Text>ID: {selectedSession.id}</Text>
+            <Text>Title: {selectedSession.title || 'None'}</Text>
+            <Text>Date: {new Date(selectedSession.date).toLocaleDateString()}</Text>
+            <Text>Start: {new Date(selectedSession.startTime).toLocaleString()}</Text>
+            <Text>End: {selectedSession.endTime ? new Date(selectedSession.endTime).toLocaleString() : 'None'}</Text>
+            <Text>Type: {selectedSession.sessionType}</Text>
+            <Text>Duration: {selectedSession.duration} minutes</Text>
+            <Text>Distance: {selectedSession.distance} km</Text>
+            <Text>Status: {selectedSession.status}</Text>
+            <Text>Weather: {selectedSession.weather}</Text>
+            <Text>Daylight: {selectedSession.daylight}</Text>
+            <Text>Start Location: {selectedSession.startLocation || 'None'}</Text>
+            <Text>End Location: {selectedSession.endLocation || 'None'}</Text>
+            <Text>Road Types: {selectedSession.roadTypes?.join(', ') || 'None'}</Text>
+            <Text>Description: {selectedSession.description || 'None'}</Text>
+            <Text>Notes: {selectedSession.notes || 'None'}</Text>
+            <Text>Apprentice: {selectedSession.apprentice?.displayName || selectedSession.apprenticeId}</Text>
+            <Text>Validator: {selectedSession.validator?.displayName || selectedSession.validatorId || 'None'}</Text>
+            <Text>Waypoints: {selectedSession.routeData?.waypoints?.length || 0}</Text>
+
+            <Button
+              title="Delete This Session"
+              onPress={() => deleteSession(selectedSession.id)}
+              color="#ff4444"
+              disabled={loading}
+            />
+          </View>
+        )}
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>3. Batch Delete</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Number of sessions to delete (or 'all')"
+          keyboardType="numeric"
+          value={deleteCountInput}
+          onChangeText={setDeleteCountInput}
+          editable={!loading}
+        />
+
+        <Button
+          title={loading ? 'Deleting...' : 'Delete Recent Sessions'}
+          onPress={async () => {
+            const count = deleteCountInput === 'all'
+              ? Infinity
+              : parseInt(deleteCountInput) || 0;
+
+            if (count <= 0 && count !== Infinity) {
+              setError('Please enter a valid number or "all"');
+              return;
+            }
+
+            setLoading(true);
+            try {
+              const deleted = await sessionApi.deleteMultipleSessions({ limit: count });
+              Alert.alert('Success', `Deleted ${deleted} sessions`);
+              await loadAllSessions(); // Recharger la liste
+            } catch (err) {
+              setError(err.message);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading || !deleteCountInput}
+          color="#ff4444"
+        />
+      </View>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: '#f5f5f5',
-  },
-  header: {
-    marginBottom: 20,
+    marginBottom: 120,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
     color: '#333',
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  userInfo: {
-    marginBottom: 20,
+  section: {
+    marginBottom: 30,
+    backgroundColor: 'white',
     padding: 15,
-    backgroundColor: '#e9f7ef',
     borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  warningText: {
-    color: '#d32f2f',
-    marginBottom: 20,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  formContainer: {
-    marginBottom: 20,
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 5,
-    color: '#333',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#444',
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 12,
-    fontSize: 16,
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 4,
+    backgroundColor: '#f9f9f9',
   },
-  selectorButton: {
-    backgroundColor: '#fff',
+  results: {
+    marginTop: 15,
+    padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 12,
+    borderColor: '#eee',
+    borderRadius: 4,
   },
-  selectorButtonText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#4a90e2',
-    padding: 15,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginBottom: 80,
-  },
-  disabledButton: {
-    backgroundColor: '#a0c4ff',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  resultTitle: {
     fontWeight: 'bold',
+    marginBottom: 5,
   },
-  messageContainer: {
-    padding: 15,
-    borderRadius: 6,
-    marginBottom: 20,
-  },
-  errorText: {
-    color: '#d32f2f',
-    backgroundColor: '#ffebee',
-    padding: 10,
-    borderRadius: 6,
-  },
-  successText: {
-    color: '#388e3c',
-    backgroundColor: '#e8f5e9',
-    padding: 10,
-    borderRadius: 6,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  optionButton: {
-    padding: 15,
+  sessionItem: {
+    padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  optionText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  cancelButton: {
-    marginTop: 15,
-    padding: 15,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 6,
-    marginBottom: 20,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#333',
+  error: {
+    color: 'red',
+    marginTop: 5,
   },
 });
+
+export default TestSessionsPage;

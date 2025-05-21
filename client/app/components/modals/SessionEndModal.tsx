@@ -15,6 +15,7 @@ import { useTheme } from '../../constants/theme';
 import { useDispatch, useSelector } from 'react-redux';
 import { setComment, setShouldAskForComment } from '../../store/slices/commentSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootState } from '../../store/store';
 
 interface SessionEndModalProps {
   visible: boolean;
@@ -36,6 +37,9 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
   const styles = createStyles(theme);
   const dispatch = useDispatch();
   const { shouldAskForComment } = useSelector((state: RootState) => state.comment);
+  const { elapsedTime } = useSelector((state: RootState) => state.chrono);
+  const { path, tracking } = useSelector((state: RootState) => state.location);
+  const { mapReady } = useSelector((state: RootState) => state.location);
 
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -43,6 +47,9 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
 
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
+
+  // Vérifie si les conditions de sauvegarde sont remplies
+  const canSaveSession = mapReady && tracking && elapsedTime > 60 && path.length >= 3;
 
   useEffect(() => {
     if (visible) {
@@ -75,6 +82,11 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
   }, [visible]);
 
   const handleConfirmSavePress = async () => {
+    if (!canSaveSession) {
+      onConfirmNoSave();
+      return;
+    }
+
     if (shouldAskForComment) {
       const dontAsk = await AsyncStorage.getItem(DONT_ASK_KEY);
       if (dontAsk !== 'true') {
@@ -112,9 +124,20 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
             <Text style={styles.title}>Fin de session</Text>
             <Text style={styles.subtitle}>Souhaitez-vous sauvegarder ce trajet ou continuer ?</Text>
 
+            {!canSaveSession && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  Cette session ne sera pas enregistrée car :
+                  {elapsedTime <= 60 && '\n- La durée est inférieure à 60 secondes'}
+                  {path.length < 3 && '\n- Le trajet est trop court'}
+                </Text>
+              </View>
+            )}
+
             <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
+              style={[styles.button, canSaveSession ? styles.primaryButton : styles.disabledButton]}
               onPress={handleConfirmSavePress}
+              disabled={!canSaveSession}
             >
               <Text style={styles.buttonText}>Sauvegarder et terminer</Text>
             </TouchableOpacity>
@@ -215,6 +238,9 @@ const createStyles = (theme: Theme) =>
     dangerButton: {
       backgroundColor: theme.colors.ui.status.error,
     },
+    disabledButton: {
+      backgroundColor: theme.colors.ui.button.disabled,
+    },
     buttonText: {
       color: theme.colors.ui.button.primaryText,
       fontWeight: theme.typography.button.fontWeight,
@@ -247,6 +273,16 @@ const createStyles = (theme: Theme) =>
       fontWeight: theme.typography.button.fontWeight,
       fontSize: theme.typography.button.fontSize,
       textAlign: 'center',
+    },
+    warningContainer: {
+      backgroundColor: theme.colors.ui.status.errorBg,
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.medium,
+      marginBottom: theme.spacing.lg,
+    },
+    warningText: {
+      color: theme.colors.ui.status.error,
+      ...theme.typography.body,
     },
   });
 
