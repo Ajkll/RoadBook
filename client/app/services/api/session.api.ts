@@ -1,242 +1,312 @@
-// client/app/services/api/session.api.ts
+// services/api/session.api.ts
 import apiClient from './client';
-import { extractApiData } from './utils';
-import { logger } from '../../utils/logger';
+import { Session, SessionData, SessionsFilterOptions } from '../../types/session.types';
+import { extractApiData, extractErrorMessage } from './utils';
+import { formatSessionData, validateSessionData } from '../../utils/UtilsSessionApi';
+import { roadbookApi } from './roadbook.api';
+import secureStorage from '../secureStorage';
 
-// Types pour les sessions
-export interface SessionData {
-  id?: string;
-  roadbookId: string;
-  startTime: string;
-  endTime?: string;
-  distance?: number;
-  duration?: number;
-  route?: any[];
-  weather?: any;
-  notes?: string;
-  status: 'PENDING' | 'COMPLETED' | 'VALIDATED' | 'REJECTED';
-}
+// Flag pour le débogage
+const DEBUG = __DEV__;
 
-export interface SessionComment {
-  id?: string;
-  text: string;
-  userId?: string;
-  createdAt?: string;
-}
+// Utilitaire pour le logging
+const logDebug = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    if (data) {
+      console.log(`🔹 SESSION API: ${message}`, data);
+    } else {
+      console.log(`🔹 SESSION API: ${message}`);
+    }
+  }
+};
 
-/**
- * Service pour gérer les opérations liées aux sessions
- */
+// Utilitaire pour le logging des erreurs
+const logError = (message: string, error: unknown) => {
+  console.error(`❌ SESSION API ERROR: ${message}`, error);
+
+  // Extraire et logger les détails supplémentaires si disponibles
+  if (error.response) {
+    console.error('- Status:', error.response.status);
+    console.error('- Data:', error.response.data);
+  } else if (error.request) {
+    console.error('- Request was made but no response received');
+  } else {
+    console.error('- Error message:', error.message);
+  }
+};
+
 export const sessionApi = {
-  /**
-   * Récupérer une session par son ID
-   */
-  getSessionById: async (sessionId: string): Promise<SessionData> => {
+  // Helper: Ensure we have a valid roadbook ID
+  _ensureRoadbookId: async (): Promise<string> => {
+    try {
+      const roadbooks = await roadbookApi.getUserRoadbooks('ACTIVE');
+
+      if (roadbooks && roadbooks.length > 0) {
+        return roadbooks[0].id;
+      }
+
+      // No active roadbook found, create one
+      logDebug('No active roadbook found, creating a new one');
+      const newRoadbook = await roadbookApi.createRoadbook({
+        title: `Roadbook ${new Date().toISOString().split('T')[0]}`,
+        description: `Auto-created roadbook`,
+        targetHours: 50
+      });
+
+      return newRoadbook.id;
+    } catch (error) {
+      logError('Failed to ensure roadbook ID', error);
+      throw new Error('Could not retrieve or create a roadbook. Please try again later.');
+    }
+  },
+
+  // Helper: Get the current user ID
+  _getCurrentUserId: async (): Promise<string> => {
+    try {
+      const { user } = await secureStorage.getAuthData();
+      if (!user || !user.id) {
+        throw new Error('User is not logged in or ID is missing');
+      }
+      return user.id;
+    } catch (error) {
+      logError('Failed to get current user ID', error);
+      throw new Error('Please log in to perform this action');
+    }
+  },
+
+  // Créer une nouvelle session pour un roadbook
+  createSession: async (roadbookId: string, sessionData: SessionData): Promise<Session> => {
+    logDebug('Creating new session', { roadbookId, date: sessionData.date });
+
+    // Validate session data first
+    const validation = validateSessionData(sessionData);
+    if (!validation.valid) {
+      const errorMessage = `Invalid session data: ${validation.errors.join(', ')}`;
+      logError(errorMessage, { sessionData });
+      throw new Error(errorMessage);
+    }
+
+    try {
+      // If roadbookId is not provided, try to get or create one
+      if (!roadbookId) {
+        roadbookId = await sessionApi._ensureRoadbookId();
+        sessionData.roadbookId = roadbookId;
+      }
+
+      // If apprenticeId is not provided, use current user ID
+      if (!sessionData.apprenticeId) {
+        sessionData.apprenticeId = await sessionApi._getCurrentUserId();
+      }
+
+      // Formater les données avant l'envoi
+      const formattedData = formatSessionData(sessionData);
+      logDebug('Formatted session data', formattedData);
+
+      const response = await apiClient.post(
+        `/roadbooks/${roadbookId}/sessions`,
+        formattedData
+      );
+
+      const session = extractApiData<Session>(response);
+      logDebug('Session created successfully', { id: session.id });
+      return session;
+    } catch (error) {
+      logError(`Failed to create session for roadbook ${roadbookId}`, error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Roadbook not found.');
+      } else if (error.response?.status === 403) {
+        throw new Error("You don't have permission to add sessions to this roadbook.");
+      } else {
+        throw new Error(error.message || 'Failed to create session. Please try again later.');
+      }
+    }
+  },
+
+  // Obtenir une session par son ID
+  getSessionById: async (sessionId: string): Promise<Session> => {
+    logDebug('Fetching session details', { id: sessionId });
+
     try {
       const response = await apiClient.get(`/sessions/${sessionId}`);
-      return extractApiData<SessionData>(response);
+
+      const session = extractApiData<Session>(response);
+      logDebug('Session details retrieved successfully');
+      return session;
     } catch (error) {
-      if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
+      logError(`Failed to fetch session ${sessionId}`, error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Session not found.');
       } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour accéder à cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+        throw new Error("You don't have permission to view this session.");
+      } else {
+        throw new Error('Failed to load session details. Please try again later.');
       }
-      
-      logger.error(`Failed to fetch session with ID ${sessionId}:`, error);
-      throw error;
     }
   },
 
-  /**
-   * Créer une nouvelle session
-   */
-  createSession: async (sessionData: SessionData): Promise<SessionData> => {
-    try {
-      const response = await apiClient.post('/sessions', sessionData);
-      return extractApiData<SessionData>(response);
-    } catch (error) {
-      if (error.response?.status === 400) {
-        throw new Error('Données de session invalides. Vérifiez les informations fournies.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      }
-      
-      logger.error('Failed to create session:', error);
-      throw error;
-    }
-  },
+  // Mettre à jour une session
+  updateSession: async (sessionId: string, sessionData: Partial<SessionData>): Promise<Session> => {
+    logDebug('Updating session', { id: sessionId });
 
-  /**
-   * Mettre à jour une session existante
-   */
-  updateSession: async (sessionId: string, sessionData: Partial<SessionData>): Promise<SessionData> => {
     try {
-      const response = await apiClient.put(`/sessions/${sessionId}`, sessionData);
-      return extractApiData<SessionData>(response);
+      // S'assurer que le formatage est correct pour les données partielles
+      const formattedData = formatSessionData({ ...sessionData });
+
+      const response = await apiClient.put(`/sessions/${sessionId}`, formattedData);
+
+      const session = extractApiData<Session>(response);
+      logDebug('Session updated successfully');
+      return session;
     } catch (error) {
-      if (error.response?.status === 400) {
-        throw new Error('Données de session invalides. Vérifiez les informations fournies.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
+      logError(`Failed to update session ${sessionId}`, error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Session not found.');
       } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour modifier cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+        throw new Error("You don't have permission to update this session.");
+      } else {
+        throw new Error('Failed to update session. Please try again later.');
       }
-      
-      logger.error(`Failed to update session with ID ${sessionId}:`, error);
-      throw error;
     }
   },
 
-  /**
-   * Supprimer une session
-   */
+  // Supprimer une session
   deleteSession: async (sessionId: string): Promise<void> => {
+    logDebug('Deleting session', { id: sessionId });
+
     try {
       await apiClient.delete(`/sessions/${sessionId}`);
+      logDebug('Session deleted successfully');
     } catch (error) {
-      if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
+      logError(`Failed to delete session ${sessionId}`, error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Session not found.');
       } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour supprimer cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être déjà été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+        throw new Error("You don't have permission to delete this session.");
+      } else {
+        throw new Error('Failed to delete session. Please try again later.');
       }
-      
-      logger.error(`Failed to delete session with ID ${sessionId}:`, error);
-      throw error;
     }
   },
 
-  /**
-   * Valider une session
-   */
-  validateSession: async (sessionId: string, validationData: { feedback?: string; status: 'VALIDATED' | 'REJECTED' }): Promise<SessionData> => {
+  // Obtenir toutes les sessions de l'utilisateur courant
+  getUserSessions: async (filters?: SessionsFilterOptions): Promise<Session[]> => {
+    logDebug('Fetching user sessions', filters);
+
     try {
-      const response = await apiClient.post(`/sessions/${sessionId}/validate`, validationData);
-      return extractApiData<SessionData>(response);
-    } catch (error) {
-      if (error.response?.status === 400) {
-        throw new Error('Données de validation invalides. Vérifiez les informations fournies.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour valider cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+      // D'abord, récupérer un roadbook actif
+      const roadbookId = await sessionApi._ensureRoadbookId(); //"a6222aae-f8aa-4aa9-9fb4-6b3be9385221";
+
+      // Construire les paramètres de requête
+      let url = `/roadbooks/${roadbookId}/sessions`;
+      const queryParams = [];
+
+      if (filters) {
+        if (filters.status) queryParams.push(`status=${filters.status}`);
+        if (filters.startDate) queryParams.push(`startDate=${filters.startDate}`);
+        if (filters.endDate) queryParams.push(`endDate=${filters.endDate}`);
+        if (filters.sessionType) queryParams.push(`sessionType=${filters.sessionType}`);
       }
-      
-      logger.error(`Failed to validate session with ID ${sessionId}:`, error);
-      throw error;
+
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join('&')}`;
+      }
+
+      const response = await apiClient.get(url);
+
+      const sessions = extractApiData<Session[]>(response);
+      logDebug(`Retrieved ${sessions.length} sessions`);
+      return sessions;
+    } catch (error) {
+      logError('Failed to fetch user sessions', error);
+      throw new Error('Failed to load your sessions. Please try again later.');
+    }
+  },
+  /**
+   * Supprime plusieurs sessions selon différents critères
+   * @param options {Object} Options de suppression
+   * @param options.limit {number} Nombre de sessions à supprimer (les plus récentes en premier). Infinity pour toutes.
+   * @param options.filters {SessionsFilterOptions} Filtres optionnels pour sélectionner les sessions
+   * @returns {Promise<number>} Nombre de sessions supprimées
+   */
+  deleteMultipleSessions: async (options: {
+    limit: number;
+    filters?: SessionsFilterOptions
+  }): Promise<number> => {
+    const { limit, filters } = options;
+    logDebug('Deleting multiple sessions', { limit, filters });
+
+    try {
+      // 1. Récupérer les sessions correspondant aux filtres
+      const sessions = await sessionApi.getUserSessions(filters);
+
+      // 2. Trier par date (les plus récentes en premier)
+      const sortedSessions = [...sessions].sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      // 3. Déterminer combien supprimer (soit le limit, soit toutes si Infinity)
+      const sessionsToDelete = limit === Infinity
+        ? sortedSessions
+        : sortedSessions.slice(0, limit);
+
+      if (sessionsToDelete.length === 0) {
+        logDebug('No sessions to delete matching criteria');
+        return 0;
+      }
+
+      logDebug(`Preparing to delete ${sessionsToDelete.length} sessions`);
+
+      // 4. Supprimer chaque session (en série pour éviter les erreurs de rate limiting)
+      let deletedCount = 0;
+      for (const session of sessionsToDelete) {
+        try {
+          await sessionApi.deleteSession(session.id);
+          deletedCount++;
+          logDebug(`Deleted session ${session.id} (${deletedCount}/${sessionsToDelete.length})`);
+        } catch (error) {
+          logError(`Failed to delete session ${session.id}`, error);
+          // On continue malgré l'erreur pour les autres sessions
+        }
+      }
+
+      logDebug(`Successfully deleted ${deletedCount} sessions`);
+      return deletedCount;
+
+    } catch (error) {
+      logError('Failed in deleteMultipleSessions', error);
+      throw new Error('Failed to delete multiple sessions. Please try again later.');
     }
   },
 
-  /**
-   * Ajouter un commentaire à une session
-   */
-  addComment: async (sessionId: string, comment: { text: string }): Promise<SessionComment> => {
-    try {
-      const response = await apiClient.post(`/sessions/${sessionId}/comments`, comment);
-      return extractApiData<SessionComment>(response);
-    } catch (error) {
-      if (error.response?.status === 400) {
-        throw new Error('Données de commentaire invalides. Le commentaire ne peut pas être vide.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour commenter cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      }
-      
-      logger.error(`Failed to add comment to session with ID ${sessionId}:`, error);
-      throw error;
-    }
-  },
+  // Valider une session (pour les instructeurs/validateurs)
+  validateSession: async (sessionId: string, isValidated: boolean, feedbackNotes?: string): Promise<Session> => {
+    logDebug('Validating session', { id: sessionId, isValidated });
 
-  /**
-   * Obtenir les commentaires d'une session
-   */
-  getComments: async (sessionId: string): Promise<SessionComment[]> => {
     try {
-      const response = await apiClient.get(`/sessions/${sessionId}/comments`);
-      return extractApiData<SessionComment[]>(response);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour voir les commentaires de cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session introuvable. Elle a peut-être été supprimée.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      }
-      
-      logger.error(`Failed to get comments for session with ID ${sessionId}:`, error);
-      throw error;
-    }
-  },
+      const status = isValidated ? 'VALIDATED' : 'REJECTED';
 
-  /**
-   * Obtenir les validations de compétences pour une session
-   */
-  getCompetencyValidations: async (sessionId: string): Promise<any[]> => {
-    try {
-      const response = await apiClient.get(`/sessions/${sessionId}/competencies`);
-      return extractApiData<any[]>(response);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour voir les validations de cette session.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session ou validations introuvables.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      }
-      
-      logger.error(`Failed to get competency validations for session with ID ${sessionId}:`, error);
-      throw error;
-    }
-  },
+      const response = await apiClient.patch(`/sessions/${sessionId}/validate`, {
+        status,
+        notes: feedbackNotes
+      });
 
-  /**
-   * Valider des compétences dans une session
-   */
-  validateCompetencies: async (sessionId: string, competencyData: { competencyIds: string[], status: 'VALIDATED' | 'IN_PROGRESS' | 'FAILED' }): Promise<any> => {
-    try {
-      const response = await apiClient.post(`/sessions/${sessionId}/competencies/validate`, competencyData);
-      return extractApiData<any>(response);
+      const session = extractApiData<Session>(response);
+      logDebug('Session validation status updated successfully');
+      return session;
     } catch (error) {
-      if (error.response?.status === 400) {
-        throw new Error('Données de validation invalides. Vérifiez les IDs de compétences fournis.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Votre session a expiré. Veuillez vous reconnecter.');
+      logError(`Failed to validate session ${sessionId}`, error);
+
+      if (error.response?.status === 404) {
+        throw new Error('Session not found.');
       } else if (error.response?.status === 403) {
-        throw new Error('Vous n\'avez pas les permissions nécessaires pour valider des compétences.');
-      } else if (error.response?.status === 404) {
-        throw new Error('Session ou compétences introuvables.');
-      } else if (!error.response) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+        throw new Error('Only guides, instructors, and admins can validate sessions.');
+      } else {
+        throw new Error('Failed to update validation status. Please try again later.');
       }
-      
-      logger.error(`Failed to validate competencies for session with ID ${sessionId}:`, error);
-      throw error;
     }
   }
 };

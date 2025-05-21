@@ -9,8 +9,9 @@ import {
   PanGestureHandler,
   ScrollView,
 } from 'react-native-gesture-handler';
-import { db } from '../../services/firebase/firebaseConfig';
-import { getDocs, collection } from 'firebase/firestore';
+
+import { sessionApi } from '../../services/api';
+
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +29,6 @@ export default function MyRoutes() {
   const currentPath = usePathname();
   const [modalVisible, setModalVisible] = useState(false);
   const [roads, setRoads] = useState<RoadTypes[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const handleHorizontalSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
@@ -38,31 +38,32 @@ export default function MyRoutes() {
     }
   };
 
+  
+  // Recuperer les sessions 
   useEffect(() => {
-    const fetchRoads = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'roads'));
-        const data = snap.docs.map((doc) => {
-          const rawData = doc.data();
+  const fetchRoadbooks = async () => {
+    try {
+      const sessions = [await sessionApi.getSessionById("1")]; // ici
+      console.log('Session récupérée :', sessions);
 
-          return {
-            id: doc.id,
-            date: rawData.date.toDate(),
-            distance: rawData.distance,
-            duration: rawData.duration,
-          };
-        });
-        setRoads(data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRoads();
-  }, []);
+      const data = sessions.map((session) => ({
+        id: session.id,
+        title: session.title,
+        date: new Date(session.date), // conversion ISO -> Date JS
+        distance: session.distance,
+        duration: session.duration,
+        weather: session.weather,
+      }));
 
-  if (loading) {
-    return <Text>Chargement…</Text>;
-  }
+      setRoads(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des sessions :', error);
+    }
+  };
+
+  fetchRoadbooks();
+}, []);
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -187,7 +188,7 @@ const ExpandableCard = ({ route, colors }) => {
           </View>
 
           <View style={styles.roadData}>
-            <Text style={[styles.text, styles.roadDataWarper]}>Trajet 1*</Text>
+            <Text style={[styles.text, styles.roadDataWarper]}>{route.title}</Text>
             <Text style={[styles.text, styles.roadDataWarper]}>
               {route.date.toLocaleDateString('fr-FR', {
                 year: '2-digit',
@@ -224,7 +225,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     scrollViewContent: {
       paddingTop: 20,
-      paddingBottom: 150, // Ensure enough space at bottom so content isn't hidden by buttons
+      paddingBottom: 150,
       alignItems: 'center',
     },
     cardsContainer: {
