@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   Modal,
@@ -15,6 +16,7 @@ import { formatElapsedTime } from '../../utils/firebase/driveSessionUtils';
 import { reverseGeocode } from '../../services/api/geocoding.api';
 import { getWeatherImageSource, getWeatherDescription } from '../../utils/weatherUtils';
 import { logger } from '../../utils/logger';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface Point {
   latitude: number;
@@ -30,7 +32,6 @@ interface RoadInfo {
   speed: {
     average: number;
   };
-  // on a besoin que de ca pas plus mais on pourrais
 }
 
 interface WeatherInfo {
@@ -52,15 +53,24 @@ interface TrajetDetailsProps {
   weather: WeatherInfo | string;
   elapsedTime: number;
   roadInfo?: RoadInfo;
+  notes?: string; // Ajouté pour les notes
 }
 
 interface TrajetOptionsModalProps {
   trajet: TrajetDetailsProps | null;
   visible: boolean;
   onClose: () => void;
+  onSaveNotes: (sessionId: string, notes: string) => Promise<void>;
 }
 
-const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible, onClose }) => {
+const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({
+  trajet,
+  visible,
+  onClose,
+  onSaveNotes
+}) => {
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState(trajet?.notes || '');
   const theme = useTheme();
   const styles = createStyles(theme);
 
@@ -68,6 +78,17 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
   const [startAddress, setStartAddress] = useState<string>('');
   const [endAddress, setEndAddress] = useState<string>('');
 
+  useEffect(() => {
+    setEditedNotes(trajet?.notes || '');
+    setIsEditingNotes(false);
+  }, [trajet]);
+
+  const handleSaveNotes = async () => {
+    if (trajet) {
+      await onSaveNotes(trajet.id, editedNotes);
+      setIsEditingNotes(false);
+    }
+  };
   useEffect(() => {
     if (visible) {
       Animated.timing(fadeAnim, {
@@ -117,7 +138,7 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
     : 'Non disponible';
 
   const averageSpeed = trajet?.roadInfo?.speed?.average
-    ? `${trajet.roadInfo.speed.average.toFixed(1)}`
+    ? `${trajet.roadInfo.speed.average.toFixed(1)} km/h`
     : 'Non disponible';
 
   return (
@@ -207,6 +228,44 @@ const TrajetOptionsModal: React.FC<TrajetOptionsModalProps> = ({ trajet, visible
                 </View>
               )}
             </View>
+
+            {/* Section Notes ajoutée */}
+            {trajet.notes || isEditingNotes ? (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Notes</Text>
+                  {!isEditingNotes ? (
+                    <TouchableOpacity onPress={() => setIsEditingNotes(true)} style={styles.editIconButton}>
+                      <MaterialIcons name="edit" size={18} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={handleSaveNotes} style={styles.saveIconButton}>
+                      <MaterialIcons name="check" size={18} color={theme.colors.success} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {isEditingNotes ? (
+                  <TextInput
+                    style={styles.notesInput}
+                    multiline
+                    value={editedNotes}
+                    onChangeText={setEditedNotes}
+                    placeholder="Ajoutez vos notes ici..."
+                  />
+                ) : (
+                  <View style={styles.notesContainer}>
+                    <Text style={styles.notesText}>{trajet.notes}</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addNotesButton}
+                onPress={() => setIsEditingNotes(true)}
+              >
+                <Text style={styles.addNotesText}>+ Ajouter des notes</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
 
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -315,6 +374,20 @@ const createStyles = (theme: Theme) =>
       flex: 2,
       textAlign: 'right',
     },
+    // Styles pour la section Notes
+    notesContainer: {
+      backgroundColor: theme.colors.ui.card.background,
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.ui.card.border,
+    },
+    notesText: {
+      ...theme.typography.body,
+      color: theme.colors.backgroundText,
+      lineHeight: 22,
+      fontStyle: 'italic',
+    },
     closeButton: {
       backgroundColor: theme.colors.ui.button.primary,
       padding: theme.spacing.md,
@@ -322,6 +395,49 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.medium,
       alignItems: 'center',
       ...theme.shadow.md,
+    },
+    editIconButton: {
+      padding: theme.spacing.xs,
+      borderRadius: theme.borderRadius.small,
+    },
+    saveIconButton: {
+      padding: theme.spacing.xs,
+      borderRadius: theme.borderRadius.small,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    editButton: {
+      color: theme.colors.primary,
+      ...theme.typography.button,
+    },
+    saveButton: {
+      color: theme.colors.success,
+      ...theme.typography.button,
+    },
+    notesInput: {
+      backgroundColor: theme.colors.ui.card.background,
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.ui.card.border,
+      minHeight: 100,
+      textAlignVertical: 'top',
+      ...theme.typography.body,
+    },
+    addNotesButton: {
+      padding: theme.spacing.md,
+      alignItems: 'center',
+      margin: theme.spacing.lg,
+      backgroundColor: theme.colors.ui.button.secondary,
+      borderRadius: theme.borderRadius.medium,
+    },
+    addNotesText: {
+      color: theme.colors.ui.button.secondaryText,
+      ...theme.typography.button,
     },
     closeText: {
       ...theme.typography.button,

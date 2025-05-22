@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
@@ -6,16 +7,22 @@ import {
   Dimensions,
   Animated,
   ScrollView,
+  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { collection, getDocs, orderBy, limit, query } from 'firebase/firestore';
+import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { collection, getDocs, orderBy, limit, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase/firebaseConfig';
 import TrajetsCarousel from '../components/roadbook/TrajetsCarousel';
+import QueryCarousel from '../components/roadbook/QueryCarousel';
 import OfflineContent from '../components/ui/OfflineContent';
 import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { useTheme } from '../constants/theme';
+import { sessionApi } from '../services/api/session.api';
+import secureStorage from '../services/secureStorage';
+import { useNotifications } from '../components/NotificationHandler';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -29,47 +36,137 @@ interface DriveSession {
   weather?: string;
   elapsedTime?: number;
   roadInfo?: any;
+  notes?: string;
 }
+
+type TabType = 'recent' | 'query';
 
 export default function Explorer() {
   const [sessions, setSessions] = useState<DriveSession[]>([]);
+  const [querySessions, setQuerySessions] = useState<DriveSession[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('recent');
+
   const progressAnimation = useRef(new Animated.Value(0)).current;
+  const tabAnimation = useRef(new Animated.Value(0)).current;
   const isConnected = useSelector(selectIsInternetReachable);
   const theme = useTheme();
   const styles = makeStyles(theme);
+  const { showInfo, showError } = useNotifications();
+
+  const handleSaveNotes = async (sessionId: string, notes: string) => {
+    try {
+      await sessionApi.updateSession(sessionId, { notes });
+      setSessions(prev => prev.map(session =>
+        session.id === sessionId ? { ...session, notes } : session
+      ));
+      showInfo('Note sauvegardée', "Vos notes ont été mises à jour avec succès.");
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      showError('Erreur', "Impossible de sauvegarder les notes.");
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      await sessionApi.deleteSession(sessionId);
+      await fetchSessions();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      showInfo('Vos données ont été supprimées', " Ce changement est iréversible. ", {
+        position: 'center',
+      });
+    }
+  };
 
   const fetchSessions = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      const q = query(collection(db, 'driveSessions'), orderBy('createdAt', 'desc'), limit(5));
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      const snapshot = await getDocs(q);
-      const result: DriveSession[] = [];
+      const dbSessions = await sessionApi.getUserSessions();
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.path && data.path.length > 0) {
-          result.push({
-            id: doc.id,
-            nom:
-              data.nom ??
-              `Trajet du ${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}`,
-            path: data.path,
-            createdAt: data.createdAt,
-            vehicle: data.vehicle,
-            weather: data.weather,
-            elapsedTime: data.elapsedTime,
-            roadInfo: data.roadInfo,
-          });
+      if (dbSessions.length === 0) {
+        setSessions([]);
+        setHasAttemptedFetch(true);
+        return;
+      }
+
+      const { user } = await secureStorage.getAuthData();
+      const userId = user?.id;
+      const combinedSessions: DriveSession[] = [];
+
+      for (const dbSession of dbSessions.slice(0, 5)) {
+        try {
+          const q = query(
+            collection(db, 'driveSessionsGPS'),
+            where('sessionId', '==', dbSession.id),
+            where('userId', '==', userId),
+            limit(1)
+          );
+
+          const snapshot = await getDocs(q);
+          let firebaseData = null;
+          if (!snapshot.empty) {
+            firebaseData = snapshot.docs[0].data();
+          }
+
+          const combinedSession: DriveSession = {
+            id: dbSession.id,
+            nom: dbSession.title || `Trajet du ${new Date(dbSession.date).toLocaleDateString()}`,
+            description: dbSession.description || '',
+            path: firebaseData?.path || [],
+            createdAt: { seconds: new Date(dbSession.date).getTime() / 1000 },
+            vehicle: firebaseData?.vehicle || 'Inconnu',
+            weather: firebaseData?.weather || 'Non disponible',
+            elapsedTime: Math.round(dbSession.duration * 60),
+            roadInfo: {
+              summary: {
+                totalDistanceKm: dbSession.distance,
+                totalDurationMinutes: dbSession.duration,
+                trafficDelayMinutes: 0
+              },
+              speed: {
+                average: dbSession.distance > 0 ? (dbSession.distance / (dbSession.duration / 60)) : 0
+              }
+            },
+            notes: dbSession.notes
+          };
+
+          combinedSessions.push(combinedSession);
+        } catch (error) {
+          console.error(`Error fetching Firebase data for session ${dbSession.id}:`, error);
+
+          const fallbackSession: DriveSession = {
+            id: dbSession.id,
+            nom: dbSession.title || `Trajet du ${new Date(dbSession.date).toLocaleDateString()}`,
+            description: dbSession.description || '',
+            path: [],
+            createdAt: { seconds: new Date(dbSession.date).getTime() / 1000 },
+            vehicle: 'Inconnu',
+            weather: 'Non disponible',
+            elapsedTime: Math.round(dbSession.duration * 60),
+            roadInfo: {
+              summary: {
+                totalDistanceKm: dbSession.distance,
+                totalDurationMinutes: dbSession.duration,
+                trafficDelayMinutes: 0
+              },
+              speed: {
+                average: dbSession.distance > 0 ? (dbSession.distance / (dbSession.duration / 60)) : 0
+              }
+            },
+            notes: dbSession.notes
+          };
+
+          combinedSessions.push(fallbackSession);
         }
-      });
+      }
 
-      setSessions(result);
+      setSessions(combinedSessions);
       setHasAttemptedFetch(true);
     } catch (error) {
+      console.error('Error fetching sessions:', error);
       setHasAttemptedFetch(true);
     } finally {
       setIsRefreshing(false);
@@ -86,9 +183,7 @@ export default function Explorer() {
 
   useEffect(() => {
     if (sessions.length === 0) return;
-
     const progressPercent = 0.2 + (currentIndex / (sessions.length - 1)) * 0.8;
-
     Animated.timing(progressAnimation, {
       toValue: progressPercent,
       duration: 400,
@@ -96,8 +191,31 @@ export default function Explorer() {
     }).start();
   }, [currentIndex, sessions.length, progressAnimation]);
 
+  const switchTab = (tab: TabType) => {
+    if (tab === activeTab) return;
+
+    setActiveTab(tab);
+    Animated.timing(tabAnimation, {
+      toValue: tab === 'recent' ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleSwipeGesture = ({ nativeEvent }: any) => {
+    if (nativeEvent.translationX > 50 && activeTab === 'query') {
+      switchTab('recent');
+    } else if (nativeEvent.translationX < -50 && activeTab === 'recent') {
+      switchTab('query');
+    }
+  };
+
   const handleScrollIndexChange = (index: number) => {
     setCurrentIndex(index);
+  };
+
+  const handleQueryResults = (results: DriveSession[]) => {
+    setQuerySessions(results);
   };
 
   const progressWidth = progressAnimation.interpolate({
@@ -106,9 +224,53 @@ export default function Explorer() {
     extrapolate: 'clamp',
   });
 
-  const renderContent = () => {
+  const contentTranslateX = tabAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -screenWidth],
+    extrapolate: 'clamp',
+  });
+
+  const renderTabHeader = () => (
+    <View style={styles.tabContainer}>
+      <TouchableOpacity
+        style={[styles.tabButton, activeTab === 'recent' && styles.tabButtonActive]}
+        onPress={() => switchTab('recent')}
+      >
+        <Text style={[styles.tabText, activeTab === 'recent' && styles.tabTextActive]}>
+          Trajets Récents
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.tabButton, activeTab === 'query' && styles.tabButtonActive]}
+        onPress={() => switchTab('query')}
+      >
+        <Text style={[styles.tabText, activeTab === 'query' && styles.tabTextActive]}>
+          Recherche
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderRecentContent = () => {
+    if (!hasAttemptedFetch) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      );
+    }
+
     if (sessions.length > 0) {
-      return <TrajetsCarousel trajets={sessions} onScrollIndexChange={handleScrollIndexChange} />;
+      return (
+        <TrajetsCarousel
+          trajets={sessions}
+          onScrollIndexChange={handleScrollIndexChange}
+          onDeleteSession={handleDeleteSession}
+          onSaveNotes={handleSaveNotes}
+          onRefreshTrajets={fetchSessions}
+        />
+      );
     }
 
     if (!isConnected) {
@@ -129,60 +291,92 @@ export default function Explorer() {
       );
     }
 
-    if (hasAttemptedFetch) {
-      return (
-        <ScrollView
-          contentContainerStyle={styles.emptyContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={fetchSessions}
-              colors={[theme.colors.ui.button.primary]}
-              tintColor={theme.colors.ui.button.primary}
-            />
-          }
-        >
-          <Text style={styles.emptyMessage}>Aucun trajet disponible</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={fetchSessions}>
-            <Text style={styles.refreshText}>Actualiser</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      );
-    }
-
-    return null;
+    return (
+      <ScrollView
+        contentContainerStyle={styles.emptyContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={fetchSessions}
+            colors={[theme.colors.ui.button.primary]}
+            tintColor={theme.colors.ui.button.primary}
+          />
+        }
+      >
+        <Text style={styles.emptyMessage}>Aucun trajet disponible</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={fetchSessions}>
+          <Text style={styles.refreshText}>Actualiser</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
   };
 
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>Trajets Récents</Text>
-        <View style={styles.progressBarContainer}>
-          <View style={styles.progressBarBase} />
-          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
-        </View>
+        {renderTabHeader()}
+        {activeTab === 'recent' && (
+          <View style={styles.progressBarContainer}>
+            <View style={styles.progressBarBase} />
+            <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+          </View>
+        )}
       </View>
 
-      {renderContent()}
-    </View>
+      <PanGestureHandler
+        onGestureEvent={handleSwipeGesture}
+        activeOffsetX={[-10, 10]}
+        failOffsetY={[-10, 10]}
+      >
+        <Animated.View style={[styles.contentContainer, { transform: [{ translateX: contentTranslateX }] }]}>
+          <View style={styles.pageContainer}>
+            {renderRecentContent()}
+          </View>
+
+          <View style={styles.pageContainer}>
+            <QueryCarousel onResults={handleQueryResults} />
+          </View>
+        </Animated.View>
+      </PanGestureHandler>
+    </GestureHandlerRootView>
   );
 }
 
-const makeStyles = (theme: Theme) =>
+const makeStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: theme.spacing.md,
       backgroundColor: theme.colors.background,
     },
     headerContainer: {
+      padding: theme.spacing.md,
+      paddingBottom: 0,
+    },
+    tabContainer: {
+      flexDirection: 'row',
       marginBottom: theme.spacing.md,
     },
-    header: {
-      fontSize: theme.typography.header.fontSize,
-      fontWeight: theme.typography.header.fontWeight,
-      marginBottom: theme.spacing.sm,
+    tabButton: {
+      flex: 1,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      marginRight: theme.spacing.sm,
+      borderRadius: theme.borderRadius.medium,
+      backgroundColor: 'transparent',
+    },
+    tabButtonActive: {
+      backgroundColor: theme.colors.primary,
+      ...theme.shadow.sm,
+    },
+    tabText: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '500',
       color: theme.colors.backgroundText,
+      textAlign: 'center',
+    },
+    tabTextActive: {
+      color: theme.colors.ui.button.primaryText,
+      fontWeight: '600',
     },
     progressBarContainer: {
       height: 6,
@@ -204,6 +398,15 @@ const makeStyles = (theme: Theme) =>
       height: '100%',
       backgroundColor: theme.colors.ui.progressBar.fill,
       borderRadius: theme.borderRadius.medium,
+    },
+    contentContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      width: screenWidth * 2,
+    },
+    pageContainer: {
+      width: screenWidth,
+      flex: 1,
     },
     emptyMessage: {
       textAlign: 'center',
@@ -230,13 +433,9 @@ const makeStyles = (theme: Theme) =>
       fontSize: theme.typography.button.fontSize,
       textTransform: theme.typography.button.textTransform,
     },
-    offlineHint: {
-      marginTop: theme.spacing.sm,
-      color: theme.colors.backgroundTextSoft,
-      fontStyle: 'italic',
-      fontSize: theme.typography.caption.fontSize,
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
   });
-
-// to do : voir TrajetsCarousel.tsx
-// to do : ajouter la possibilite d se balader sur la map un click prolonger devrais mettre celle ci en pleine ecrant ! et l'option itineraire diriger vers notre systeme de navigation !

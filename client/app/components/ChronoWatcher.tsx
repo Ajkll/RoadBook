@@ -23,7 +23,7 @@ const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
 
 export default function ChronoWatcher() {
   const dispatch = useDispatch();
-  const { showError, showWarning } = useNotifications();
+  const { showError } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const isOnline = useSelector(selectIsInternetReachable);
 
@@ -249,7 +249,7 @@ export default function ChronoWatcher() {
               console.log(`[${instanceId}] session sauvegardée avec ID: ${savedSession.id}`);
             } catch (error) {
               logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
-              showWarning(
+              showError(
                 '⚠️ Problème de sauvegarde',
                 "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
                 { position: 'center' }

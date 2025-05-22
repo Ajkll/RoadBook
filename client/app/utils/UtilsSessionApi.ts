@@ -1,6 +1,7 @@
 import { SessionData, WeatherType, DaylightType, SessionType, RoadType, SessionStatus } from '../types/session.types';
 import { reverseGeocode } from '../services/api/geocoding.api';
 import { roadbookApi } from '../services/api/roadbook.api';
+import { calculatePathDistance } from './firebase/driveSessionUtils';
 
 export const SESSION_CONSTRAINTS = {
   WEATHER_TYPES: ['CLEAR', 'CLOUDY', 'RAINY', 'SNOWY', 'FOGGY', 'WINDY', 'OTHER'] as WeatherType[],
@@ -263,45 +264,45 @@ export const mapDriveSessionToSessionData = async ({
   elapsedTime,
   userId,
   userComment,
+  path = [],
   weather,
   roadInfo,
-  vehicle
+  vehicle,
+  roadbookId
 }: {
   elapsedTime: number;
   userId: string;
   userComment: string;
+  path?: { latitude: number; longitude: number }[];
   weather?: any;
   roadInfo?: any;
   vehicle?: string | null;
+  roadbookId: string;
 }): Promise<SessionData> => {
   const now = new Date();
   const startTime = new Date(now.getTime() - elapsedTime * 1000);
 
-  // Déployer Firebase pour future ajout
+  // Calculer la distance
   let startLocation = 'Localisation inconnue';
   let endLocation = 'Localisation inconnue';
+  let distance = 0;
 
-  // TODO: Récupérer les données GPS depuis Firebase ici
-  // const { startLocation, endLocation } = await getLocationsFromFirebase();
+  if (roadInfo?.summary?.totalDistanceKm) {
+    distance = roadInfo.summary.totalDistanceKm;
+  } else if (path && path.length >= 2) {
+    // Fallback: calcul manuel si l'API a échoué
+    distance = calculatePathDistance(path);
+    console.warn('Using fallback distance calculation', distance);
+  }
 
   // Déterminer les valeurs pour la DB
   const weatherType = determineWeatherType(weather);
   const daylightType = determineDaylightType(startTime, weather?.visibility);
   const roadTypes = determineRoadTypes(roadInfo);
 
-  // Obtenir un roadbookId (peut être remplacé par la logique dans saveDriveSession)
-  let roadbookId = '';
-  try {
-    const roadbooks = await roadbookApi.getUserRoadbooks('ACTIVE');
-    if (roadbooks && roadbooks.length > 0) {
-      roadbookId = roadbooks[0].id;
-    }
-  } catch (error) {
-    console.error('Failed to get roadbooks:', error);
-  }
-
-  // Construire l'objet SessionData
+  // Construire l'objet SessionData AVEC roadbookId
   const sessionData: SessionData = {
+    roadbookId,
     title: generateSessionTitle(startTime),
     description: generateSessionDescription(weather, roadInfo, vehicle),
     date: formatDateToISO(startTime),
@@ -310,16 +311,23 @@ export const mapDriveSessionToSessionData = async ({
     duration: elapsedTime / 60, // Convertir secondes en minutes
     startLocation,
     endLocation,
-    distance: roadInfo?.summary?.totalDistanceKm || 0,
+    distance: distance,
     weather: weatherType,
     daylight: daylightType,
     sessionType: 'PRACTICE', // Par défaut
     roadTypes: roadTypes,
     apprenticeId: userId,
-    roadbookId: roadbookId,
     notes: userComment,
     status: 'PENDING' // Par défaut
   };
 
+  // Validation avant retour
+  const validation = validateSessionData(sessionData);
+  if (!validation.valid) {
+    console.error('Invalid session data:', validation.errors);
+    throw new Error(validation.errors.join(', '));
+  }
+
+  console.log('✅ Session data validated successfully');
   return sessionData;
 };

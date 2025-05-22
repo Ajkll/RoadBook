@@ -118,7 +118,7 @@ export const sessionApi = {
   },
 
   // Créer une nouvelle session pour un roadbook
-  createSession: async (roadbookId: string, sessionData: SessionData): Promise<Session> => {
+  createSession: async (roadbookId: string | null, sessionData: SessionData): Promise<Session> => {
     logDebug('Creating new session', { roadbookId, date: sessionData.date });
 
     // Validate session data first
@@ -130,38 +130,111 @@ export const sessionApi = {
     }
 
     try {
-      // If roadbookId is not provided, try to get or create one
-      if (!roadbookId) {
-        roadbookId = await sessionApi._ensureRoadbookId();
-        sessionData.roadbookId = roadbookId;
+      let finalRoadbookId = roadbookId;
+
+      if (!finalRoadbookId) {
+        try {
+          finalRoadbookId = await sessionApi._ensureRoadbookId();
+        } catch (roadbookError) {
+          logError('Failed to ensure roadbook ID, trying fallback approach', roadbookError);
+
+          try {
+            const newRoadbook = await roadbookApi.createRoadbook({
+              title: `Roadbook ${new Date().toISOString().split('T')[0]}`,
+              description: `Auto-created roadbook`,
+              targetHours: 50
+            });
+            finalRoadbookId = newRoadbook.id;
+            logDebug('Created new roadbook as fallback', { id: finalRoadbookId });
+          } catch (createError) {
+            logError('Failed to create fallback roadbook', createError);
+            throw new Error('Could not retrieve or create a roadbook. Please check your connection and try again.');
+          }
+        }
       }
 
-      // If apprenticeId is not provided, use current user ID
-      if (!sessionData.apprenticeId) {
-        sessionData.apprenticeId = await sessionApi._getCurrentUserId();
+      // Mettre à jour sessionData avec le roadbookId final
+      const finalSessionData = {
+        ...sessionData,
+        roadbookId: finalRoadbookId
+      };
+
+      // Si apprenticeId est manquant, essayer de le récupérer
+      if (!finalSessionData.apprenticeId) {
+        try {
+          finalSessionData.apprenticeId = await sessionApi._getCurrentUserId();
+        } catch (userError) {
+          logError('Failed to get current user ID', userError);
+          throw new Error('Please log in to create a session');
+        }
       }
 
       // Formater les données avant l'envoi
-      const formattedData = formatSessionData(sessionData);
+      const formattedData = formatSessionData(finalSessionData);
       logDebug('Formatted session data', formattedData);
 
+      // Créer la session
       const response = await apiClient.post(
-        `/roadbooks/${roadbookId}/sessions`,
+        `/roadbooks/${finalRoadbookId}/sessions`,
         formattedData
       );
 
       const session = normalizeSessionData(extractApiData<Session>(response));
       logDebug('Session created successfully', { id: session.id });
       return session;
-    } catch (error) {
-      logError(`Failed to create session for roadbook ${roadbookId}`, error);
 
+    } catch (error) {
+      logError(`Failed to create session`, error);
+
+      // Gestion d'erreurs plus spécifique
       if (error.response?.status === 404) {
-        throw new Error('Roadbook not found.');
+        throw new Error('Roadbook not found. Please try refreshing the app.');
       } else if (error.response?.status === 403) {
         throw new Error("You don't have permission to add sessions to this roadbook.");
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error. Please try again in a few moments.');
+      } else if (error.message?.includes('roadbook')) {
+        // Si l'erreur contient déjà un message sur le roadbook, la passer telle quelle
+        throw error;
       } else {
-        throw new Error(error.message || 'Failed to create session. Please try again later.');
+        throw new Error(error.message || 'Failed to create session. Please check your connection and try again.');
+      }
+    }
+  },
+
+  _ensureRoadbookId: async (): Promise<string> => {
+    try {
+      logDebug('Attempting to get active roadbooks');
+      const roadbooks = await roadbookApi.getUserRoadbooks('ACTIVE');
+
+      if (roadbooks && roadbooks.length > 0) {
+        logDebug('Found active roadbook', { id: roadbooks[0].id });
+        return roadbooks[0].id;
+      }
+
+      // No active roadbook found, create one
+      logDebug('No active roadbook found, creating a new one');
+      const newRoadbook = await roadbookApi.createRoadbook({
+        title: `Roadbook ${new Date().toISOString().split('T')[0]}`,
+        description: `Auto-created roadbook`,
+        targetHours: 50
+      });
+
+      logDebug('Created new roadbook', { id: newRoadbook.id });
+      return newRoadbook.id;
+
+    } catch (error) {
+      logError('Failed to ensure roadbook ID', error);
+
+      // Différencier les types d'erreurs
+      if (error.response?.status === 500) {
+        throw new Error('Database connection error. Please try again in a few moments.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Permission denied. Please check your account status.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Please log in again to continue.');
+      } else {
+        throw new Error('Could not retrieve or create a roadbook. Please check your connection.');
       }
     }
   },

@@ -62,6 +62,9 @@ interface Trajet {
 interface TrajetsCarouselProps {
   trajets?: Trajet[];
   onScrollIndexChange?: (index: number) => void;
+  onDeleteSession?: (sessionId: string) => void;
+  onSaveNotes?: (sessionId: string, notes: string) => Promise<void>;
+  onRefreshTrajets?: () => Promise<void>;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -126,6 +129,9 @@ const formatWeather = (weather: any): string | WeatherDetails => {
 const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
   trajets: propsTrajets,
   onScrollIndexChange,
+  onDeleteSession,
+  onSaveNotes,
+  onRefreshTrajets,
 }) => {
   const theme = useTheme();
   const [trajets, setTrajets] = useState<Trajet[]>([]);
@@ -136,6 +142,19 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const pullRatio = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
+  const polylineAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (selectedTrajet) {
+      Animated.timing(polylineAnimation, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      polylineAnimation.setValue(0);
+    }
+  }, [selectedTrajet]);
 
   const loadData = useCallback(async () => {
     try {
@@ -170,9 +189,13 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData();
+    if (onRefreshTrajets) {
+      await onRefreshTrajets();
+    } else {
+      await loadData();
+    }
     setRefreshing(false);
-  }, [loadData]);
+  }, [loadData, onRefreshTrajets]);
 
   useEffect(() => {
     if (propsTrajets && propsTrajets.length > 0) {
@@ -268,6 +291,24 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
     },
     info: {
       padding: 14,
+    },
+    deleteButton: {
+      position: 'absolute',
+      zIndex: 10,
+      top: 12,
+      left: 12,
+      backgroundColor: theme.colors.error,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    deleteText: {
+      color: theme.colors.primaryText,
+      fontSize: 20,
+      fontWeight: 'bold',
+      lineHeight: 20,
     },
     title: {
       fontSize: 18,
@@ -369,6 +410,15 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
                 <Text style={styles.menuText}>≡</Text>
               </TouchableOpacity>
 
+              {onDeleteSession && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => onDeleteSession(item.id)}
+                >
+                  <Text style={styles.deleteText}>×</Text>
+                </TouchableOpacity>
+              )}
+
               <MapView style={styles.map} region={region} scrollEnabled={false} zoomEnabled={false}>
                 <Polyline
                   coordinates={item.path.filter(
@@ -380,6 +430,15 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
                   lineJoin="round"
                   lineDashPattern={[1, 0]}
                   zIndex={2}
+                  strokeColors={[
+                    {
+                      from: polylineAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['transparent', theme.colors.primary],
+                      }),
+                      to: theme.colors.primary,
+                    },
+                  ]}
                 />
                 {item.path[0] && (
                   <Marker
@@ -415,11 +474,10 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
         trajet={selectedTrajet}
         visible={selectedTrajet !== null}
         onClose={() => setSelectedTrajet(null)}
+        onSaveNotes={onSaveNotes}
       />
     </>
   );
 };
 
 export default TrajetsCarousel;
-
-// to do : optimiser l'aspect visuel en ajoutant une animation polyline

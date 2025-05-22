@@ -58,18 +58,11 @@ export async function saveDriveSession({
   vehicle?: 'moto' | 'voiture' | 'camion' | 'camionnette' | null;
 }) {
   try {
-    // 1. Sauvegarder dans Firebase pour maintenir la compatibilité
-    await saveSessionWithOfflineSupport({
-      elapsedTime,
-      userId,
-      userComment,
-      path,
-      weather,
-      roadInfo,
-      vehicle,
-    });
+    console.log('🔹 Getting roadbook ID before mapping session data...');
+    const roadbookId = await sessionApi._ensureRoadbookId();
+    console.log('🔹 Got roadbook ID:', roadbookId);
 
-    // 2. Transformer les données pour la DB relationnelle
+    // 2. Maintenant mapper les données avec le roadbookId
     const sessionData = await mapDriveSessionToSessionData({
       elapsedTime,
       userId,
@@ -78,16 +71,34 @@ export async function saveDriveSession({
       weather,
       roadInfo,
       vehicle,
+      roadbookId
     });
 
-    if (!sessionData.roadbookId) {
-      sessionData.roadbookId = await sessionApi._ensureRoadbookId();
-    }
-    const createdSession = await sessionApi.createSession(sessionData.roadbookId, sessionData);
+    console.log('🔹 Mapped session data:', {
+      ...sessionData,
+      path: `${path?.length || 0} points`
+    });
+
+    // 3. Créer la session dans la DB
+    const createdSession = await sessionApi.createSession(roadbookId, sessionData);
+    console.log('🔹 Session created successfully:', createdSession.id);
+
+    // 4. Sauvegarder les données GPS lourdes dans Firebase
+    const firebaseData = {
+      sessionId: createdSession.id, // Référence vers la session DB
+      path: path, // Coordonnées GPS (lourdes)
+      weather: weather,
+      vehicle: vehicle,
+      createdAt: Timestamp.now(),
+      userId: userId
+    };
+
+    const docRef = await addDoc(collection(db, 'driveSessionsGPS'), firebaseData);
+    console.log('🔹 GPS data saved to Firebase with ID:', docRef.id);
 
     return createdSession;
   } catch (error) {
-    console.error('Error saving session to DB:', error);
+    console.error(' Error saving session:', error);
     throw error;
   }
 }
