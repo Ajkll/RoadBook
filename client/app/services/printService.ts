@@ -143,7 +143,7 @@ const generatePrintHTML = (roads: RouteData[], title: string = 'Rapport de Route
         </div>
         
         <div class="footer">
-            <p>Document généré automatiquement par l'application de gestion des routes</p>
+            <p>Document généré automatiquement par l'application RoadBook Tracker</p>
         </div>
     </body>
     </html>
