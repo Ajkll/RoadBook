@@ -8,7 +8,6 @@ import { RoadProvider } from '../../context/RoadContext';
 import { RoadTypes } from '../../types/session.types';
 import { useFocusEffect } from '@react-navigation/native';
 
-
 export default function MyRoutesLayout() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -20,47 +19,56 @@ export default function MyRoutesLayout() {
 
   const [roads, setRoads] = useState<RoadTypes[]>([]);
   
+  // Fonction pour récupérer les sessions
+  const fetchRoadbooks = useCallback(async () => {
+    try {
+      const sessions = await sessionApi.getUserSessions();
 
-  // Recuperer les sessions 
+      const data = sessions.map((session) => ({
+        id: session.id,
+        title: session.startLocation,
+        date: new Date(session.date),
+        distance: session.distance,
+        duration: session.duration,
+        weather: session.weather,
+      }));
+
+      console.log('Sessions récupérées:', data);
+      setRoads(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des sessions :', error);
+    }
+  }, []);
+
+  // Fonction refresh exposée au contexte
+  const refreshRoads = useCallback(() => {
+    console.log('Refresh des sessions demandé');
+    fetchRoadbooks();
+  }, [fetchRoadbooks]);
+
+  // Recuperer les sessions au focus
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
 
-      const fetchRoadbooks = async () => {
-        try {
-          const sessions = await sessionApi.getUserSessions();
-
-          if (!isActive) return;
-
-          const data = sessions.map((session) => ({
-            id: session.id,
-            title: session.startLocation,
-            date: new Date(session.date),
-            distance: session.distance,
-            duration: session.duration,
-            weather: session.weather,
-          }));
-
-          console.log(data);
-          setRoads(data);
-        } catch (error) {
-          console.error('Erreur lors du chargement des sessions :', error);
+      const loadData = async () => {
+        if (isActive) {
+          await fetchRoadbooks();
         }
       };
 
-      fetchRoadbooks();
+      loadData();
 
       return () => {
         isActive = false;
       };
-    }, [])
+    }, [fetchRoadbooks])
   );
-
 
   return (
     <View style={{ flex: 1 }}>
       {/* Stack Navigation avec animation */}
-      <RoadProvider roads={roads}>
+      <RoadProvider roads={roads} refreshRoads={refreshRoads}>
         <Stack>
           <Stack.Screen name="stats" options={{ headerShown: false, animation: 'slide_from_left' }} />
           <Stack.Screen

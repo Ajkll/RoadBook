@@ -23,12 +23,8 @@ export default function MyRoutes() {
   const router = useRouter();
   const currentPath = usePathname();
   const [modalVisible, setModalVisible] = useState(false);
+  const { roads, refreshRoads } = useRoads(); 
   
-  // CORRECTION ICI : destructure l'objet retourné par useRoads()
-  const { roads } = useRoads(); // Au lieu de : const roads = useRoads();
-  
-  console.log('ROADS DANS my-roads:', roads);
-
   const handleHorizontalSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
       router.push('/(tabs)/my-routes/my-roads');
@@ -58,6 +54,7 @@ export default function MyRoutes() {
                     key={route.id || index}
                     route={route}
                     colors={colors}
+                    refreshRoads={refreshRoads}
                   />
                 ))
               ) : (
@@ -87,7 +84,7 @@ export default function MyRoutes() {
   );
 }
 
-const ExpandableCard = ({ route, colors }) => {
+const ExpandableCard = ({ route, colors, refreshRoads }) => {
   const [expanded, setExpanded] = useState(false);
   const animation = useMemo(() => new Animated.Value(100), []);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -101,19 +98,29 @@ const ExpandableCard = ({ route, colors }) => {
     setExpanded(!expanded);
   };
 
+  // Fonction pour gérer la suppression avec refresh
+  const handleDelete = async () => {
+    try {
+      await sessionApi.deleteSession(route.id);
+      console.log("Suppression de la route avec l'id : " + route.id);
+      
+      // Refresh les données après suppression
+      if (refreshRoads) {
+        refreshRoads();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    }
+  };
+
   return (
     <Animated.View
       style={[expanded ? styles.expandedCard : styles.roadCard, { height: animation }]}
     >
       {!expanded && (
         <View style={styles.cardContent}>
-          {/* La petite croix */}
-          <TouchableOpacity
-            onPress={() => {
-              sessionApi.deleteSession(route.id)
-              console.log("Supression de la route avec l'id : " + route.id);
-            }}
-          >
+          {/* La petite croix avec gestion async */}
+          <TouchableOpacity onPress={handleDelete}>
             <MaterialIcons name="close" size={30} color={colors.primaryIcon} />
           </TouchableOpacity>
 
@@ -148,18 +155,6 @@ const ExpandableCard = ({ route, colors }) => {
             </View>
 
             <View style={styles.WeatherCard}>
-              {/*<Ionicons
-                name="thermometer"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />
-              <MaterialIcons
-                name="air"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />*/}
               <Text style={styles.text}>{route.weather}</Text>
               <Ionicons
                 name="cloud"
@@ -167,13 +162,6 @@ const ExpandableCard = ({ route, colors }) => {
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
               />
-              {/*
-              <Ionicons
-                name="eye"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />*/}
             </View>
           </View>
 

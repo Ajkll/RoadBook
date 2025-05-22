@@ -52,7 +52,7 @@ export default function MyRoutes() {
       <PanGestureHandler onGestureEvent={handleSwipe}>
         <View style={styles.container}>
           <View style={styles.content}>
-            <ProgressBar title="Progression" progress={67} />
+            <ProgressBar title="Progression" distanceKm={totalStats.totalDistance} />
           </View>
 
           <View style={styles.cardsContainer}>
