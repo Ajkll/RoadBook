@@ -6,6 +6,8 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Header from './components/layout/Header';
 import SoundCardParameters from './components/parameters/soundCardParameters';
 import { AppInfo } from './components/parameters/appInfoReport';
+import CommentToggle  from './components/parameters/CommentToggle';
+import ProfileButton  from './components/parameters/ProfileButton.tsx';
 import { useTheme } from './constants/theme';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import * as Notifications from 'expo-notifications';
@@ -106,6 +108,10 @@ const SettingsScreen = () => {
         <AppInfo  />
         {/* section son */}
         <SoundCardParameters />
+        {/* link ver les profileSettings */}
+        <ProfileButton />
+        {/* section preference */}
+        <CommentToggle />
         {/* section notifications */}
         <View style={styles.settingItem}>
           <Text style={styles.label}>

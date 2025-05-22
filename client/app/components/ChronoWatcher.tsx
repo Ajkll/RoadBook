@@ -16,6 +16,7 @@ import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
 import { useNotifications } from './NotificationHandler';
 import { logger } from '../utils/logger';
+import { resetCommentState } from '../store/slices/commentSlice';
 
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
@@ -40,6 +41,8 @@ export default function ChronoWatcher() {
   const isProcessing = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+
+  const comment = useSelector((state: RootState) => state.comment.comment);
 
   useEffect(() => {
     console.log(`[${instanceId}] chrono monter`);
@@ -200,15 +203,18 @@ export default function ChronoWatcher() {
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
 
+          const sessionComment = comment;
+
           console.log(`[${instanceId}] User ID:`, userId);
           console.log(`[${instanceId}] Elapsedtime:`, finalElapsedTime);
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
+          console.log(`[${instanceId}] Commentaire:`, sessionComment)
 
-          if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
-            console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré.", {
+          if (finalElapsedTime <= 60 || !finalPath || finalPath.length < 3) {
+            console.log(`[${instanceId}] session ignorée : aucune donnée utile (chemins\\durée trop court\\(es))`);
+            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré; aucune donnée utile (chemins\\durée trop court\\(es))", {
               position: 'center',
             });
           } else {
@@ -227,19 +233,20 @@ export default function ChronoWatcher() {
               );
             }
 
-            // sauvegarde vers firebase
+            // sauvegarde vers la DB
             try {
               console.log(`[${instanceId}] tentative de sauvegarde de la session`);
-              await saveDriveSession({
+              const savedSession = await saveDriveSession({
                 elapsedTime: finalElapsedTime,
                 userId,
+                userComment: sessionComment,
                 path: finalPath,
                 weather,
                 roadInfo,
                 vehicle,
               });
-
-              console.log(`[${instanceId}] session sauvegardée `);
+              dispatch(resetCommentState());
+              console.log(`[${instanceId}] session sauvegardée avec ID: ${savedSession.id}`);
             } catch (error) {
               logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
               showWarning(

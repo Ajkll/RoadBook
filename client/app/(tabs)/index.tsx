@@ -8,6 +8,7 @@ import { getWeather } from '../services/api/weather';
 import * as Location from 'expo-location';
 import { selectIsConnected, selectIsInternetReachable } from '../store/slices/networkSlice';
 import { useSelector } from 'react-redux';
+import { useAuth } from '../context/AuthContext';
 
 const WEATHER_CONFIG = {
   ONLINE: {
@@ -34,6 +35,7 @@ export default function HomeScreen() {
   const isConnected = useSelector(selectIsConnected);
   const isInternetReachable = useSelector(selectIsInternetReachable);
   const isOffline = !isConnected || !isInternetReachable;
+  const { user } = useAuth();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -88,7 +90,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left']}>
       <ScrollView style={styles.content}>
-        <Text style={styles.welcomeTitle}>Bienvenue sur votre RoadBook</Text>
+        <Text style={styles.welcomeTitle}>Bienvenue sur votre RoadBook, {user?.displayName || user?.name || ''}</Text>
 
         {/* Weather Card */}
         {locationError ? (
