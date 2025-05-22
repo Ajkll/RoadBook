@@ -29,6 +29,8 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
   const [date, setDate] = useState(new Date());
   const [departureTime, setDepartureTime] = useState(new Date());
   const [arrivalTime, setArrivalTime] = useState(new Date());
+  const [departureLocation, setDepartureLocation] = useState('');
+  const [arrivalLocation, setArrivalLocation] = useState('');
   const [distance, setDistance] = useState('');
   const [selectedWeather, setSelectedWeather] = useState<WeatherType>('CLEAR');
 
@@ -50,6 +52,8 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
       date,
       departureTime,
       arrivalTime,
+      departureLocation,
+      arrivalLocation,
       distance,
       selectedWeather,
     };
@@ -62,15 +66,14 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
     // Préparer les données pour l'API
     const sessionData: SessionData = {
-      id: formData.roadName,           
       title: formData.roadName,
-      description: "",
+      description: formData.roadName,
       date: formattedDate,             
       startTime: formData.departureTime.toISOString(),
       endTime: formData.arrivalTime.toISOString(),
       duration: durationMin,
-      startLocation: formData.roadName, // temporaire parce que title ne fonctionne pas à l'endpoint
-      endLocation: "Là",
+      startLocation: formData.departureLocation, // temporaire parce que title ne fonctionne pas à l'endpoint
+      endLocation: formData.arrivalLocation,
       distance: Number(distance),
       weather: selectedWeather || 'CLEAR', 
       daylight: 'DAY',
@@ -85,15 +88,12 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
       apprenticeId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       roadbookId: "a6222aae-f8aa-4aa9-9fb4-6b3be9385221",
       validatorId: "b1c2d3e4-f5a6-7890-bcde-fa1234567890",
-      notes: "",
+      notes: formData.roadName,
       status: 'PENDING',
     };
 
-    id.current += 1;
-
-
       // Envoyer les données à l'API en utilisant la fonction importée
-      const createdSession = await sessionApi.createSession("a6222aae-f8aa-4aa9-9fb4-6b3be9385221", sessionData);
+      const createdSession = await sessionApi.createSession('', sessionData);
       console.log('Session créée:', createdSession);
 
       refreshRoads();
@@ -108,7 +108,6 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
     } catch (error) {
       console.error('Erreur lors de la création de la session:', error);
       // Afficher l'erreur à l'utilisateur, par exemple avec une alerte
-      // Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la création du trajet');
     }
   };
 
@@ -138,7 +137,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
           <TextInput
             style={[styles.fullWidthInput, { color: colors.secondaryText }]}
-            placeholder="Trajet 3"
+            placeholder="Nom du trajet"
             placeholderTextColor="#999"
             value={roadName}
             onChangeText={setRoadName}
@@ -172,7 +171,6 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
           </View>
 
           <View style={styles.timePickersContainer}>
-            <Text style={styles.requiredStar}>*</Text>
             <Text style={styles.inputText}>Début</Text>
             <TouchableOpacity
               onPress={() => setShowDeparturePicker(true)}
@@ -196,6 +194,24 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
             <Text style={styles.inputText}>Fin</Text>
           </View>
 
+          <View style={styles.timePickersContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Départ"
+              placeholderTextColor="#999"
+              value={departureLocation}
+              onChangeText={setDepartureLocation}
+            />
+            <Ionicons name="chevron-forward" size={30} color={colors.secondaryDarker} />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Arrivée"
+              placeholderTextColor="#999"
+              value={arrivalLocation}
+              onChangeText={setArrivalLocation}
+            />
+          </View>
+
           <View style={styles.groupForm}>
             {/*<TouchableOpacity style={styles.halfWidthInput}>
               <Text style={styles.inputText}>Météo</Text>
@@ -208,11 +224,11 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
               </View>
             </TouchableOpacity>*/}
 
-            <View style={styles.fullWidthInput}>
+            <View style={[styles.textInput, styles.fullWidthInput]}>
               <Picker
                 selectedValue={selectedWeather}
                 onValueChange={(itemValue) => setSelectedWeather(itemValue)}
-                style={{ flex: 1, color: colors.secondaryText }} // <-- ici pour le texte sélectionné
+                style={{ flex: 1, color: colors.secondaryText, fontSize: 13 }} // <-- ici pour le texte sélectionné
                 dropdownIconColor={colors.secondaryIcon} // facultatif
               >
                 <Picker.Item label="Clair" value="CLEAR" />
@@ -321,6 +337,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     textInput:{
       width: '35%',
+      color: colors.primaryTextSoft,
     },
     groupForm: {
       flexDirection: 'row',

@@ -19,21 +19,22 @@ export default function MyRoutesLayout() {
 
   const [roads, setRoads] = useState<RoadTypes[]>([]);
   
-// Fonction générique pour retry avec gestion silencieuse des erreurs
 async function safeRetry<T>(fn: () => Promise<T>, maxRetries = 10, delay = 2000): Promise<T | null> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const result = await fn();
       return result;
-    } catch (error) {
-      console.warn(`Tentative ${attempt + 1} échouée`, error);
+    } catch (error: any) {
+      // Ne pas relancer l'erreur, juste log ou ignorer
+      console.warn(`Tentative ${attempt + 1} échouée: ${error?.message || error}`);
       await new Promise((res) => setTimeout(res, delay));
     }
   }
 
   console.warn('Toutes les tentatives ont échoué.');
-  return null; // Pas d'erreur lancée
+  return null;
 }
+
 
 // Fonction pour récupérer les sessions
 const fetchRoadbooks = useCallback(async () => {
@@ -44,12 +45,16 @@ const fetchRoadbooks = useCallback(async () => {
     return;
   }
 
+  //console.log("Session brut: ", sessions)
+
   const data = sessions.map((session) => ({
     id: session.id,
-    title: session.startLocation,
+    title: session.notes,
     date: new Date(session.date),
     distance: session.distance,
     duration: session.duration,
+    startLocation: session.startLocation,
+    endLocation: session.endLocation,
     weather: session.weather,
   }));
 

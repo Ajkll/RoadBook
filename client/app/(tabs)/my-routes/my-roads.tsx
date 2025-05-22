@@ -114,7 +114,7 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
 
   const toggleExpand = () => {
     Animated.timing(animation, {
-      toValue: expanded ? 110 : 320,
+      toValue: expanded ? 110 : 400,
       duration: expanded ? 250 : 250,  
       useNativeDriver: false,
     }).start();
@@ -226,12 +226,10 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
             <Text style={[styles.text, styles.roadDataWarper]}>{route.duration} min</Text>
           </View>
 
-          {/* Section avec le bouton d'impression individuelle */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.singlePrintButton} onPress={handlePrintSingleRoute}>
-              <Ionicons name="print-outline" size={24} color={colors.primaryIcon} />
-              <Text style={[styles.text, { fontSize: 12, marginTop: 4 }]}>Imprimer</Text>
-            </TouchableOpacity>
+          <View style={styles.roadPoints}>
+            <Text style={[styles.text]}>{route.startLocation}</Text>
+            <MaterialIcons name="arrow-forward-ios" size={24} color={colors.primaryIcon} />
+            <Text style={[styles.text]}>{route.endLocation}</Text>
           </View>
 
           <TouchableOpacity onPress={toggleExpand} style={styles.closeIcon}>
@@ -353,6 +351,17 @@ const createStyles = (colors: ThemeColors) =>
       paddingTop: 20,
       paddingBottom: 30,
     },
+    roadPoints: {
+      backgroundColor: colors.primaryDarker,
+      borderRadius: 10,
+      height: 60,
+      width: '100%',
+      marginBottom: 25,
+      paddingHorizontal: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
     roadData: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -361,6 +370,7 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 10,
       paddingTop: 20,
       paddingBottom: 20,
+      marginBottom: 20,
     },
     roadDataWarper: {
       display: 'flex',
