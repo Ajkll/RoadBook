@@ -1,22 +1,8 @@
-// types/session.types.ts
 export type WeatherType = 'CLEAR' | 'CLOUDY' | 'RAINY' | 'SNOWY' | 'FOGGY' | 'WINDY' | 'OTHER';
 export type DaylightType = 'DAY' | 'NIGHT' | 'DAWN_DUSK';
 export type SessionType = 'PRACTICE' | 'EXAM' | 'LESSON';
 export type SessionStatus = 'PENDING' | 'VALIDATED' | 'REJECTED';
 export type RoadType = 'URBAN' | 'HIGHWAY' | 'RURAL' | 'MOUNTAIN' | 'RESIDENTIAL' | 'OTHER';
-
-export interface Waypoint {
-  lat: number;
-  lng: number;
-  name?: string;
-}
-
-export interface RouteData {
-  startPoint?: string | null;
-  endPoint?: string | null;
-  path?: Waypoint[];
-  waypoints?: Waypoint[];
-}
 
 export interface SessionData {
   id?: string;
@@ -33,7 +19,6 @@ export interface SessionData {
   daylight?: DaylightType;
   sessionType?: SessionType;
   roadTypes?: RoadType[];
-  routeData?: RouteData;
   apprenticeId?: string;
   roadbookId: string;
   validatorId?: string;

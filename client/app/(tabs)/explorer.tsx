@@ -1,311 +1,242 @@
-// TestSessionsPage.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, Button, ScrollView, StyleSheet, TextInput, Alert } from 'react-native';
-import sessionApi from '../services/api/session.api';
-import { Session } from '../types/session.types';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Dimensions,
+  Animated,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
+import { collection, getDocs, orderBy, limit, query } from 'firebase/firestore';
+import { db } from '../services/firebase/firebaseConfig';
+import TrajetsCarousel from '../components/roadbook/TrajetsCarousel';
+import OfflineContent from '../components/ui/OfflineContent';
+import { useSelector } from 'react-redux';
+import { selectIsInternetReachable } from '../store/slices/networkSlice';
+import { useTheme } from '../constants/theme';
 
-const TestSessionsPage = () => {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [sessionIdInput, setSessionIdInput] = useState('');
-  const [deleteCountInput, setDeleteCountInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const { width: screenWidth } = Dimensions.get('window');
 
-  // Charger toutes les sessions
-  const loadAllSessions = async () => {
-    setLoading(true);
-    setError('');
+interface DriveSession {
+  id: string;
+  nom: string;
+  description: string;
+  path: { latitude: number; longitude: number }[];
+  createdAt: any;
+  vehicle?: string;
+  weather?: string;
+  elapsedTime?: number;
+  roadInfo?: any;
+}
+
+export default function Explorer() {
+  const [sessions, setSessions] = useState<DriveSession[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const progressAnimation = useRef(new Animated.Value(0)).current;
+  const isConnected = useSelector(selectIsInternetReachable);
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+
+  const fetchSessions = useCallback(async () => {
     try {
-      console.log('Loading all sessions...');
-      const allSessions = await sessionApi.getUserSessions();
-      console.log('Sessions loaded:', allSessions.length);
-      setSessions(allSessions);
-      if (allSessions.length > 0) {
-        setSessionIdInput(allSessions[0].id); // Pré-remplir avec le premier ID
-      }
-    } catch (err) {
-      setError('Failed to load sessions: ' + err.message);
-      console.error(err);
+      setIsRefreshing(true);
+      const q = query(collection(db, 'driveSessions'), orderBy('createdAt', 'desc'), limit(5));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      const snapshot = await getDocs(q);
+      const result: DriveSession[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.path && data.path.length > 0) {
+          result.push({
+            id: doc.id,
+            nom:
+              data.nom ??
+              `Trajet du ${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}`,
+            path: data.path,
+            createdAt: data.createdAt,
+            vehicle: data.vehicle,
+            weather: data.weather,
+            elapsedTime: data.elapsedTime,
+            roadInfo: data.roadInfo,
+          });
+        }
+      });
+
+      setSessions(result);
+      setHasAttemptedFetch(true);
+    } catch (error) {
+      setHasAttemptedFetch(true);
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (isConnected) {
+      fetchSessions();
+    } else {
+      setHasAttemptedFetch(true);
+    }
+  }, [fetchSessions, isConnected]);
+
+  useEffect(() => {
+    if (sessions.length === 0) return;
+
+    const progressPercent = 0.2 + (currentIndex / (sessions.length - 1)) * 0.8;
+
+    Animated.timing(progressAnimation, {
+      toValue: progressPercent,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [currentIndex, sessions.length, progressAnimation]);
+
+  const handleScrollIndexChange = (index: number) => {
+    setCurrentIndex(index);
   };
 
-  // Charger une session spécifique
-  const loadSpecificSession = async () => {
-    if (!sessionIdInput) {
-      setError('Please enter a session ID');
-      return;
+  const progressWidth = progressAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['20%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const renderContent = () => {
+    if (sessions.length > 0) {
+      return <TrajetsCarousel trajets={sessions} onScrollIndexChange={handleScrollIndexChange} />;
     }
 
-    setLoading(true);
-    setError('');
-    try {
-      console.log('Loading session with ID:', sessionIdInput);
-      const session = await sessionApi.getSessionById(sessionIdInput);
-      console.log('Session details loaded:', session);
-      setSelectedSession(session);
-    } catch (err) {
-      setError('Failed to load session: ' + err.message);
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (!isConnected) {
+      return (
+        <ScrollView
+          contentContainerStyle={styles.emptyContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={fetchSessions}
+              colors={[theme.colors.ui.button.primary]}
+              tintColor={theme.colors.ui.button.primary}
+            />
+          }
+        >
+          <OfflineContent message="Impossible de charger les trajets. Vérifiez votre connexion internet." />
+        </ScrollView>
+      );
     }
-  };
 
-  // Supprimer une session
-  const deleteSession = async (id: string) => {
-    setLoading(true);
-    setError('');
-    try {
-      await sessionApi.deleteSession(id);
-      Alert.alert('Success', 'Session deleted successfully');
-
-      // Recharger la liste
-      await loadAllSessions();
-      setSelectedSession(null);
-    } catch (err) {
-      setError('Failed to delete session: ' + err.message);
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (hasAttemptedFetch) {
+      return (
+        <ScrollView
+          contentContainerStyle={styles.emptyContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={fetchSessions}
+              colors={[theme.colors.ui.button.primary]}
+              tintColor={theme.colors.ui.button.primary}
+            />
+          }
+        >
+          <Text style={styles.emptyMessage}>Aucun trajet disponible</Text>
+          <TouchableOpacity style={styles.refreshButton} onPress={fetchSessions}>
+            <Text style={styles.refreshText}>Actualiser</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      );
     }
-  };
 
-  // Format date function to handle different date formats
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'None';
-    try {
-      return new Date(dateString).toLocaleString();
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  // Helper to handle undefined or null values safely
-  const displayValue = (value: any, defaultValue = 'None') => {
-    return value !== undefined && value !== null ? value : defaultValue;
+    return null;
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Session API Test Page</Text>
-
-      {/* Section pour charger toutes les sessions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>1. Load All Sessions</Text>
-        <Button
-          title={loading ? 'Loading...' : 'Load All Sessions'}
-          onPress={loadAllSessions}
-          disabled={loading}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {sessions.length > 0 && (
-          <View style={styles.results}>
-            <Text style={styles.resultTitle}>Sessions Found: {sessions.length}</Text>
-            {sessions.map(session => (
-              <View key={session.id} style={styles.sessionItem}>
-                <Text>ID: {session.id}</Text>
-                <Text>Title: {displayValue(session.title)}</Text>
-                <Text>Date: {formatDate(session.date)}</Text>
-                <Text>Type: {displayValue(session.sessionType)}</Text>
-                <Text>Status: {displayValue(session.status)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+    <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Trajets Récents</Text>
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBase} />
+          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+        </View>
       </View>
 
-      {/* Section pour charger une session spécifique */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>2. Load Specific Session</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Session ID"
-          value={sessionIdInput}
-          onChangeText={setSessionIdInput}
-          editable={!loading}
-        />
-
-        <Button
-          title={loading ? 'Loading...' : 'Load Session'}
-          onPress={loadSpecificSession}
-          disabled={loading || !sessionIdInput}
-        />
-
-        {selectedSession && (
-          <View style={styles.results}>
-            <Text style={styles.resultTitle}>Session Details</Text>
-            <Text>ID: {selectedSession.id}</Text>
-            <Text>Title: {displayValue(selectedSession.title)}</Text>
-            <Text>Date: {formatDate(selectedSession.date)}</Text>
-            <Text>Start: {formatDate(selectedSession.startTime)}</Text>
-            <Text>End: {formatDate(selectedSession.endTime)}</Text>
-            <Text>Type: {displayValue(selectedSession.sessionType)}</Text>
-            <Text>Duration: {displayValue(selectedSession.duration)} minutes</Text>
-            <Text>Distance: {displayValue(selectedSession.distance)} km</Text>
-            <Text>Status: {displayValue(selectedSession.status)}</Text>
-            <Text>Weather: {displayValue(selectedSession.weather)}</Text>
-            <Text>Daylight: {displayValue(selectedSession.daylight)}</Text>
-            <Text>Start Location: {displayValue(selectedSession.startLocation)}</Text>
-            <Text>End Location: {displayValue(selectedSession.endLocation)}</Text>
-            <Text>Road Types: {selectedSession.roadTypes?.join(', ') || 'None'}</Text>
-
-            <Text style={styles.sectionSubtitle}>Description:</Text>
-            <Text style={styles.textBlock}>{displayValue(selectedSession.description)}</Text>
-
-            <Text style={styles.sectionSubtitle}>Notes:</Text>
-            <Text style={styles.textBlock}>{displayValue(selectedSession.notes)}</Text>
-
-            <Text>Apprentice: {displayValue(selectedSession.apprentice?.displayName || selectedSession.apprenticeId)}</Text>
-            <Text>Validator: {displayValue(selectedSession.validator?.displayName || selectedSession.validatorId)}</Text>
-
-            <Text style={styles.sectionSubtitle}>Waypoints:</Text>
-            <Text>Count: {selectedSession.routeData?.waypoints?.length || 0}</Text>
-            {selectedSession.routeData?.path && selectedSession.routeData.path.length > 0 ? (
-              <View style={styles.waypointsContainer}>
-                <Text>First: {JSON.stringify(selectedSession.routeData.path[0])}</Text>
-                {selectedSession.routeData.path.length > 1 && (
-                  <Text>Last: {JSON.stringify(selectedSession.routeData.path[selectedSession.routeData.path.length - 1])}</Text>
-                )}
-              </View>
-            ) : (
-              <Text>No waypoints available</Text>
-            )}
-
-            <Button
-              title="Delete This Session"
-              onPress={() => deleteSession(selectedSession.id)}
-              color="#ff4444"
-              disabled={loading}
-            />
-          </View>
-        )}
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>3. Batch Delete</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Number of sessions to delete (or 'all')"
-          value={deleteCountInput}
-          onChangeText={setDeleteCountInput}
-          editable={!loading}
-        />
-
-        <Button
-          title={loading ? 'Deleting...' : 'Delete Recent Sessions'}
-          onPress={async () => {
-            const count = deleteCountInput === 'all'
-              ? Infinity
-              : parseInt(deleteCountInput) || 0;
-
-            if (count <= 0 && count !== Infinity) {
-              setError('Please enter a valid number or "all"');
-              return;
-            }
-
-            setLoading(true);
-            try {
-              const deleted = await sessionApi.deleteMultipleSessions({ limit: count });
-              Alert.alert('Success', `Deleted ${deleted} sessions`);
-              await loadAllSessions(); // Recharger la liste
-            } catch (err) {
-              setError(err.message);
-            } finally {
-              setLoading(false);
-            }
-          }}
-          disabled={loading || !deleteCountInput}
-          color="#ff4444"
-        />
-      </View>
-    </ScrollView>
+      {renderContent()}
+    </View>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    marginBottom: 120,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  section: {
-    marginBottom: 30,
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#444',
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginTop: 8,
-    marginBottom: 4,
-    color: '#444',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 4,
-    backgroundColor: '#f9f9f9',
-  },
-  results: {
-    marginTop: 15,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 4,
-  },
-  resultTitle: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  sessionItem: {
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  error: {
-    color: 'red',
-    marginTop: 5,
-  },
-  textBlock: {
-    backgroundColor: '#f9f9f9',
-    padding: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  waypointsContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  }
-});
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.background,
+    },
+    headerContainer: {
+      marginBottom: theme.spacing.md,
+    },
+    header: {
+      fontSize: theme.typography.header.fontSize,
+      fontWeight: theme.typography.header.fontWeight,
+      marginBottom: theme.spacing.sm,
+      color: theme.colors.backgroundText,
+    },
+    progressBarContainer: {
+      height: 6,
+      backgroundColor: theme.colors.ui.progressBar.background,
+      borderRadius: theme.borderRadius.medium,
+      overflow: 'hidden',
+      position: 'relative',
+      borderWidth: 0.7,
+    },
+    progressBarBase: {
+      position: 'absolute',
+      height: '100%',
+      width: '20%',
+      backgroundColor: theme.colors.ui.progressBar.fill,
+      borderRadius: theme.borderRadius.medium,
+    },
+    progressBarFill: {
+      position: 'absolute',
+      height: '100%',
+      backgroundColor: theme.colors.ui.progressBar.fill,
+      borderRadius: theme.borderRadius.medium,
+    },
+    emptyMessage: {
+      textAlign: 'center',
+      marginTop: theme.spacing.lg,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.backgroundTextSoft,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: theme.spacing.lg,
+    },
+    refreshButton: {
+      marginTop: theme.spacing.lg,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.ui.button.primary,
+      borderRadius: theme.borderRadius.medium,
+      ...theme.shadow.xl,
+    },
+    refreshText: {
+      color: theme.colors.ui.button.primaryText,
+      fontWeight: theme.typography.button.fontWeight,
+      fontSize: theme.typography.button.fontSize,
+      textTransform: theme.typography.button.textTransform,
+    },
+    offlineHint: {
+      marginTop: theme.spacing.sm,
+      color: theme.colors.backgroundTextSoft,
+      fontStyle: 'italic',
+      fontSize: theme.typography.caption.fontSize,
+    },
+  });
 
-export default TestSessionsPage;
+// to do : voir TrajetsCarousel.tsx
+// to do : ajouter la possibilite d se balader sur la map un click prolonger devrais mettre celle ci en pleine ecrant ! et l'option itineraire diriger vers notre systeme de navigation !

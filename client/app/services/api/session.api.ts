@@ -39,28 +39,6 @@ const logError = (message: string, error: unknown) => {
 const normalizeSessionData = (session: any): Session => {
   if (!session) return session;
 
-  let routeData = {
-    path: [],
-    startPoint: null,
-    endPoint: null
-  };
-
-  // Properly handle route data conversion
-  if (session.routeData) {
-    // Case 1: API returns waypoints (new structure)
-    if (session.routeData.waypoints && Array.isArray(session.routeData.waypoints)) {
-      routeData.path = session.routeData.waypoints;
-    }
-    // Case 2: API returns path (old structure or already normalized)
-    else if (session.routeData.path && Array.isArray(session.routeData.path)) {
-      routeData.path = session.routeData.path;
-    }
-
-    // Always use locations from session if available
-    routeData.startPoint = session.startLocation || session.routeData.startPoint || null;
-    routeData.endPoint = session.endLocation || session.routeData.endPoint || null;
-  }
-
   // Use notes or description
   let notes = session.notes;
   if (!notes && session.description) {
@@ -87,7 +65,6 @@ const normalizeSessionData = (session: any): Session => {
     daylight: session.daylight || null,
     sessionType: session.sessionType || 'PRACTICE',
     roadTypes: session.roadTypes || [],
-    routeData: routeData,
     validatorId: session.validatorId || null,
     notes: notes || null,
     status: session.status || 'PENDING',
