@@ -9,18 +9,13 @@ import {
   PanGestureHandler,
   ScrollView,
 } from 'react-native-gesture-handler';
-
 import { sessionApi } from '../../services/api';
+import { useRoads } from '../../context/RoadContext';
 
 
 const { width } = Dimensions.get('window');
 
-type RoadTypes = {
-  id: string;
-  date: Date;
-  distance: number;
-  duration: number;
-};
+
 
 export default function MyRoutes() {
   const { colors } = useTheme();
@@ -28,7 +23,11 @@ export default function MyRoutes() {
   const router = useRouter();
   const currentPath = usePathname();
   const [modalVisible, setModalVisible] = useState(false);
-  const [roads, setRoads] = useState<RoadTypes[]>([]);
+  
+  // CORRECTION ICI : destructure l'objet retourné par useRoads()
+  const { roads } = useRoads(); // Au lieu de : const roads = useRoads();
+  
+  console.log('ROADS DANS my-roads:', roads);
 
   const handleHorizontalSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
@@ -38,42 +37,14 @@ export default function MyRoutes() {
     }
   };
 
-  
-  // Recuperer les sessions 
-  useEffect(() => {
-  const fetchRoadbooks = async () => {
-    try {
-      const sessions = [await sessionApi.getSessionById("1")]; // ici
-      console.log('Session récupérée :', sessions);
-
-      const data = sessions.map((session) => ({
-        id: session.id,
-        title: session.title,
-        date: new Date(session.date), // conversion ISO -> Date JS
-        distance: session.distance,
-        duration: session.duration,
-        weather: session.weather,
-      }));
-
-      setRoads(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des sessions :', error);
-    }
-  };
-
-  fetchRoadbooks();
-}, []);
-
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PanGestureHandler
         onGestureEvent={handleHorizontalSwipe}
-        activeOffsetX={[-2, 2]} // Only activate when movement exceeds 20px horizontally
-        failOffsetY={[-20, 20]} // Fail when movement exceeds 20px vertically (so ScrollView handles it)
+        activeOffsetX={[-2, 2]}
+        failOffsetY={[-20, 20]}
       >
         <View style={styles.container}>
-          {/* Use React Native Gesture Handler's ScrollView for better gesture integration */}
           <ScrollView
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
@@ -81,12 +52,19 @@ export default function MyRoutes() {
             scrollEventThrottle={5}
           >
             <View style={styles.cardsContainer}>
-              {roads.map((route, index) => (
-                <ExpandableCard key={route.id || index} route={route} colors={colors} />
-              ))}
+              {Array.isArray(roads) && roads.length > 0 ? (
+                roads.map((route, index) => (
+                  <ExpandableCard
+                    key={route.id || index}
+                    route={route}
+                    colors={colors}
+                  />
+                ))
+              ) : (
+                <Text style={{ color: colors.primaryText }}>Chargement des routes...</Text>
+              )}
             </View>
 
-            {/* Add space at the bottom so content isn't hidden by buttons */}
             <View style={{ height: 150 }} />
           </ScrollView>
 
@@ -129,6 +107,16 @@ const ExpandableCard = ({ route, colors }) => {
     >
       {!expanded && (
         <View style={styles.cardContent}>
+          {/* La petite croix */}
+          <TouchableOpacity
+            onPress={() => {
+              sessionApi.deleteSession(route.id)
+              console.log("Supression de la route avec l'id : " + route.id);
+            }}
+          >
+            <MaterialIcons name="close" size={30} color={colors.primaryIcon} />
+          </TouchableOpacity>
+
           <MaterialIcons name="person" size={40} color="#D9D9D9" />
           <Text style={styles.text}>
             {route.date.toLocaleDateString('fr-FR', {
@@ -154,13 +142,13 @@ const ExpandableCard = ({ route, colors }) => {
             <View style={styles.profile}>
               <MaterialIcons name="circle" size={100} color={colors.primaryIcon} />
               <View style={styles.profileName}>
-                <Text style={styles.text}>Moniteur*</Text>
+                <Text style={styles.text}>Moniteur</Text>
                 <MaterialIcons name="person" size={30} color={colors.primaryIcon} />
               </View>
             </View>
 
             <View style={styles.WeatherCard}>
-              <Ionicons
+              {/*<Ionicons
                 name="thermometer"
                 size={24}
                 color={colors.primaryIcon}
@@ -171,19 +159,21 @@ const ExpandableCard = ({ route, colors }) => {
                 size={24}
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
-              />
+              />*/}
+              <Text style={styles.text}>{route.weather}</Text>
               <Ionicons
                 name="cloud"
                 size={24}
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
               />
+              {/*
               <Ionicons
                 name="eye"
                 size={24}
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
-              />
+              />*/}
             </View>
           </View>
 

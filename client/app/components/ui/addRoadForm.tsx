@@ -7,7 +7,7 @@ import PropTypes from 'prop-types';
 import { sessionApi } from '../../services/api';
 import { SessionData, WeatherType } from '../../types/session.types';
 import { Picker } from '@react-native-picker/picker';
-
+import { useRoads } from '../../context/RoadContext';
 
 
 AddRouteForm.propTypes = {
@@ -60,17 +60,17 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
     // Préparer les données pour l'API
     const sessionData: SessionData = {
-      id: String(id.current),           
+      id: formData.roadName,           
       title: formData.roadName,
       description: "",
       date: formattedDate,             
       startTime: formData.departureTime.toISOString(),
       endTime: formData.arrivalTime.toISOString(),
       duration: durationMin,
-      startLocation: "Ici",
+      startLocation: formData.roadName, // temporaire parce que title ne fonctionne pas à l'endpoint
       endLocation: "Là",
       distance: Number(distance),
-      weather: selectedWeather || 'CLEAR', // utilise la météo sélectionnée
+      weather: selectedWeather || 'CLEAR', 
       daylight: 'DAY',
       sessionType: 'PRACTICE',
       roadTypes: [],

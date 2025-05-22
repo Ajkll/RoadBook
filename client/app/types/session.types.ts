@@ -38,6 +38,14 @@ export interface SessionData {
   status?: SessionStatus;
 }
 
+// données réellement affichées 
+export type RoadTypes = {
+  id: string;
+  date: Date;
+  distance: number;
+  duration: number;
+};
+
 export interface Session extends SessionData {
   id: string;
   roadbookId: string;
