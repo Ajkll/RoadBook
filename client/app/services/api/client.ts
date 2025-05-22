@@ -13,7 +13,7 @@ const GITHUB_CODESPACE_URL =
   'https://yanstart-rainy-space-5rgx6q6xqpw367r5-4002.preview.app.github.dev/api';
 
 // URL de l'API de production (déployée sur Render)
-const PRODUCTION_API = 'https://roadbook-backend.onrender.com/api';
+const PRODUCTION_API = 'https://roadbook.onrender.com/api';
 
 // ===== NGROK CONFIG =====
 // IMPORTANT: Remplace cette URL par ton URL ngrok active

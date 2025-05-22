@@ -2,9 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { User } from '../../types/auth.types';
-import { Notification, NotificationPreferences } from '../../services/api/notification.api';
-import { UserBadge, BadgeProgressInfo } from '../../services/api/badge.api';
-import { PrivacySettings } from '../../services/api/privacy.api';
+import { 
+  Notification, 
+  NotificationPreferences,
+  UserBadge, 
+  BadgeProgressInfo,
+  PrivacySettings 
+} from '../../services/api';
 
 // Import des composants de profil
 import ProfileHeader from './ProfileHeader';
@@ -79,6 +83,7 @@ interface ProfileScreenProps {
 export default function ProfileScreen({
   user,
   loading,
+  sectionLoading,
   loadingError,
   currentSection,
   setCurrentSection,
@@ -106,6 +111,8 @@ export default function ProfileScreen({
   handleLogoutSession,
   handleLogoutAllSessions,
   handleTogglePrivacy,
+  handleSavePrivacySettings,
+  handleRequestDataExport,
   handleConfirmAction,
   setNotifications,
   updateProfilePicture,
@@ -169,6 +176,9 @@ export default function ProfileScreen({
           <PrivacySection
             privacySettings={privacySettings}
             handleTogglePrivacy={handleTogglePrivacy}
+            handleSavePrivacySettings={handleSavePrivacySettings}
+            handleRequestDataExport={handleRequestDataExport}
+            sectionLoading={sectionLoading?.privacy}
           />
         );
       case 'badges':

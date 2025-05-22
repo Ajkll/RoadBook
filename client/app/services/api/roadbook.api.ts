@@ -135,6 +135,7 @@ export interface ApiResponse<T> {
 }
 
 // RoadBook API Service
+// Utilise le client API configuré avec la nouvelle URL de production
 export const roadbookApi = {
   // Get all user's roadbooks
   getUserRoadbooks: async (status?: string): Promise<Roadbook[]> => {

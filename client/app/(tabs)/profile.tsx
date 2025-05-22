@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { authApi } from '../services/api/auth.api';
-import usersApi from '../services/api/users.api';
-import notificationApi, { Notification, NotificationPreferences } from '../services/api/notification.api';
-import badgeApi, { UserBadge, BadgeProgressInfo } from '../services/api/badge.api';
-import privacyApi, { PrivacySettings } from '../services/api/privacy.api';
+import { useSelector } from 'react-redux';
+import { 
+  authApi, 
+  usersApi, 
+  notificationApi, 
+  badgeApi, 
+  privacyApi 
+} from '../services/api';
+import { Notification, NotificationPreferences } from '../services/api/notification.api';
+import { UserBadge, BadgeProgressInfo } from '../services/api/badge.api';
+import { PrivacySettings } from '../services/api/privacy.api';
 import { User } from '../types/auth.types';
 import { useAuth } from '../context/AuthContext';
+import { selectIsInternetReachable } from '../store/slices/networkSlice';
+import { logger } from '../utils/logger';
 
 // Import du composant principal orchestrateur
 import ProfileScreen from '../components/profile';
@@ -24,6 +32,9 @@ const DEFAULT_PRIVACY_SETTINGS = {
 export default function Profile() {
   // Utiliser le context d'authentification
   const { user: authUser, updateProfile, refreshUserData, logout: authLogout } = useAuth();
+  
+  // Vérifier l'état de la connexion
+  const isOnline = useSelector(selectIsInternetReachable);
   
   // État local
   const [user, setUser] = useState<User | null>(authUser);
@@ -97,7 +108,7 @@ export default function Profile() {
       ]);
       
     } catch (error) {
-      console.error('Erreur lors du chargement des données utilisateur:', error);
+      logger.error('Erreur lors du chargement des données utilisateur:', error);
       setLoadingError(
         error.message || 'Impossible de charger vos données. Veuillez vérifier votre connexion internet et réessayer.'
       );
@@ -120,7 +131,7 @@ export default function Profile() {
         setNotifications([]);
       }
     } catch (error) {
-      console.log('Erreur lors du chargement des notifications:', error);
+      logger.error('Erreur lors du chargement des notifications:', error);
       // Initialiser avec des notifications simulées en cas d'erreur
       const fakeNotifications = [
         {
@@ -160,7 +171,7 @@ export default function Profile() {
       setBadges(userBadges);
       setBadgeProgress(progress);
     } catch (error) {
-      console.log('Erreur lors du chargement des badges:', error);
+      logger.error('Erreur lors du chargement des badges:', error);
       // Générer des badges simulés en cas d'erreur
       setBadges([
         {
@@ -196,7 +207,7 @@ export default function Profile() {
         }]);
       }
     } catch (error) {
-      console.log('Erreur lors du chargement des sessions:', error);
+      logger.error('Erreur lors du chargement des sessions:', error);
       // Sessions par défaut en cas d'erreur
       setSessions([{ 
         id: 'session-current', 
@@ -217,7 +228,7 @@ export default function Profile() {
       const settings = await privacyApi.getPrivacySettings();
       setPrivacySettings(settings);
     } catch (error) {
-      console.log('Erreur lors du chargement des paramètres de confidentialité:', error);
+      logger.error('Erreur lors du chargement des paramètres de confidentialité:', error);
       // Conserver les paramètres par défaut en cas d'erreur
     } finally {
       setSectionLoading(prev => ({ ...prev, privacy: false }));
@@ -230,7 +241,7 @@ export default function Profile() {
       const prefs = await notificationApi.getNotificationPreferences();
       setNotificationPrefs(prefs);
     } catch (error) {
-      console.log('Erreur lors du chargement des préférences de notification:', error);
+      logger.error('Erreur lors du chargement des préférences de notification:', error);
       // Conserver les valeurs par défaut en cas d'erreur
     }
   };
@@ -249,6 +260,16 @@ export default function Profile() {
 
   // Gérer la sauvegarde du profil avec validation améliorée et synchronisation
   const handleSaveProfile = async () => {
+    // Vérifier si l'utilisateur est en ligne avant de tenter la mise à jour
+    if (!isOnline) {
+      Alert.alert(
+        'Mode hors ligne',
+        'Les modifications de profil ne sont pas disponibles en mode hors ligne. Veuillez vous connecter à Internet et réessayer.',
+        [{ text: 'Compris' }]
+      );
+      return;
+    }
+    
     setLoading(true);
     setSectionLoading(prev => ({ ...prev, profile: true }));
     
@@ -281,14 +302,19 @@ export default function Profile() {
         }
       }
       
+      logger.info(`Tentative de mise à jour du profil pour l'utilisateur ${user?.id}`);
+      
       // Utiliser updateProfile depuis le AuthContext pour synchroniser les données
       const updatedUser = await updateProfile(editedUser);
       
       // Mettre à jour l'état local
       setUser(updatedUser);
       setEditing(false);
+      
+      logger.info(`Profil mis à jour avec succès pour l'utilisateur ${user?.id}`);
       Alert.alert('Profil mis à jour', 'Vos informations personnelles ont été mises à jour avec succès.');
     } catch (error) {
+      logger.error('Erreur lors de la mise à jour du profil:', error);
       Alert.alert(
         'Erreur de mise à jour',
         error.message || 'Une erreur est survenue lors de la mise à jour de votre profil. Veuillez réessayer.'
@@ -590,9 +616,20 @@ export default function Profile() {
   };
 
   // Gérer la mise à jour de la photo de profil - approche simplifiée
-  const handleUpdateProfilePicture = async (uri: string): Promise<void> => {
+  const handleUpdateProfilePicture = async (uri: string, source: 'gallery' | 'camera' = 'gallery'): Promise<void> => {
+    // Vérifier si l'utilisateur est en ligne avant de tenter la mise à jour
+    if (!isOnline) {
+      Alert.alert(
+        'Mode hors ligne',
+        'Les modifications de photo de profil ne sont pas disponibles en mode hors ligne. Veuillez vous connecter à Internet et réessayer.',
+        [{ text: 'Compris' }]
+      );
+      return Promise.reject(new Error('Hors ligne'));
+    }
+    
     try {
       setUploadingPicture(true);
+      logger.info(`Tentative de mise à jour de la photo de profil depuis ${source} pour l'utilisateur ${user?.id}`);
       
       try {
         // Créer un objet FormData
@@ -638,9 +675,11 @@ export default function Profile() {
             
             // Mettre à jour le profil dans le context d'authentification
             await updateProfile({ profilePicture: result.profilePicture });
+            
+            logger.info(`Photo de profil mise à jour avec succès pour l'utilisateur ${user.id}`);
           }
         } catch (apiError) {
-          console.log('API endpoint non disponible, utilisation de l\'URI local:', apiError);
+          logger.warn('API endpoint non disponible, utilisation de l\'URI local:', apiError);
           
           // Si l'API échoue, utiliser l'URI local comme fallback (approche simplifiée)
           if (user) {
@@ -657,13 +696,13 @@ export default function Profile() {
           }
         }
       } catch (error) {
-        console.error('Erreur lors du traitement de l\'image:', error);
+        logger.error('Erreur lors du traitement de l\'image:', error);
         throw new Error('Une erreur est survenue lors du traitement de l\'image.');
       }
       
       return Promise.resolve();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la photo de profil:', error);
+      logger.error('Erreur lors de la mise à jour de la photo de profil:', error);
       throw error;
     } finally {
       setUploadingPicture(false);

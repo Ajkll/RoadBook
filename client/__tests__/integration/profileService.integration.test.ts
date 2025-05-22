@@ -19,6 +19,18 @@ jest.mock('../../app/services/api/client', () => ({
   default: {
     post: jest.fn(),
     put: jest.fn(),
+  },
+  API_URL: 'https://mock-api.test/api',
+  API_CONFIG: {
+    API_URL: 'https://mock-api.test/api',
+    ENVIRONMENT: 'test',
+    USING_PRODUCTION: false,
+    IS_PHYSICAL_DEVICE: false
+  },
+  authEvents: {
+    emit: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn()
   }
 }));
 
@@ -56,8 +68,9 @@ describe('Profile Service - Integration Tests', () => {
     const utils = require('../../app/services/api/utils');
     utils.extractApiData = jest.fn(response => response.data);
 
-    // Importer après les mocks
-    usersApi = require('../../app/services/api/users.api').usersApi;
+    // Importer après les mocks - utiliser l'import centralisé
+    const api = require('../../app/services/api');
+    usersApi = api.usersApi;
   });
 
   describe('updateProfileAvatar', () => {
