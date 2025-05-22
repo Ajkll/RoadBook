@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Animated, Alert } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AddRouteForm from '../../components/ui/addRoadForm';
 import {
   GestureHandlerRootView,
@@ -15,7 +15,25 @@ import { useRoads } from '../../context/RoadContext';
 
 const { width } = Dimensions.get('window');
 
+type IconName =
+  | "weather-sunny"
+  | "weather-cloudy"
+  | "weather-pouring"
+  | "weather-snowy"
+  | "weather-fog"
+  | "weather-windy"
+  | "weather-partly-cloudy"
+  ;
 
+const weatherMap: Record<string, { icon: IconName; label: string }> = {
+  CLEAR: { icon: 'weather-sunny', label: 'Ensoleillé' },
+  CLOUDY: { icon: 'weather-cloudy', label: 'Nuageux' },
+  RAINY: { icon: 'weather-pouring', label: 'Pluvieux' },
+  SNOWY: { icon: 'weather-snowy', label: 'Neigeux' },
+  FOGGY: { icon: 'weather-fog', label: 'Brumeux' },
+  WINDY: { icon: 'weather-windy', label: 'Venteux' },
+  OTHER: { icon: 'weather-partly-cloudy', label: 'Autre' },
+};
 
 export default function MyRoutes() {
   const { colors } = useTheme();
@@ -86,12 +104,12 @@ export default function MyRoutes() {
 
 const ExpandableCard = ({ route, colors, refreshRoads }) => {
   const [expanded, setExpanded] = useState(false);
-  const animation = useMemo(() => new Animated.Value(100), []);
+  const animation = useMemo(() => new Animated.Value(110), []);
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const toggleExpand = () => {
     Animated.timing(animation, {
-      toValue: expanded ? 100 : 500,
+      toValue: expanded ? 110 : 320,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -113,6 +131,19 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
     }
   };
 
+  const confirmDelete = () => {
+  Alert.alert(
+    "Confirmer la suppression",
+    "Voulez-vous vraiment supprimer ce trajet ?",
+    [
+      { text: "Annuler", style: "cancel" },
+      { text: "Supprimer", onPress: handleDelete, style: "destructive" }
+    ]
+  );
+
+
+  };
+
   return (
     <Animated.View
       style={[expanded ? styles.expandedCard : styles.roadCard, { height: animation }]}
@@ -120,7 +151,7 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
       {!expanded && (
         <View style={styles.cardContent}>
           {/* La petite croix avec gestion async */}
-          <TouchableOpacity onPress={handleDelete}>
+          <TouchableOpacity onPress={confirmDelete}>
             <MaterialIcons name="close" size={30} color={colors.primaryIcon} />
           </TouchableOpacity>
 
@@ -155,13 +186,15 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
             </View>
 
             <View style={styles.WeatherCard}>
-              <Text style={styles.text}>{route.weather}</Text>
-              <Ionicons
-                name="cloud"
+              <MaterialCommunityIcons
+                name={weatherMap[route.weather]?.icon ?? 'weather-partly-cloudy'}
                 size={24}
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
               />
+              <Text style={styles.text}>
+                {weatherMap[route.weather]?.label ?? 'Inconnu'}
+              </Text>
             </View>
           </View>
 
@@ -177,11 +210,14 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
             <Text style={[styles.text, styles.roadDataWarper]}>{route.distance} km</Text>
             <Text style={[styles.text, styles.roadDataWarper]}>{route.duration} min</Text>
           </View>
-
-          <View style={styles.commentContainer}>
-            <View style={styles.roadComment}></View>
-            <View style={styles.roadComment}></View>
+          {/*
+          <View style={styles.roadComment}>
+            <Text style={styles.text}>Mon commentaire</Text>  
           </View>
+          <View style={styles.roadComment}>
+            <Text style={styles.text}>Commentaire de l'accompagnant</Text>  
+          </View>
+          */}
 
           <TouchableOpacity onPress={toggleExpand} style={styles.closeIcon}>
             <Animated.View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
@@ -289,8 +325,9 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 20,
     },
     WeatherCard: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
+      flexDirection: 'column',     
+      alignItems: 'center',        
+      justifyContent: 'center',    
       width: '45%',
       height: 120,
       backgroundColor: colors.primaryDarker,
@@ -298,8 +335,10 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 20,
       marginBottom: 20,
       marginRight: 35,
-      paddingTop: 10,
+      paddingTop: 20,
+      paddingBottom: 30,
     },
+
     roadData: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -329,9 +368,9 @@ const createStyles = (colors: ThemeColors) =>
     },
     roadComment: {
       backgroundColor: colors.primaryDarker,
-      width: '47%',
+      width: '100%',
+      padding: 10,
       borderRadius: 10,
-      height: 170,
       marginTop: 20,
     },
     test: {
