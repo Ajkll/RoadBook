@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Animated, Alert } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, router } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AddRouteForm from '../../components/ui/addRoadForm';
@@ -11,7 +11,7 @@ import {
 } from 'react-native-gesture-handler';
 import { sessionApi } from '../../services/api';
 import { useRoads } from '../../context/RoadContext';
-
+import { printAllRoutes, printSingleRoute } from '../../services/printService';
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +49,11 @@ export default function MyRoutes() {
     } else if (nativeEvent.translationX > 50 && currentPath.includes('my-roads')) {
       router.push('/(tabs)/my-routes/stats');
     }
+  };
+
+  // Fonction pour imprimer toutes les routes
+  const handlePrintAllRoutes = async () => {
+    await printAllRoutes(roads);
   };
 
   return (
@@ -92,7 +97,7 @@ export default function MyRoutes() {
             <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
               <MaterialIcons name="add-box" size={40} color={colors.primaryIcon} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.printButton}>
+            <TouchableOpacity style={styles.printButton} onPress={handlePrintAllRoutes}>
               <Ionicons name="print-outline" size={40} color={colors.primaryIcon} />
             </TouchableOpacity>
           </View>
@@ -110,10 +115,17 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
   const toggleExpand = () => {
     Animated.timing(animation, {
       toValue: expanded ? 110 : 320,
-      duration: 300,
+      duration: expanded ? 250 : 250,  
       useNativeDriver: false,
     }).start();
-    setExpanded(!expanded);
+
+    if (expanded) {
+      setExpanded(!expanded);
+    } else {
+      setTimeout(() => {
+        setExpanded(!expanded);
+      }, 0);
+    }
   };
 
   // Fonction pour gérer la suppression avec refresh
@@ -132,16 +144,19 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
   };
 
   const confirmDelete = () => {
-  Alert.alert(
-    "Confirmer la suppression",
-    "Voulez-vous vraiment supprimer ce trajet ?",
-    [
-      { text: "Annuler", style: "cancel" },
-      { text: "Supprimer", onPress: handleDelete, style: "destructive" }
-    ]
-  );
+    Alert.alert(
+      "Confirmer la suppression",
+      "Voulez-vous vraiment supprimer ce trajet ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        { text: "Supprimer", onPress: handleDelete, style: "destructive" }
+      ]
+    );
+  };
 
-
+  // Fonction pour imprimer une route individuelle
+  const handlePrintSingleRoute = async () => {
+    await printSingleRoute(route);
   };
 
   return (
@@ -210,14 +225,14 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
             <Text style={[styles.text, styles.roadDataWarper]}>{route.distance} km</Text>
             <Text style={[styles.text, styles.roadDataWarper]}>{route.duration} min</Text>
           </View>
-          {/*
-          <View style={styles.roadComment}>
-            <Text style={styles.text}>Mon commentaire</Text>  
+
+          {/* Section avec le bouton d'impression individuelle */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity style={styles.singlePrintButton} onPress={handlePrintSingleRoute}>
+              <Ionicons name="print-outline" size={24} color={colors.primaryIcon} />
+              <Text style={[styles.text, { fontSize: 12, marginTop: 4 }]}>Imprimer</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.roadComment}>
-            <Text style={styles.text}>Commentaire de l'accompagnant</Text>  
-          </View>
-          */}
 
           <TouchableOpacity onPress={toggleExpand} style={styles.closeIcon}>
             <Animated.View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
@@ -298,13 +313,13 @@ const createStyles = (colors: ThemeColors) =>
       position: 'absolute',
       bottom: 100,
       left: 45,
-      zIndex: 999, // Ensure buttons stay on top
+      zIndex: 999,
     },
     printButton: {
       position: 'absolute',
       bottom: 100,
       right: 45,
-      zIndex: 999, // Ensure buttons stay on top
+      zIndex: 999,
     },
     profile: {
       position: 'relative',
@@ -338,7 +353,6 @@ const createStyles = (colors: ThemeColors) =>
       paddingTop: 20,
       paddingBottom: 30,
     },
-
     roadData: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -372,6 +386,18 @@ const createStyles = (colors: ThemeColors) =>
       padding: 10,
       borderRadius: 10,
       marginTop: 20,
+    },
+    actionButtonsContainer: {
+      alignItems: 'center',
+      marginTop: 15,
+      marginBottom: 10,
+    },
+    singlePrintButton: {
+      alignItems: 'center',
+      padding: 10,
+      backgroundColor: colors.primaryDarker,
+      borderRadius: 8,
+      minWidth: 80,
     },
     test: {
       height: 0,
