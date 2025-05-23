@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -56,6 +56,59 @@ export default function Explorer() {
   const styles = makeStyles(theme);
   const { showInfo, showError } = useNotifications();
 
+  const [appliedFilters, setAppliedFilters] = useState({
+    country: '',
+    vehicle: '',
+    minDistance: 0,
+    maxDistance: 500,
+    minDuration: 0,
+    maxDuration: 300,
+    limit: 10,
+  });
+  const applyFilters = useCallback((sessions, filters) => {
+    let filtered = [...sessions];
+
+    // Filtre par pays/lieu
+    if (filters.country) {
+      filtered = filtered.filter(session =>
+        session.description?.toLowerCase().includes(filters.country.toLowerCase()) ||
+        session.nom?.toLowerCase().includes(filters.country.toLowerCase())
+      );
+    }
+
+    // Filtre par véhicule
+    if (filters.vehicle) {
+      filtered = filtered.filter(session =>
+        session.vehicle?.toLowerCase().includes(filters.vehicle.toLowerCase())
+      );
+    }
+
+    // Filtre par distance
+    filtered = filtered.filter(session => {
+      const distance = session.roadInfo?.summary?.totalDistanceKm || 0;
+      return distance >= filters.minDistance && distance <= filters.maxDistance;
+    });
+
+    // Filtre par durée
+    filtered = filtered.filter(session => {
+      const duration = session.elapsedTime || 0;
+      const durationInMinutes = Math.round(duration / 60);
+      return durationInMinutes >= filters.minDuration && durationInMinutes <= filters.maxDuration;
+    });
+
+    // Limiter le nombre de résultats
+    return filtered.slice(0, filters.limit);
+  }, []);
+
+  // 3. Calculer les sessions filtrées
+  const filteredSessions = useMemo(() => {
+    return applyFilters(sessions, appliedFilters);
+  }, [sessions, appliedFilters, applyFilters]);
+
+  // 4. Fonction pour gérer les changements de filtres
+  const handleFiltersChange = useCallback((newFilters) => {
+    setAppliedFilters(newFilters);
+  }, []);
   const handleSaveNotes = async (sessionId: string, notes: string) => {
     try {
       await sessionApi.updateSession(sessionId, { notes });
@@ -96,7 +149,7 @@ export default function Explorer() {
       const userId = user?.id;
       const combinedSessions: DriveSession[] = [];
 
-      for (const dbSession of dbSessions.slice(0, 5)) {
+      for (const dbSession of dbSessions.slice(0, 20)) {//20 comme dans les filtres
         try {
           const q = query(
             collection(db, 'driveSessionsGPS'),
@@ -263,13 +316,27 @@ export default function Explorer() {
 
     if (sessions.length > 0) {
       return (
-        <TrajetsCarousel
-          trajets={sessions}
-          onScrollIndexChange={handleScrollIndexChange}
-          onDeleteSession={handleDeleteSession}
-          onSaveNotes={handleSaveNotes}
-          onRefreshTrajets={fetchSessions}
-        />
+        <>
+          {/* Indicateur de filtres actifs */}
+          {(appliedFilters.country || appliedFilters.vehicle ||
+            appliedFilters.minDistance > 0 || appliedFilters.maxDistance < 500 ||
+            appliedFilters.minDuration > 0 || appliedFilters.maxDuration < 300 ||
+            appliedFilters.limit < 10) && (
+            <View style={styles.filterIndicator}>
+              <Text style={styles.filterIndicatorText}>
+                Filtres appliqués • {filteredSessions.length}/{sessions.length} trajets
+              </Text>
+            </View>
+          )}
+
+          <TrajetsCarousel
+            trajets={filteredSessions}
+            onScrollIndexChange={handleScrollIndexChange}
+            onDeleteSession={handleDeleteSession}
+            onSaveNotes={handleSaveNotes}
+            onRefreshTrajets={fetchSessions}
+          />
+        </>
       );
     }
 
@@ -334,7 +401,9 @@ export default function Explorer() {
           </View>
 
           <View style={styles.pageContainer}>
-            <QueryCarousel onResults={handleQueryResults} />
+            <View style={styles.pageContainer}>
+              <QueryCarousel onFiltersChange={handleFiltersChange} />
+            </View>
           </View>
         </Animated.View>
       </PanGestureHandler>
@@ -351,6 +420,21 @@ const makeStyles = (theme: any) =>
     headerContainer: {
       padding: theme.spacing.md,
       paddingBottom: 0,
+    },
+    filterIndicator: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      borderRadius: theme.borderRadius.medium,
+      alignItems: 'center',
+      marginTop: 5,
+      },
+    filterIndicatorText: {
+      color: theme.colors.ui.button.primaryText,
+      fontSize: 14,
+      fontWeight: '600',
     },
     tabContainer: {
       flexDirection: 'row',

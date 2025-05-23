@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState , useMemo } from 'react';
 import * as Location from 'expo-location';
 import { useDispatch, useSelector } from 'react-redux';
 import { tick, resetChrono } from '../store/slices/chronoSlice';
@@ -58,7 +58,7 @@ export default function ChronoWatcher() {
     const activationTimer = setTimeout(() => {
       isInstanceActive = true;
       console.log(`[${instanceId}] activation confirmée`);
-    }, 300);
+    }, 50);
 
     return () => {
       clearTimeout(activationTimer);
@@ -68,7 +68,7 @@ export default function ChronoWatcher() {
       setTimeout(() => {
         isInstanceActive = false;
         isTrackingActive.current = false;
-      }, 120);
+      }, 50);
 
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -101,7 +101,7 @@ export default function ChronoWatcher() {
       const stabilizationTimer = setTimeout(() => {
         setIsInitialLoad(false);
         console.log(`[${instanceId}] démarrage initial stabiliser`);
-      }, 800);
+      }, 400);
       return () => clearTimeout(stabilizationTimer);
     }
   }, [isRunning, isInitialLoad]);
@@ -148,7 +148,10 @@ export default function ChronoWatcher() {
 
             // une seul demande a l'api (on pourrais tenire compt des changement métèo mais pas pour le moment)
             if (!weatherRef.current) {
-              const weather = await getWeather(latitude, longitude);
+              const weather = await getWeather(latitude, longitude, Date.now(), {
+                timePrecisionHours: 0.5,
+                distancePrecisionMeters: 1000,
+              });
               if (weather) {
                 console.log(`[${instanceId}] meteo :`, weather);
                 weatherRef.current = weather;
@@ -278,11 +281,11 @@ export default function ChronoWatcher() {
         console.log(`[${instanceId}] Démarrage normal du tracking`);
         setupTimerRef = setTimeout(() => {
           startTrackingFn();
-        }, 300);
+        }, 50);
       } else if (!isRunning && isTrackingActive.current) {
         setupTimerRef = setTimeout(() => {
           stopTrackingAndSave();
-        }, 300);
+        }, 50);
       }
     };
 
