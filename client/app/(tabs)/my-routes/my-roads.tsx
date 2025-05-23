@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
@@ -9,17 +9,13 @@ import {
   PanGestureHandler,
   ScrollView,
 } from 'react-native-gesture-handler';
-import { db } from '../../services/firebase/firebaseConfig';
-import { getDocs, collection } from 'firebase/firestore';
+import { sessionApi } from '../../services/api';
+import { useRoads } from '../../context/RoadContext';
+
 
 const { width } = Dimensions.get('window');
 
-type RoadTypes = {
-  id: string;
-  date: Date;
-  distance: number;
-  duration: number;
-};
+
 
 export default function MyRoutes() {
   const { colors } = useTheme();
@@ -27,9 +23,8 @@ export default function MyRoutes() {
   const router = useRouter();
   const currentPath = usePathname();
   const [modalVisible, setModalVisible] = useState(false);
-  const [roads, setRoads] = useState<RoadTypes[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const { roads, refreshRoads } = useRoads(); 
+  
   const handleHorizontalSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
       router.push('/(tabs)/my-routes/my-roads');
@@ -38,41 +33,14 @@ export default function MyRoutes() {
     }
   };
 
-  useEffect(() => {
-    const fetchRoads = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'roads'));
-        const data = snap.docs.map((doc) => {
-          const rawData = doc.data();
-
-          return {
-            id: doc.id,
-            date: rawData.date.toDate(),
-            distance: rawData.distance,
-            duration: rawData.duration,
-          };
-        });
-        setRoads(data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRoads();
-  }, []);
-
-  if (loading) {
-    return <Text>Chargement…</Text>;
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PanGestureHandler
         onGestureEvent={handleHorizontalSwipe}
-        activeOffsetX={[-2, 2]} // Only activate when movement exceeds 20px horizontally
-        failOffsetY={[-20, 20]} // Fail when movement exceeds 20px vertically (so ScrollView handles it)
+        activeOffsetX={[-2, 2]}
+        failOffsetY={[-20, 20]}
       >
         <View style={styles.container}>
-          {/* Use React Native Gesture Handler's ScrollView for better gesture integration */}
           <ScrollView
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
@@ -80,12 +48,20 @@ export default function MyRoutes() {
             scrollEventThrottle={5}
           >
             <View style={styles.cardsContainer}>
-              {roads.map((route, index) => (
-                <ExpandableCard key={route.id || index} route={route} colors={colors} />
-              ))}
+              {Array.isArray(roads) && roads.length > 0 ? (
+                roads.map((route, index) => (
+                  <ExpandableCard
+                    key={route.id || index}
+                    route={route}
+                    colors={colors}
+                    refreshRoads={refreshRoads}
+                  />
+                ))
+              ) : (
+                <Text style={{ color: colors.primaryText }}>Chargement des routes...</Text>
+              )}
             </View>
 
-            {/* Add space at the bottom so content isn't hidden by buttons */}
             <View style={{ height: 150 }} />
           </ScrollView>
 
@@ -108,7 +84,7 @@ export default function MyRoutes() {
   );
 }
 
-const ExpandableCard = ({ route, colors }) => {
+const ExpandableCard = ({ route, colors, refreshRoads }) => {
   const [expanded, setExpanded] = useState(false);
   const animation = useMemo(() => new Animated.Value(100), []);
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -122,12 +98,32 @@ const ExpandableCard = ({ route, colors }) => {
     setExpanded(!expanded);
   };
 
+  // Fonction pour gérer la suppression avec refresh
+  const handleDelete = async () => {
+    try {
+      await sessionApi.deleteSession(route.id);
+      console.log("Suppression de la route avec l'id : " + route.id);
+      
+      // Refresh les données après suppression
+      if (refreshRoads) {
+        refreshRoads();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    }
+  };
+
   return (
     <Animated.View
       style={[expanded ? styles.expandedCard : styles.roadCard, { height: animation }]}
     >
       {!expanded && (
         <View style={styles.cardContent}>
+          {/* La petite croix avec gestion async */}
+          <TouchableOpacity onPress={handleDelete}>
+            <MaterialIcons name="close" size={30} color={colors.primaryIcon} />
+          </TouchableOpacity>
+
           <MaterialIcons name="person" size={40} color="#D9D9D9" />
           <Text style={styles.text}>
             {route.date.toLocaleDateString('fr-FR', {
@@ -153,32 +149,15 @@ const ExpandableCard = ({ route, colors }) => {
             <View style={styles.profile}>
               <MaterialIcons name="circle" size={100} color={colors.primaryIcon} />
               <View style={styles.profileName}>
-                <Text style={styles.text}>Moniteur*</Text>
+                <Text style={styles.text}>Moniteur</Text>
                 <MaterialIcons name="person" size={30} color={colors.primaryIcon} />
               </View>
             </View>
 
             <View style={styles.WeatherCard}>
-              <Ionicons
-                name="thermometer"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />
-              <MaterialIcons
-                name="air"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />
+              <Text style={styles.text}>{route.weather}</Text>
               <Ionicons
                 name="cloud"
-                size={24}
-                color={colors.primaryIcon}
-                style={styles.roadDataWarper}
-              />
-              <Ionicons
-                name="eye"
                 size={24}
                 color={colors.primaryIcon}
                 style={styles.roadDataWarper}
@@ -187,7 +166,7 @@ const ExpandableCard = ({ route, colors }) => {
           </View>
 
           <View style={styles.roadData}>
-            <Text style={[styles.text, styles.roadDataWarper]}>Trajet 1*</Text>
+            <Text style={[styles.text, styles.roadDataWarper]}>{route.title}</Text>
             <Text style={[styles.text, styles.roadDataWarper]}>
               {route.date.toLocaleDateString('fr-FR', {
                 year: '2-digit',
@@ -224,7 +203,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     scrollViewContent: {
       paddingTop: 20,
-      paddingBottom: 150, // Ensure enough space at bottom so content isn't hidden by buttons
+      paddingBottom: 150,
       alignItems: 'center',
     },
     cardsContainer: {

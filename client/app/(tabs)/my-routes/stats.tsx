@@ -1,11 +1,10 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import ProgressBar from '../../components/ui/ProgressBar';
-import { db } from '../../services/firebase/firebaseConfig';
-import { getDocs, collection } from 'firebase/firestore';
+import { useRoads } from '../../context/RoadContext';
 
 const { width } = Dimensions.get('window');
 
@@ -14,8 +13,9 @@ export default function MyRoutes() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const currentPath = usePathname();
-  const [roads, setRoads] = useState([]);
-  const [setLoading] = useState(true);
+  
+  // Récupération des données depuis le contexte
+  const { roads } = useRoads();
 
   const handleSwipe = ({ nativeEvent }) => {
     if (nativeEvent.translationX < -50 && currentPath.includes('stats')) {
@@ -25,50 +25,55 @@ export default function MyRoutes() {
     }
   };
 
-  useEffect(() => {
-    const fetchRoads = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'roads'));
-        const data = snap.docs.map((doc) => {
-          const rawData = doc.data();
+  // Calcul des totaux
+  const totalStats = useMemo(() => {
+    if (!Array.isArray(roads) || roads.length === 0) {
+      return { totalDuration: 0, totalDistance: 0 };
+    }
 
-          return {
-            id: doc.id,
-            date: rawData.date.toDate(),
-            distance: rawData.distance,
-            duration: rawData.duration,
-          };
-        });
-        setRoads(data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRoads();
-  }, []);
+    const totalDuration = roads.reduce((sum, road) => sum + (road.duration || 0), 0);
+    const totalDistance = roads.reduce((sum, road) => sum + (road.distance || 0), 0);
+
+    return { totalDuration, totalDistance };
+  }, [roads]);
+
+  // Conversion des minutes en heures et minutes pour un affichage plus lisible
+  const formatDuration = (minutes) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PanGestureHandler onGestureEvent={handleSwipe}>
         <View style={styles.container}>
           <View style={styles.content}>
-            <ProgressBar title="Progression" progress={67} />
+            <ProgressBar title="Progression" distanceKm={totalStats.totalDistance} />
           </View>
 
           <View style={styles.cardsContainer}>
             <View style={styles.roadCard}>
               <Text style={styles.text}>Heures totales</Text>
               <View style={styles.dataCard}>
-                <Text style={styles.text}>{roads[0]?.duration} min</Text>
+                <Text style={styles.text}>
+                  {formatDuration(totalStats.totalDuration)}
+                </Text>
               </View>
             </View>
 
             <View style={styles.roadCard}>
               <Text style={styles.text}>Distance totale</Text>
               <View style={styles.dataCard}>
-                <Text style={styles.text}>224 km</Text>
+                <Text style={styles.text}>
+                  {totalStats.totalDistance} km
+                </Text>
               </View>
             </View>
+
           </View>
         </View>
       </PanGestureHandler>
