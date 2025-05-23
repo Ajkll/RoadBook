@@ -10,7 +10,7 @@ export const SESSION_CONSTRAINTS = {
   SESSION_STATUS: ['PENDING', 'VALIDATED', 'REJECTED'] as SessionStatus[],
   ROAD_TYPES: ['URBAN', 'HIGHWAY', 'RURAL', 'MOUNTAIN', 'RESIDENTIAL', 'OTHER'] as RoadType[],
   MIN_DURATION: 1, // minutes
-  MAX_DURATION: 720, // 12 hours
+  MAX_DURATION: 720, // minutes
   MIN_DISTANCE: 0.1, // km
   MAX_DISTANCE: 10000, // km
 };
@@ -19,7 +19,6 @@ export const SESSION_CONSTRAINTS = {
 export const validateSessionData = (sessionData: SessionData): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  // Required fields
   if (!sessionData.date) {
     errors.push('Date is required');
   }
@@ -32,7 +31,7 @@ export const validateSessionData = (sessionData: SessionData): { valid: boolean;
     errors.push('Roadbook ID is required');
   }
 
-  // Type validations
+  // validation du typage des données
   if (sessionData.weather && !SESSION_CONSTRAINTS.WEATHER_TYPES.includes(sessionData.weather as WeatherType)) {
     errors.push(`Weather type is invalid. Valid types: ${SESSION_CONSTRAINTS.WEATHER_TYPES.join(', ')}`);
   }
@@ -58,7 +57,6 @@ export const validateSessionData = (sessionData: SessionData): { valid: boolean;
     }
   }
 
-  // Numeric validations
   if (sessionData.duration !== undefined) {
     if (typeof sessionData.duration !== 'number') {
       errors.push('Duration must be a number');
@@ -81,21 +79,19 @@ export const validateSessionData = (sessionData: SessionData): { valid: boolean;
   };
 };
 
-// Format session data for API request
 export const formatSessionData = (sessionData: SessionData): SessionData => {
   const formattedData = { ...sessionData };
 
-  // Handle description -> notes conversion
   if (sessionData.description && !sessionData.notes) {
     formattedData.notes = sessionData.description;
   }
 
-  // Ensure proper date formatting (YYYY-MM-DD)
+  // (YYYY-MM-DD)
   if (sessionData.date && sessionData.date instanceof Date) {
     formattedData.date = sessionData.date.toISOString().split('T')[0];
   }
 
-  // Ensure proper time formatting (ISO string)
+  // (ISO string)
   if (sessionData.startTime && sessionData.startTime instanceof Date) {
     formattedData.startTime = sessionData.startTime.toISOString();
   }
@@ -104,14 +100,12 @@ export const formatSessionData = (sessionData: SessionData): SessionData => {
     formattedData.endTime = sessionData.endTime.toISOString();
   }
 
-  // Calculate duration if not provided but start and end times are available
   if (!sessionData.duration && sessionData.startTime && sessionData.endTime) {
     const start = new Date(sessionData.startTime);
     const end = new Date(sessionData.endTime);
     formattedData.duration = Math.round((end.getTime() - start.getTime()) / (60 * 1000));
   }
 
-  // Make sure IDs are strings
   if (sessionData.roadbookId) {
     formattedData.roadbookId = String(sessionData.roadbookId);
   }
@@ -127,7 +121,6 @@ export const formatSessionData = (sessionData: SessionData): SessionData => {
   return formattedData;
 };
 
-// Generate empty session data template with required fields
 export const createEmptySessionData = (roadbookId: string): SessionData => {
   const now = new Date();
   const tomorrow = new Date();
@@ -308,7 +301,7 @@ export const mapDriveSessionToSessionData = async ({
     date: formatDateToISO(startTime),
     startTime: startTime.toISOString(),
     endTime: now.toISOString(),
-    duration: elapsedTime / 60, // Convertir secondes en minutes
+    duration: elapsedTime / 60, // Convertir less secondes en minutes
     startLocation,
     endLocation,
     distance: distance,

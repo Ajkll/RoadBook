@@ -23,6 +23,8 @@ import { useTheme } from '../constants/theme';
 import { sessionApi } from '../services/api/session.api';
 import secureStorage from '../services/secureStorage';
 import { useNotifications } from '../components/NotificationHandler';
+import ConfirmModal from '../components/modals/ConfirmModal';
+
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -37,6 +39,7 @@ interface DriveSession {
   elapsedTime?: number;
   roadInfo?: any;
   notes?: string;
+  offline?: boolean;
 }
 
 type TabType = 'recent' | 'query';
@@ -48,7 +51,9 @@ export default function Explorer() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('recent');
-
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const tabAnimation = useRef(new Animated.Value(0)).current;
   const isConnected = useSelector(selectIsInternetReachable);
@@ -83,6 +88,14 @@ export default function Explorer() {
       );
     }
 
+    // Filtre par statut offline
+    if (filters.offline !== 'Tous') {
+      const wantOffline = filters.offline === 'En ligne';
+      filtered = filtered.filter(session => {
+        return wantOffline ? session.offline : !session.offline;
+      });
+    }
+
     // Filtre par distance
     filtered = filtered.filter(session => {
       const distance = session.roadInfo?.summary?.totalDistanceKm || 0;
@@ -100,12 +113,12 @@ export default function Explorer() {
     return filtered.slice(0, filters.limit);
   }, []);
 
-  // 3. Calculer les sessions filtrées
+  // Calculer les sessions filtrées
   const filteredSessions = useMemo(() => {
     return applyFilters(sessions, appliedFilters);
   }, [sessions, appliedFilters, applyFilters]);
 
-  // 4. Fonction pour gérer les changements de filtres
+  // pour gérer les changements de filtres
   const handleFiltersChange = useCallback((newFilters) => {
     setAppliedFilters(newFilters);
   }, []);
@@ -122,15 +135,28 @@ export default function Explorer() {
     }
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
+  const handleDeleteSession = (sessionId) => {
+    setSessionToDelete(sessionId);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) {
+      console.log('Aucune session à supprimer');
+      return;
+    }
+
     try {
-      await sessionApi.deleteSession(sessionId);
+      await sessionApi.deleteSession(sessionToDelete);
       await fetchSessions();
+      showInfo('Suppression réussie', "La session a été supprimée avec succès.");
     } catch (error) {
       console.error('Error deleting session:', error);
-      showInfo('Vos données ont été supprimées', " Ce changement est iréversible. ", {
-        position: 'center',
-      });
+      showError('Erreur', "Impossible de supprimer la session.");
+    } finally {
+      setShowConfirmModal(false);
+      setSessionToDelete(null);
+      setDeleteConfirmText('');
     }
   };
 
@@ -183,7 +209,8 @@ export default function Explorer() {
                 average: dbSession.distance > 0 ? (dbSession.distance / (dbSession.duration / 60)) : 0
               }
             },
-            notes: dbSession.notes
+            notes: dbSession.notes,
+            offline: firebaseData?.offline || false
           };
 
           combinedSessions.push(combinedSession);
@@ -318,7 +345,7 @@ export default function Explorer() {
       return (
         <>
           {/* Indicateur de filtres actifs */}
-          {(appliedFilters.country || appliedFilters.vehicle ||
+          {(appliedFilters.country || appliedFilters.vehicle || appliedFilters.offline !== 'Tous' ||
             appliedFilters.minDistance > 0 || appliedFilters.maxDistance < 500 ||
             appliedFilters.minDuration > 0 || appliedFilters.maxDuration < 300 ||
             appliedFilters.limit < 10) && (
@@ -407,6 +434,21 @@ export default function Explorer() {
           </View>
         </Animated.View>
       </PanGestureHandler>
+      {/* Confirmation de suppression, */}
+      <ConfirmModal
+        visible={showConfirmModal}
+        title="Confirmer la suppression"
+        message="Êtes-vous sûr de vouloir supprimer définitivement cette session ? Cette action est irréversible."
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setSessionToDelete(null);
+          setDeleteConfirmText('');
+        }}
+        destructive={true}
+      />
     </GestureHandlerRootView>
   );
 }

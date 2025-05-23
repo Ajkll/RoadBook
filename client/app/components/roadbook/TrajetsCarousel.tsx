@@ -413,9 +413,9 @@ const TrajetsCarousel: React.FC<TrajetsCarouselProps> = ({
               {onDeleteSession && (
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => onDeleteSession(item.id)}
+                  onPress={() => onDeleteSession && onDeleteSession(item.id)}
                 >
-                  <Text style={styles.deleteText}>×</Text>
+                  <Text style={styles.deleteText}>x</Text>
                 </TouchableOpacity>
               )}
 

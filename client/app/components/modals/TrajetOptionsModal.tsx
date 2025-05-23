@@ -53,7 +53,7 @@ interface TrajetDetailsProps {
   weather: WeatherInfo | string;
   elapsedTime: number;
   roadInfo?: RoadInfo;
-  notes?: string; // Ajouté pour les notes
+  notes?: string;
 }
 
 interface TrajetOptionsModalProps {
@@ -374,7 +374,6 @@ const createStyles = (theme: Theme) =>
       flex: 2,
       textAlign: 'right',
     },
-    // Styles pour la section Notes
     notesContainer: {
       backgroundColor: theme.colors.ui.card.background,
       borderRadius: theme.borderRadius.medium,

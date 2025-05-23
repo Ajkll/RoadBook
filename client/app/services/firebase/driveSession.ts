@@ -4,6 +4,8 @@ import { saveSessionWithOfflineSupport, DriveSessionData } from '../sync/syncMan
 import { sessionApi } from '../api/session.api';
 import { mapDriveSessionToSessionData } from '../../utils/UtilsSessionApi';
 import { reverseGeocode } from '../api/geocoding.api';
+import { store } from '../../store/store';
+import { selectIsInternetReachable } from '../../store/slices/networkSlice';
 
 /**
  * Sauvegarde une session de conduite avec support hors ligne intégré
@@ -18,10 +20,12 @@ export async function saveDriveSession({
   weather,
   roadInfo,
   vehicle,
+  offline,
 }: {
   elapsedTime: number;
   userId: string;
   userComment: string;
+  offline: boolean;
   path: { latitude: number; longitude: number }[];
   weather?: {
     temperature: number;
@@ -58,11 +62,34 @@ export async function saveDriveSession({
   vehicle?: 'moto' | 'voiture' | 'camion' | 'camionnette' | null;
 }) {
   try {
+    // verif la co avant tout
+    const isOnline = selectIsInternetReachable(store.getState());
+
+    if (!isOnline) {
+      // Hors ligne
+      console.log('🔹 Mode hors ligne détecté, utilisation du système de sauvegarde hors ligne');
+      const sessionData: DriveSessionData = {
+        elapsedTime,
+        userId,
+        userComment,
+        path,
+        weather,
+        roadInfo,
+        vehicle,
+        offline,
+      };
+
+      const sessionId = await saveSessionWithOfflineSupport(sessionData);
+      return { id: sessionId }; // Retourner dans le même format que l'API
+    }
+
+    // En ligne
+    console.log('🔹 Mode en ligne, sauvegarde directe dans la DB');
     console.log('🔹 Getting roadbook ID before mapping session data...');
     const roadbookId = await sessionApi._ensureRoadbookId();
     console.log('🔹 Got roadbook ID:', roadbookId);
 
-    // 2. Maintenant mapper les données avec le roadbookId
+    // alors on map
     const sessionData = await mapDriveSessionToSessionData({
       elapsedTime,
       userId,
@@ -71,7 +98,7 @@ export async function saveDriveSession({
       weather,
       roadInfo,
       vehicle,
-      roadbookId
+      roadbookId,
     });
 
     console.log('🔹 Mapped session data:', {
@@ -79,17 +106,18 @@ export async function saveDriveSession({
       path: `${path?.length || 0} points`
     });
 
-    // 3. Créer la session dans la DB
+    //créer la session dans la DB
     const createdSession = await sessionApi.createSession(roadbookId, sessionData);
     console.log('🔹 Session created successfully:', createdSession.id);
 
-    // 4. Sauvegarder les données GPS lourdes dans Firebase
+    //save les données GPS lourdes dans Firebase
     const firebaseData = {
       sessionId: createdSession.id, // Référence vers la session DB
       path: path, // Coordonnées GPS (lourdes)
       weather: weather,
       vehicle: vehicle,
       createdAt: Timestamp.now(),
+      offline: offline || false,
       userId: userId
     };
 
@@ -99,6 +127,26 @@ export async function saveDriveSession({
     return createdSession;
   } catch (error) {
     console.error(' Error saving session:', error);
-    throw error;
+
+    // En cas d'erreur, essayons de sauvegarder hors ligne en mode fallback (l'api publique de notre db etant instable)
+    console.log('🔹 Tentative de sauvegarde de secours hors ligne...');
+    try {
+      const sessionData: DriveSessionData = {
+        elapsedTime,
+        userId,
+        userComment,
+        path,
+        weather,
+        roadInfo,
+        vehicle,
+      };
+
+      const sessionId = await saveSessionWithOfflineSupport(sessionData);
+      console.log('🔹 Session sauvegardée en mode de secours avec ID:', sessionId);
+      return { id: sessionId };
+    } catch (fallbackError) {
+      console.error('Échec de la sauvegarde de secours:', fallbackError);
+      throw error; // Relancer l'erreur originale
+    }
   }
 }

@@ -15,6 +15,13 @@ const COUNTRIES = [
   'France', 'Belgium', 'Germany', 'Italy', 'Spain', 'Netherlands',
   'Switzerland', 'Austria', 'Portugal', 'Other'
 ];
+const OFFLINE_OPTIONS = ['Tous', 'En ligne', 'Hors ligne'];
+/*
+  important c'est volontaire que si pas de connection avec la db
+  (que ce soit le questionnaire offline qui sync avec la db par facilité on consider ce genre de trajet comme offline
+  (meme si techniquement l'user avait peut etre de la connection mais pas avec la db a cause de probleme  interne au serveur)
+
+*/
 
 const QueryCarousel = ({ onFiltersChange }) => {
   const [filters, setFilters] = useState({
@@ -25,6 +32,7 @@ const QueryCarousel = ({ onFiltersChange }) => {
     minDuration: 0,
     maxDuration: 300,
     limit: 10,
+    offline: 'Tous',
   });
 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -162,7 +170,12 @@ const QueryCarousel = ({ onFiltersChange }) => {
           filters.country,
           (value) => updateFilter('country', value)
         )}
-
+        {renderDropdownSection(
+          'Connexion',
+          OFFLINE_OPTIONS,
+          filters.offline,
+          (value) => updateFilter('offline', value)
+        )}
         {renderDropdownSection(
           'Véhicule',
           VEHICLES,

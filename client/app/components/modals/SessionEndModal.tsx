@@ -41,7 +41,7 @@ const SessionEndModal: React.FC<SessionEndModalProps> = ({
   const { path, tracking } = useSelector((state: RootState) => state.location);
   const { mapReady } = useSelector((state: RootState) => state.location);
 
-  // Refs pour les animations
+  //  animations
   const blinkAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;

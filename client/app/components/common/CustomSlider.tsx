@@ -40,7 +40,7 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
     let newValues = [...sliderValue];
     newValues[editingIndex] = numValue;
 
-    // Gestion des conflits min/max
+    // Gestion des conflits min ou max
     if (newValues.length === 2) {
       if (editingIndex === 0 && newValues[0] > newValues[1]) {
         newValues[1] = newValues[0];
@@ -55,7 +55,11 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
 
   const ThumbComponent = () => (
     <View style={styles.thumbWrapper}>
-      <AntDesign name="right" size={29} color={theme.colors.primary} />
+      {AntDesign ? (
+        <AntDesign name="right" size={29} color={theme.colors.primary} />
+      ) : (
+        <View style={[styles.fallbackThumb, { backgroundColor: theme.colors.primary }]} />
+      )}
     </View>
   );
 
@@ -150,6 +154,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  fallbackThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
   valueInput: {
     borderWidth: 1,
     borderRadius: 5,
@@ -158,3 +167,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+// to do quand on la connectione st perdue il perd l'acces a AntDesign donc on a pas de handle quand je remet la co ou alors c'est un bug mais j'ai fait un trajet ofline puis je suis venue sur cette page pour verifier que mon trajet ofline est bien la (il l'etait) mais j'ia aps d'handle bizard

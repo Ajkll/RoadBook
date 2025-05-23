@@ -145,13 +145,14 @@ export default function ChronoWatcher() {
           async (location) => {
             const { latitude, longitude } = location.coords;
             dispatch(updateLocation({ latitude, longitude }));
-
-            // une seul demande a l'api (on pourrais tenire compt des changement métèo mais pas pour le moment)
             if (!weatherRef.current) {
-              const weather = await getWeather(latitude, longitude, Date.now(), {
+              let weather = await getWeather(latitude, longitude, Date.now(), {
                 timePrecisionHours: 0.5,
                 distancePrecisionMeters: 1000,
               });
+              if (!weather && isOnline) {
+                weather = await getWeather(latitude, longitude);
+              }
               if (weather) {
                 console.log(`[${instanceId}] meteo :`, weather);
                 weatherRef.current = weather;
@@ -205,7 +206,7 @@ export default function ChronoWatcher() {
           const finalElapsedTime = elapsedTimeRef.current;
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
-
+          const offline = isOnline;
           const sessionComment = comment;
 
           console.log(`[${instanceId}] User ID:`, userId);
@@ -213,7 +214,8 @@ export default function ChronoWatcher() {
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
-          console.log(`[${instanceId}] Commentaire:`, sessionComment)
+          console.log(`[${instanceId}] Commentaire:`, sessionComment);
+          console.log(`[${instanceId}] IsOnline:`, offline);
 
           if (finalElapsedTime <= 60 || !finalPath || finalPath.length < 3) {
             console.log(`[${instanceId}] session ignorée : aucune donnée utile (chemins\\durée trop court\\(es))`);
@@ -247,6 +249,7 @@ export default function ChronoWatcher() {
                 weather,
                 roadInfo,
                 vehicle,
+                offline,
               });
               dispatch(resetCommentState());
               console.log(`[${instanceId}] session sauvegardée avec ID: ${savedSession.id}`);
