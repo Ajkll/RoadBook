@@ -27,7 +27,7 @@ const initialState: LocationState = {
 };
 
 // buffer temporaire pour les coord GPS
-const BUFFER_SIZE = 5;
+const BUFFER_SIZE = 3;
 
 // TreshHold arbitraire
 const MOVEMENT_THRESHOLD = 0.00012; // Environ 10-15 mètres arbitraire (mais ca semble etre le sweetspote)

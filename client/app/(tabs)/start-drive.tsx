@@ -123,17 +123,13 @@ export default function StartDriveScreen() {
   }, []);
 
   const handleStartTracking = useCallback(() => {
+    dispatch(startTracking());
     setTimeout(() => {
-      dispatch(startTracking());
       dispatch(startChrono());
-
-      setTimeout(() => {
-        if (actionSheetRef.current) {
-          actionSheetRef.current.hide(); // Correction ici
-        }
-      }, 50);
+      actionSheetRef.current?.hide();
     }, 100);
   }, [dispatch]);
+
 
   // detecter les bord en fonction de notre position
   const isPositionNearEdge = useCallback(() => {
@@ -313,7 +309,7 @@ export default function StartDriveScreen() {
 
   const getDisplayCoordinates = useCallback((coords: Coord[]) => {
     if (coords.length < 100) return coords;
-    return coords.filter((_, index) => index % 2 === 0);
+    return coords.filter((_, index) => index % 3 !== 0);
   }, []);
 
   const polylineComponent = useMemo(() => {

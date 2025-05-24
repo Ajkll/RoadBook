@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState , useMemo } from 'react';
 import * as Location from 'expo-location';
 import { useDispatch, useSelector } from 'react-redux';
 import { tick, resetChrono } from '../store/slices/chronoSlice';
@@ -16,13 +16,14 @@ import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { getGeoapifyRouteInfo } from '../services/api/getRouteInfo';
 import { useNotifications } from './NotificationHandler';
 import { logger } from '../utils/logger';
+import { resetCommentState } from '../store/slices/commentSlice';
 
 let isInstanceActive = false;
 const instanceId = `chrono-${Math.random().toString(36).substr(2, 5)}`;
 
 export default function ChronoWatcher() {
   const dispatch = useDispatch();
-  const { showError, showWarning } = useNotifications();
+  const { showError } = useNotifications();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const isOnline = useSelector(selectIsInternetReachable);
 
@@ -41,6 +42,8 @@ export default function ChronoWatcher() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
+  const comment = useSelector((state: RootState) => state.comment.comment);
+
   useEffect(() => {
     console.log(`[${instanceId}] chrono monter`);
 
@@ -55,7 +58,7 @@ export default function ChronoWatcher() {
     const activationTimer = setTimeout(() => {
       isInstanceActive = true;
       console.log(`[${instanceId}] activation confirmée`);
-    }, 300);
+    }, 50);
 
     return () => {
       clearTimeout(activationTimer);
@@ -65,7 +68,7 @@ export default function ChronoWatcher() {
       setTimeout(() => {
         isInstanceActive = false;
         isTrackingActive.current = false;
-      }, 120);
+      }, 50);
 
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -98,7 +101,7 @@ export default function ChronoWatcher() {
       const stabilizationTimer = setTimeout(() => {
         setIsInitialLoad(false);
         console.log(`[${instanceId}] démarrage initial stabiliser`);
-      }, 800);
+      }, 400);
       return () => clearTimeout(stabilizationTimer);
     }
   }, [isRunning, isInitialLoad]);
@@ -142,10 +145,14 @@ export default function ChronoWatcher() {
           async (location) => {
             const { latitude, longitude } = location.coords;
             dispatch(updateLocation({ latitude, longitude }));
-
-            // une seul demande a l'api (on pourrais tenire compt des changement métèo mais pas pour le moment)
             if (!weatherRef.current) {
-              const weather = await getWeather(latitude, longitude);
+              let weather = await getWeather(latitude, longitude, Date.now(), {
+                timePrecisionHours: 0.5,
+                distancePrecisionMeters: 1000,
+              });
+              if (!weather && isOnline) {
+                weather = await getWeather(latitude, longitude);
+              }
               if (weather) {
                 console.log(`[${instanceId}] meteo :`, weather);
                 weatherRef.current = weather;
@@ -199,16 +206,20 @@ export default function ChronoWatcher() {
           const finalElapsedTime = elapsedTimeRef.current;
           const finalPath = pathRef.current;
           const weather = weatherRef.current;
+          const offline = isOnline;
+          const sessionComment = comment;
 
           console.log(`[${instanceId}] User ID:`, userId);
           console.log(`[${instanceId}] Elapsedtime:`, finalElapsedTime);
           console.log(`[${instanceId}] Path.length:`, finalPath?.length || 0);
           console.log(`[${instanceId}] Weather:`, !!weather);
           console.log(`[${instanceId}] Véhicule:`, vehicle);
+          console.log(`[${instanceId}] Commentaire:`, sessionComment);
+          console.log(`[${instanceId}] IsOnline:`, offline);
 
-          if (finalElapsedTime === 0 || !finalPath || finalPath.length < 3) {
-            console.log(`[${instanceId}] session ignorée : aucune donnée utile`);
-            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré.", {
+          if (finalElapsedTime <= 60 || !finalPath || finalPath.length < 3) {
+            console.log(`[${instanceId}] session ignorée : aucune donnée utile (chemins\\durée trop court\\(es))`);
+            showError('⛔ Échec de la sauvegarde', "Ton trajet n'a pas été enregistré; aucune donnée utile (chemins\\durée trop court\\(es))", {
               position: 'center',
             });
           } else {
@@ -227,22 +238,24 @@ export default function ChronoWatcher() {
               );
             }
 
-            // sauvegarde vers firebase
+            // sauvegarde vers la DB
             try {
               console.log(`[${instanceId}] tentative de sauvegarde de la session`);
-              await saveDriveSession({
+              const savedSession = await saveDriveSession({
                 elapsedTime: finalElapsedTime,
                 userId,
+                userComment: sessionComment,
                 path: finalPath,
                 weather,
                 roadInfo,
                 vehicle,
+                offline,
               });
-
-              console.log(`[${instanceId}] session sauvegardée `);
+              dispatch(resetCommentState());
+              console.log(`[${instanceId}] session sauvegardée avec ID: ${savedSession.id}`);
             } catch (error) {
               logger.error(`[${instanceId}] echéc de la sauvegarde de session:`, error);
-              showWarning(
+              showError(
                 '⚠️ Problème de sauvegarde',
                 "Une erreur s'est produite. Nouvelle tentative à la prochaine connexion.",
                 { position: 'center' }
@@ -271,11 +284,11 @@ export default function ChronoWatcher() {
         console.log(`[${instanceId}] Démarrage normal du tracking`);
         setupTimerRef = setTimeout(() => {
           startTrackingFn();
-        }, 300);
+        }, 50);
       } else if (!isRunning && isTrackingActive.current) {
         setupTimerRef = setTimeout(() => {
           stopTrackingAndSave();
-        }, 300);
+        }, 50);
       }
     };
 

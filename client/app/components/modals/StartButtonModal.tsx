@@ -58,7 +58,7 @@ const StartButtonModal = ({
 
       <ActionSheet
         ref={actionSheetRef}
-        // sous la nav bar
+        // pour que ce soit sous la nav bar
         isModal={false}
         backgroundInteractionEnabled={true}
         zIndex={0}

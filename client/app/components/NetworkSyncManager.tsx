@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { AppState, AppStateStatus } from 'react-native';
 import { selectIsInternetReachable } from '../store/slices/networkSlice';
 import { selectPendingItems, selectIsSyncing } from '../store/slices/syncSlice';
-import { completeSync } from '../services/sync/syncManager'; // Changé pour utiliser completeSync
+import { completeSync } from '../services/sync/syncManager';
 import Toast from 'react-native-toast-message';
 import { useNotifications } from './NotificationHandler';
 import { logger } from '../utils/logger';

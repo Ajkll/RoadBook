@@ -22,10 +22,14 @@ import { getGeoapifyRouteInfo } from '../api/getRouteInfo';
 import { getWeather } from '../api/weather';
 import { useNotifications } from '../../components/NotificationHandler';
 import { logger } from '../../utils/logger';
+import { sessionApi } from '../api/session.api';
+import { mapDriveSessionToSessionData } from '../../utils/UtilsSessionApi';
 
 interface DriveSessionData {
   elapsedTime: number;
   userId: string;
+  userComment: string;
+  offline: boolean;
   path: { latitude: number; longitude: number }[];
   weather?: {
     temperature: number;
@@ -62,10 +66,19 @@ interface DriveSessionData {
   vehicle?: 'moto' | 'voiture' | 'camion' | 'camionnette' | null;
 }
 
+//interface pour les requêtes roadbook en attente
+interface PendingRoadbookRequest {
+  id: string;
+  driveSessionId: string;
+  userId: string;
+  requestedAt: number;
+}
+
 interface PendingSessionPackage {
   session: PendingDriveSession;
   roadRequest?: PendingRoadInfoRequest;
   weatherRequest?: PendingWeatherRequest;
+  roadbookRequest?: PendingRoadbookRequest;
 }
 
 /**
@@ -77,10 +90,10 @@ export async function saveSessionWithOfflineSupport(data: DriveSessionData): Pro
 
   try {
     if (isOnline) {
-      // Mode en ligne = sauvegarde directe
+      // Mode en ligne = sauvegarde directe dans notre DB / firebase
       return await saveOnlineSession(data);
     } else {
-      // Mode hors ligne = sauvegarde storagelocale (asyncStorage)
+      // Mode hors ligne = sauvegarde locale (asyncStorage)
       return await saveOfflineSession(data, timestamp);
     }
   } catch (error) {
@@ -90,33 +103,53 @@ export async function saveSessionWithOfflineSupport(data: DriveSessionData): Pro
 }
 
 async function saveOnlineSession(data: DriveSessionData): Promise<string> {
-  // Récupérer les infos manquantes si possible
+  console.log('Tentative de sauvegarde en ligne...');
+
+  // recup le roadbookId en premier
+  const roadbookId = await sessionApi._ensureRoadbookId();
+
   const [weather, roadInfo] = await Promise.all([
     data.weather ? data.weather : tryGetWeather(data.path),
     data.roadInfo ? data.roadInfo : tryGetRoadInfo(data.path, data.elapsedTime),
   ]);
 
-  const docRef = await addDoc(collection(db, 'driveSessions'), {
-    userId: data.userId,
+  const sessionData = await mapDriveSessionToSessionData({
     elapsedTime: data.elapsedTime,
+    userId: data.userId,
+    userComment: data.userComment,
     path: data.path,
-    weather: weather || null,
-    roadInfo: roadInfo || null,
-    vehicle: data.vehicle || null,
-    createdAt: Timestamp.now(),
+    weather,
+    roadInfo,
+    vehicle: data.vehicle,
+    roadbookId
   });
 
-  console.log('En ligne - Session enregistrée avec ID:', docRef.id);
-  return docRef.id;
+  // créer la session dans la DB
+  const createdSession = await sessionApi.createSession(roadbookId, sessionData);
+
+  // save les données GPS dans Firebase
+  const firebaseData = {
+    sessionId: createdSession.id,
+    path: data.path,
+    weather,
+    vehicle: data.vehicle,
+    createdAt: Timestamp.now(),
+    userId: data.userId
+  };
+
+  await addDoc(collection(db, 'driveSessionsGPS'), firebaseData);
+
+  console.log('Session sauvegardée en ligne avec ID:', createdSession.id);
+  return createdSession.id;
 }
 
 async function saveOfflineSession(data: DriveSessionData, timestamp: number): Promise<string> {
-  console.log('Hors ligne: stockage local de la session');
+  console.log(' Hors ligne: stockage local de la session');
   const sessionPackage = await createPendingSessionPackage(data, timestamp);
   const { showInfo } = useNotifications();
   await saveSessionPackage(sessionPackage);
 
-  showInfo('📴 Mode hors ligne', 'Trajet sauvegardé localement. Synchronisation automatique à la reconnexion.');
+  showInfo(' Mode hors ligne', 'Trajet sauvegardé localement. Synchronisation automatique à la reconnexion.');
 
   console.log('Session sauvegardée localement avec ID:', sessionPackage.session.id);
   return sessionPackage.session.id;
@@ -131,6 +164,8 @@ async function createPendingSessionPackage(
   const session: PendingDriveSession = {
     id: sessionId,
     elapsedTime: data.elapsedTime,
+    userComment: data.userComment || null,
+    offline: data.offline || false,
     userId: data.userId,
     path: data.path,
     weather: data.weather || null,
@@ -142,8 +177,14 @@ async function createPendingSessionPackage(
 
   const pkg: PendingSessionPackage = { session };
 
+  pkg.roadbookRequest = {
+    id: `roadbook_${timestamp}_${Math.random().toString(36).substr(2, 5)}`,
+    driveSessionId: sessionId,
+    userId: data.userId,
+    requestedAt: timestamp,
+  };
+
   if (data.path.length >= 2) {
-    // pas d'info si le trajet est non significatif (normalement déja préalablement filtrer par ChronoWatcher mais double vérification)
     pkg.roadRequest = {
       id: `road_${timestamp}_${Math.random().toString(36).substr(2, 5)}`,
       driveSessionId: sessionId,
@@ -152,7 +193,6 @@ async function createPendingSessionPackage(
     };
   }
 
-  // meme réflexion que ci-dessus
   if (data.path.length > 0) {
     const lastPoint = data.path[data.path.length - 1];
     pkg.weatherRequest = {
@@ -170,6 +210,16 @@ async function createPendingSessionPackage(
 
 async function saveSessionPackage(pkg: PendingSessionPackage): Promise<void> {
   await savePendingDriveSession(pkg.session);
+
+  if (pkg.roadbookRequest) {
+    store.dispatch(
+      addPendingItem({
+        id: pkg.roadbookRequest.id,
+        type: 'api',
+        data: pkg.roadbookRequest,
+      })
+    );
+  }
 
   if (pkg.roadRequest) {
     store.dispatch(
@@ -202,7 +252,7 @@ async function saveSessionPackage(pkg: PendingSessionPackage): Promise<void> {
 }
 
 async function handleSaveError(data: DriveSessionData, timestamp: number): Promise<string> {
-  console.log('Tentative de sauvegarde de secours suite à une erreur');
+  console.log(' Tentative de sauvegarde de secours suite à une erreur');
   const sessionPackage = await createPendingSessionPackage(data, timestamp);
   await saveSessionPackage(sessionPackage);
   return sessionPackage.session.id;
@@ -215,10 +265,7 @@ async function tryGetWeather(path: { latitude: number; longitude: number }[]) {
     const lastPoint = path[path.length - 1];
     return await getWeather(lastPoint.latitude, lastPoint.longitude);
   } catch (error) {
-    logger.error(
-      'Erreur lors de la récupération des données météo de la sauvegard de secoure (fallback):',
-      error
-    );
+    logger.error('Erreur lors de la récupération des données météo:', error);
     return null;
   }
 }
@@ -232,7 +279,7 @@ async function tryGetRoadInfo(
   try {
     return await getGeoapifyRouteInfo(path, elapsedTime);
   } catch (error) {
-    logger.error('Erreur lors de la récupération des infos de route :', error);
+    logger.error('Erreur lors de la récupération des infos de route:', error);
     return null;
   }
 }
@@ -246,7 +293,7 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
     return { success: 0, failed: 0 };
   }
 
-  console.log('synchronisation des sessions en attente');
+  console.log(' Synchronisation des sessions en attente');
   store.dispatch(setSyncing(true));
 
   try {
@@ -262,25 +309,11 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
 
     for (const session of pendingSessions) {
       try {
-        // Envoye à Firebase
-        const docRef = await addDoc(collection(db, 'driveSessions'), {
-          userId: session.userId,
-          elapsedTime: session.elapsedTime,
-          path: session.path,
-          weather: session.weather || null,
-          roadInfo: session.roadInfo || null,
-          vehicle: session.vehicle || null,
-          createdAt: Timestamp.fromMillis(session.createdAt),
-        });
-
-        await removePendingDriveSession(session.id);
-        store.dispatch(removePendingItem(session.id));
-        store.dispatch(clearSyncError(session.id));
-
+        await processSingleSession(session);
         successCount++;
-        console.log(`Session ${session.id} synchronisée avec succès (ID Firebase: ${docRef.id})`);
+        console.log(` Session ${session.id} synchronisée avec succès`);
       } catch (error) {
-        logger.error(`Échec de synchronisation pour la session ${session.id}:`, error);
+        logger.error(` Échec de synchronisation pour la session ${session.id}:`, error);
         store.dispatch(
           setSyncError({
             id: session.id,
@@ -295,7 +328,7 @@ export async function syncPendingSessions(): Promise<{ success: number; failed: 
       await saveLastSyncDate();
       const { showSuccess } = useNotifications();
       showSuccess(
-        '🔄 Synchronisation terminée',
+        ' Synchronisation terminée',
         `${successCount} trajet${successCount > 1 ? 's' : ''} synchronisé${successCount > 1 ? 's' : ''}`
       );
     }
@@ -325,16 +358,12 @@ export async function checkAndSync(): Promise<void> {
 
 export async function completeSync(): Promise<void> {
   const isOnline = selectIsInternetReachable(store.getState());
-  if (!isOnline) {
-    return;
-  }
-
-  if (store.getState().sync.syncing) {
+  if (!isOnline || store.getState().sync.syncing) {
     return;
   }
 
   store.dispatch(setSyncing(true));
-  console.log('synchronisation complète');
+  console.log(' Synchronisation complète');
 
   try {
     const sessions = await getPendingDriveSessions();
@@ -367,13 +396,24 @@ export async function completeSync(): Promise<void> {
 async function processSingleSession(session: PendingDriveSession): Promise<void> {
   const updatedSession = { ...session };
 
+  // recup le roadbookId d'abord
+  let roadbookId: string;
+  try {
+    roadbookId = await sessionApi._ensureRoadbookId();
+    console.log(`RoadbookId récupéré pour ${updatedSession.id}: ${roadbookId}`);
+  } catch (error) {
+    logger.error(` Erreur roadbookId pour ${updatedSession.id}:`, error);
+    throw error; // Impossible de continuer sans le roadbookId
+  }
+
+  // recup les données météo si manquantes
   if (!updatedSession.weather && updatedSession.path.length > 0) {
     try {
       const lastPoint = updatedSession.path[updatedSession.path.length - 1];
       const weather = await getWeather(
         lastPoint.latitude,
         lastPoint.longitude,
-        updatedSession.locationTimestamp, // Utiliser le timestamp ei : pour les requete api "hystorique"
+        updatedSession.locationTimestamp,
         {
           timePrecisionHours: 1,
           distancePrecisionMeters: 1000,
@@ -381,77 +421,83 @@ async function processSingleSession(session: PendingDriveSession): Promise<void>
       );
       if (weather) {
         updatedSession.weather = weather;
-        console.log(`Météo récupérée pour ${updatedSession.id}`);
+        console.log(` Météo récupérée pour ${updatedSession.id}`);
       }
     } catch (error) {
-      logger.error(`Erreur météo pour ${updatedSession.id}:`, error);
+      logger.error(` Erreur météo pour ${updatedSession.id}:`, error);
     }
   }
 
+  // recup les infos de route si manquantes
   if (!updatedSession.roadInfo && updatedSession.path.length >= 2) {
     try {
       const roadInfo = await getGeoapifyRouteInfo(updatedSession.path, updatedSession.elapsedTime);
       if (roadInfo) {
         updatedSession.roadInfo = roadInfo;
-        console.log(`RoadInfo récupéré pour ${updatedSession.id}`);
+        console.log(` RoadInfo récupéré pour ${updatedSession.id}`);
       }
     } catch (error) {
-      logger.error(`Erreur roadInfo pour ${updatedSession.id}:`, error);
+      logger.error(` Erreur roadInfo pour ${updatedSession.id}:`, error);
     }
   }
 
-  if (updatedSession.weather || updatedSession.roadInfo) {
-    try {
-      // Sauvegarde dans Firebase et suppression du localStorage et redux
-      await saveSessionToFirebase(updatedSession);
-      await removePendingDriveSession(updatedSession.id);
-      store.dispatch(
-        removePendingItem({
-          id: updatedSession.id,
-          force: true,
-        })
-      );
+  // save whole session
+  try {
+    const sessionData = await mapDriveSessionToSessionData({
+      elapsedTime: updatedSession.elapsedTime,
+      userId: updatedSession.userId,
+      userComment: updatedSession.userComment || '',
+      path: updatedSession.path,
+      offline: updatedSession.offline || false,
+      weather: updatedSession.weather,
+      roadInfo: updatedSession.roadInfo,
+      vehicle: updatedSession.vehicle,
+      roadbookId
+    });
 
-      // Suppression des requêtes API associées a une session de conduite
-      const state = store.getState();
-      state.sync.pendingItems.forEach((item) => {
-        if (item.data.driveSessionId === updatedSession.id) {
-          store.dispatch(
-            removePendingItem({
-              id: item.id,
-              force: true,
-            })
-          );
-        }
-      });
+    // save dans la db
+    const createdSession = await sessionApi.createSession(roadbookId, sessionData);
 
-      console.log(`Session ${updatedSession.id} et requêtes associées synchronisées et nettoyées`);
-    } catch (error) {
-      logger.error(`Erreur lors de la sauvegarde Firebase pour ${updatedSession.id}:`, error);
-      await savePendingDriveSession(updatedSession);
+    // save dans firebase
+    const firebaseData = {
+      sessionId: createdSession.id,
+      path: updatedSession.path,
+      weather: updatedSession.weather,
+      vehicle: updatedSession.vehicle,
+      createdAt: Timestamp.fromMillis(updatedSession.createdAt),
+      userId: updatedSession.userId
+    };
 
-      store.dispatch(
-        setSyncError({
-          id: updatedSession.id,
-          error: error instanceof Error ? error.message : 'Erreur inconnue',
-        })
-      );
-    }
-  } else {
-    console.log(`Session ${updatedSession.id} ignorée - aucune donnée API disponible`);
+    await addDoc(collection(db, 'driveSessionsGPS'), firebaseData);
+    await removePendingDriveSession(updatedSession.id);
+    store.dispatch(removePendingItem({ id: updatedSession.id, force: true }));
+
+    const state = store.getState();
+    state.sync.pendingItems.forEach((item) => {
+      if (item.data.driveSessionId === updatedSession.id) {
+        store.dispatch(
+          removePendingItem({
+            id: item.id,
+            force: true,
+          })
+        );
+      }
+    });
+
+    store.dispatch(clearSyncError(updatedSession.id));
+    console.log(`Session ${updatedSession.id} et requêtes associées synchronisées et nettoyées`);
+
+  } catch (error) {
+    logger.error(` Erreur lors de la sauvegarde Firebase pour ${updatedSession.id}:`, error);
+    // En cas d'erreur, remettre la session mise à jour en attente
+    await savePendingDriveSession(updatedSession);
+
+    store.dispatch(
+      setSyncError({
+        id: updatedSession.id,
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      })
+    );
+    throw error;
   }
 }
-
-async function saveSessionToFirebase(session: PendingDriveSession): Promise<void> {
-  await addDoc(collection(db, 'driveSessions'), {
-    userId: session.userId,
-    elapsedTime: session.elapsedTime,
-    path: session.path,
-    weather: session.weather || null,
-    roadInfo: session.roadInfo || null,
-    vehicle: session.vehicle || null,
-    createdAt: Timestamp.fromMillis(session.createdAt),
-  });
-}
-
-// to do : ajoute de possibiliter de enregistrer des trajet "mes trajet " et d'attendre la connection pour les sync

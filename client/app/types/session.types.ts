@@ -1,24 +1,13 @@
-// types/session.types.ts
 export type WeatherType = 'CLEAR' | 'CLOUDY' | 'RAINY' | 'SNOWY' | 'FOGGY' | 'WINDY' | 'OTHER';
 export type DaylightType = 'DAY' | 'NIGHT' | 'DAWN_DUSK';
 export type SessionType = 'PRACTICE' | 'EXAM' | 'LESSON';
 export type SessionStatus = 'PENDING' | 'VALIDATED' | 'REJECTED';
 export type RoadType = 'URBAN' | 'HIGHWAY' | 'RURAL' | 'MOUNTAIN' | 'RESIDENTIAL' | 'OTHER';
 
-export interface Waypoint {
-  lat: number;
-  lng: number;
-  name?: string;
-}
-
-export interface RouteData {
-  waypoints: Waypoint[];
-}
-
 export interface SessionData {
   id?: string;
   title?: string;
-  description?: string;
+  description?: string; // Note: Non supporté par l'API pour l'instant (future ajout), utiliser notes à la place
   date: string;  // Format YYYY-MM-DD
   startTime: string;  // ISO string
   endTime?: string;   // ISO string
@@ -30,21 +19,12 @@ export interface SessionData {
   daylight?: DaylightType;
   sessionType?: SessionType;
   roadTypes?: RoadType[];
-  routeData?: RouteData;
   apprenticeId?: string;
   roadbookId: string;
   validatorId?: string;
   notes?: string;
   status?: SessionStatus;
 }
-
-// données réellement affichées 
-export type RoadTypes = {
-  id: string;
-  date: Date;
-  distance: number;
-  duration: number;
-};
 
 export interface Session extends SessionData {
   id: string;
