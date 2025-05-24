@@ -35,6 +35,49 @@ const logError = (message: string, error: unknown) => {
   }
 };
 
+// Utilitaire pour normaliser les données de session
+const normalizeSessionData = (session: any): Session => {
+  if (!session) return session;
+
+  // Use notes or description
+  let notes = session.notes;
+  if (!notes && session.description) {
+    notes = session.description;
+  }
+
+  // Title fallback
+  const title = session.title || (session.roadbook ? session.roadbook.title : null);
+
+  const normalized: Session = {
+    id: session.id || '',
+    date: session.date || '',
+    startTime: session.startTime || '',
+    roadbookId: session.roadbookId || '',
+    apprenticeId: session.apprenticeId || '',
+    title: title,
+    description: null, // Not supported yet
+    endTime: session.endTime || null,
+    duration: session.duration || 0,
+    startLocation: session.startLocation || null,
+    endLocation: session.endLocation || null,
+    distance: session.distance || 0,
+    weather: session.weather || null,
+    daylight: session.daylight || null,
+    sessionType: session.sessionType || 'PRACTICE',
+    roadTypes: session.roadTypes || [],
+    validatorId: session.validatorId || null,
+    notes: notes || null,
+    status: session.status || 'PENDING',
+    createdAt: session.createdAt || null,
+    updatedAt: session.updatedAt || null,
+    validationDate: session.validationDate || null,
+    apprentice: session.apprentice || null,
+    validator: session.validator || null
+  };
+
+  return normalized;
+};
+
 export const sessionApi = {
   // Helper: Ensure we have a valid roadbook ID
   _ensureRoadbookId: async (): Promise<string> => {
@@ -75,7 +118,7 @@ export const sessionApi = {
   },
 
   // Créer une nouvelle session pour un roadbook
-  createSession: async (roadbookId: string, sessionData: SessionData): Promise<Session> => {
+  createSession: async (roadbookId: string | null, sessionData: SessionData): Promise<Session> => {
     logDebug('Creating new session', { roadbookId, date: sessionData.date });
 
     // Validate session data first
@@ -87,38 +130,111 @@ export const sessionApi = {
     }
 
     try {
-      // If roadbookId is not provided, try to get or create one
-      if (!roadbookId) {
-        roadbookId = await sessionApi._ensureRoadbookId();
-        sessionData.roadbookId = roadbookId;
+      let finalRoadbookId = roadbookId;
+
+      if (!finalRoadbookId) {
+        try {
+          finalRoadbookId = await sessionApi._ensureRoadbookId();
+        } catch (roadbookError) {
+          logError('Failed to ensure roadbook ID, trying fallback approach', roadbookError);
+
+          try {
+            const newRoadbook = await roadbookApi.createRoadbook({
+              title: `Roadbook ${new Date().toISOString().split('T')[0]}`,
+              description: `Auto-created roadbook`,
+              targetHours: 50
+            });
+            finalRoadbookId = newRoadbook.id;
+            logDebug('Created new roadbook as fallback', { id: finalRoadbookId });
+          } catch (createError) {
+            logError('Failed to create fallback roadbook', createError);
+            throw new Error('Could not retrieve or create a roadbook. Please check your connection and try again.');
+          }
+        }
       }
 
-      // If apprenticeId is not provided, use current user ID
-      if (!sessionData.apprenticeId) {
-        sessionData.apprenticeId = await sessionApi._getCurrentUserId();
+      // Mettre à jour sessionData avec le roadbookId final
+      const finalSessionData = {
+        ...sessionData,
+        roadbookId: finalRoadbookId
+      };
+
+      // Si apprenticeId est manquant, essayer de le récupérer
+      if (!finalSessionData.apprenticeId) {
+        try {
+          finalSessionData.apprenticeId = await sessionApi._getCurrentUserId();
+        } catch (userError) {
+          logError('Failed to get current user ID', userError);
+          throw new Error('Please log in to create a session');
+        }
       }
 
       // Formater les données avant l'envoi
-      const formattedData = formatSessionData(sessionData);
+      const formattedData = formatSessionData(finalSessionData);
       logDebug('Formatted session data', formattedData);
 
+      // Créer la session
       const response = await apiClient.post(
-        `/roadbooks/${roadbookId}/sessions`,
+        `/roadbooks/${finalRoadbookId}/sessions`,
         formattedData
       );
 
-      const session = extractApiData<Session>(response);
+      const session = normalizeSessionData(extractApiData<Session>(response));
       logDebug('Session created successfully', { id: session.id });
       return session;
-    } catch (error) {
-      logError(`Failed to create session for roadbook ${roadbookId}`, error);
 
+    } catch (error) {
+      logError(`Failed to create session`, error);
+
+      // Gestion d'erreurs plus spécifique
       if (error.response?.status === 404) {
-        throw new Error('Roadbook not found.');
+        throw new Error('Roadbook not found. Please try refreshing the app.');
       } else if (error.response?.status === 403) {
         throw new Error("You don't have permission to add sessions to this roadbook.");
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error. Please try again in a few moments.');
+      } else if (error.message?.includes('roadbook')) {
+        // Si l'erreur contient déjà un message sur le roadbook, la passer telle quelle
+        throw error;
       } else {
-        throw new Error(error.message || 'Failed to create session. Please try again later.');
+        throw new Error(error.message || 'Failed to create session. Please check your connection and try again.');
+      }
+    }
+  },
+
+  _ensureRoadbookId: async (): Promise<string> => {
+    try {
+      logDebug('Attempting to get active roadbooks');
+      const roadbooks = await roadbookApi.getUserRoadbooks('ACTIVE');
+
+      if (roadbooks && roadbooks.length > 0) {
+        logDebug('Found active roadbook', { id: roadbooks[0].id });
+        return roadbooks[0].id;
+      }
+
+      // No active roadbook found, create one
+      logDebug('No active roadbook found, creating a new one');
+      const newRoadbook = await roadbookApi.createRoadbook({
+        title: `Roadbook ${new Date().toISOString().split('T')[0]}`,
+        description: `Auto-created roadbook`,
+        targetHours: 50
+      });
+
+      logDebug('Created new roadbook', { id: newRoadbook.id });
+      return newRoadbook.id;
+
+    } catch (error) {
+      logError('Failed to ensure roadbook ID', error);
+
+      // Différencier les types d'erreurs
+      if (error.response?.status === 500) {
+        throw new Error('Database connection error. Please try again in a few moments.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Permission denied. Please check your account status.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Please log in again to continue.');
+      } else {
+        throw new Error('Could not retrieve or create a roadbook. Please check your connection.');
       }
     }
   },
@@ -130,8 +246,12 @@ export const sessionApi = {
     try {
       const response = await apiClient.get(`/sessions/${sessionId}`);
 
-      const session = extractApiData<Session>(response);
-      logDebug('Session details retrieved successfully');
+      const rawData = extractApiData<any>(response);
+      logDebug('Raw session data from API', rawData);
+
+      const session = normalizeSessionData(rawData);
+      logDebug('Normalized session data', session);
+
       return session;
     } catch (error) {
       logError(`Failed to fetch session ${sessionId}`, error);
@@ -156,7 +276,7 @@ export const sessionApi = {
 
       const response = await apiClient.put(`/sessions/${sessionId}`, formattedData);
 
-      const session = extractApiData<Session>(response);
+      const session = normalizeSessionData(extractApiData<Session>(response));
       logDebug('Session updated successfully');
       return session;
     } catch (error) {
@@ -198,7 +318,7 @@ export const sessionApi = {
 
     try {
       // D'abord, récupérer un roadbook actif
-      const roadbookId = await sessionApi._ensureRoadbookId(); //"a6222aae-f8aa-4aa9-9fb4-6b3be9385221";
+      const roadbookId = await sessionApi._ensureRoadbookId();
 
       // Construire les paramètres de requête
       let url = `/roadbooks/${roadbookId}/sessions`;
@@ -217,14 +337,20 @@ export const sessionApi = {
 
       const response = await apiClient.get(url);
 
-      const sessions = extractApiData<Session[]>(response);
-      logDebug(`Retrieved ${sessions.length} sessions`);
+      const rawData = extractApiData<any[]>(response);
+      logDebug(`Retrieved ${rawData.length} raw sessions`);
+
+      // Normalize each session
+      const sessions = rawData.map(session => normalizeSessionData(session));
+      logDebug(`Normalized ${sessions.length} sessions`);
+
       return sessions;
     } catch (error) {
       logError('Failed to fetch user sessions', error);
       throw new Error('Failed to load your sessions. Please try again later.');
     }
   },
+
   /**
    * Supprime plusieurs sessions selon différents critères
    * @param options {Object} Options de suppression
@@ -294,7 +420,7 @@ export const sessionApi = {
         notes: feedbackNotes
       });
 
-      const session = extractApiData<Session>(response);
+      const session = normalizeSessionData(extractApiData<Session>(response));
       logDebug('Session validation status updated successfully');
       return session;
     } catch (error) {
