@@ -1,8 +1,8 @@
 import React, { createContext, useContext } from 'react';
-import { RoadTypes } from '../types/session.types';
+import { SessionData } from '../types/session.types';
 
 type RoadContextType = {
-  roads: RoadTypes[];
+  roads: SessionData[];
   refreshRoads: () => void;
 };
 
@@ -19,7 +19,7 @@ export const RoadProvider = ({
   refreshRoads,
 }: {
   children: React.ReactNode;
-  roads: RoadTypes[];
+  roads: SessionData[];
   refreshRoads: () => void;
 }) => {
   return (

@@ -111,7 +111,7 @@ export default function HomeScreen() {
         {/* Progress Bar non finit*/}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Votre progression</Text>
-          <ProgressBar title="Total heures de conduite" progress={67} />
+          <ProgressBar title="Total heures de conduite" />
         </View>
 
         {/* Compétences à travailler non finit */}

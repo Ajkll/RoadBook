@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import { shareAsync } from 'expo-sharing';
 import { Alert } from 'react-native';
+import { SessionData } from '../types/session.types';
 
 export interface RouteData {
   id?: string | number;
@@ -15,7 +16,7 @@ export interface RouteData {
 }
 
 // Fonction pour générer le HTML du PDF
-const generatePrintHTML = (roads: RouteData[], title: string = 'Rapport de Routes') => {
+const generatePrintHTML = (roads: SessionData[], title: string = 'Rapport de Routes') => {
   const tableRows = roads.map(route => `
     <tr>
       <td>${new Date(route.date).toLocaleDateString('fr-FR', {
@@ -26,7 +27,7 @@ const generatePrintHTML = (roads: RouteData[], title: string = 'Rapport de Route
       <td>${route.startLocation || '/'}</td>
       <td>${route.endLocation || '/'}</td>
       <td>${route.distance} km</td>
-      <td>${route.validator || 'Moniteur'}</td>
+      <td>${route.validatorId || 'Moniteur'}</td>
     </tr>
   `).join('');
 
@@ -152,7 +153,7 @@ const generatePrintHTML = (roads: RouteData[], title: string = 'Rapport de Route
 
 // Fonction principale pour imprimer les routes
 export const printRoutes = async (
-  roads: RouteData[], 
+  roads: SessionData[], 
   options: {
     title?: string;
     dialogTitle?: string;
@@ -195,7 +196,7 @@ export const printRoutes = async (
 };
 
 // Fonction pour imprimer toutes les routes
-export const printAllRoutes = async (roads: RouteData[]) => {
+export const printAllRoutes = async (roads: SessionData[]) => {
   return printRoutes(roads, {
     title: 'Rapport de toutes les routes',
     dialogTitle: 'Partager le rapport complet'
@@ -203,7 +204,7 @@ export const printAllRoutes = async (roads: RouteData[]) => {
 };
 
 // Fonction pour imprimer une route individuelle
-export const printSingleRoute = async (route: RouteData) => {
+export const printSingleRoute = async (route: SessionData) => {
   return printRoutes([route], {
     title: 'Détail de la route',
     dialogTitle: 'Partager la route'
