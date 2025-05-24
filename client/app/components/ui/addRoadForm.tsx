@@ -67,29 +67,16 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
     // Préparer les données pour l'API
     const sessionData: SessionData = {
       title: formData.roadName,
-      description: formData.roadName,
       date: formattedDate,             
       startTime: formData.departureTime.toISOString(),
       endTime: formData.arrivalTime.toISOString(),
       duration: durationMin,
-      startLocation: formData.departureLocation, // temporaire parce que title ne fonctionne pas à l'endpoint
+      startLocation: formData.departureLocation, 
       endLocation: formData.arrivalLocation,
       distance: Number(distance),
       weather: selectedWeather || 'CLEAR', 
-      daylight: 'DAY',
-      sessionType: 'PRACTICE',
-      roadTypes: [],
-      routeData: {
-        waypoints: [
-          { lat: 48.8566, lng: 2.3522, name: "Départ" },
-          { lat: 45.7640, lng: 4.8357, name: "Arrivée" },
-        ]
-      },
-      apprenticeId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      roadbookId: "a6222aae-f8aa-4aa9-9fb4-6b3be9385221",
-      validatorId: "b1c2d3e4-f5a6-7890-bcde-fa1234567890",
+      roadbookId: "noid", //a6222aae-f8aa-4aa9-9fb4-6b3be9385221
       notes: formData.roadName,
-      status: 'PENDING',
     };
 
       // Envoyer les données à l'API en utilisant la fonction importée
@@ -213,23 +200,12 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
           </View>
 
           <View style={styles.groupForm}>
-            {/*<TouchableOpacity style={styles.halfWidthInput}>
-              <Text style={styles.inputText}>Météo</Text>
-              <View style={styles.iconContainer}>
-                <MaterialCommunityIcons
-                  name="weather-snowy-rainy"
-                  size={30}
-                  color={colors.secondaryIcon}
-                />
-              </View>
-            </TouchableOpacity>*/}
-
             <View style={[styles.textInput, styles.fullWidthInput]}>
               <Picker
                 selectedValue={selectedWeather}
                 onValueChange={(itemValue) => setSelectedWeather(itemValue)}
-                style={{ flex: 1, color: colors.secondaryText, fontSize: 13 }} // <-- ici pour le texte sélectionné
-                dropdownIconColor={colors.secondaryIcon} // facultatif
+                style={{ flex: 1, color: colors.secondaryText, fontSize: 13 }} 
+                dropdownIconColor={colors.secondaryIcon}
               >
                 <Picker.Item label="Clair" value="CLEAR" />
                 <Picker.Item label="Nuageux" value="CLOUDY" />

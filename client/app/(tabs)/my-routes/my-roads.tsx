@@ -172,7 +172,7 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
 
           <MaterialIcons name="person" size={40} color="#D9D9D9" />
           <Text style={styles.text}>
-            {route.date.toLocaleDateString('fr-FR', {
+            {new Date(route.date).toLocaleDateString('fr-FR', {
               year: '2-digit',
               month: 'numeric',
               day: 'numeric',
@@ -216,7 +216,7 @@ const ExpandableCard = ({ route, colors, refreshRoads }) => {
           <View style={styles.roadData}>
             <Text style={[styles.text, styles.roadDataWarper]}>{route.title}</Text>
             <Text style={[styles.text, styles.roadDataWarper]}>
-              {route.date.toLocaleDateString('fr-FR', {
+              {new Date(route.date).toLocaleDateString('fr-FR', {
                 year: '2-digit',
                 month: 'numeric',
                 day: 'numeric',

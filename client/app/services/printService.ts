@@ -18,7 +18,7 @@ export interface RouteData {
 const generatePrintHTML = (roads: RouteData[], title: string = 'Rapport de Routes') => {
   const tableRows = roads.map(route => `
     <tr>
-      <td>${route.date.toLocaleDateString('fr-FR', {
+      <td>${new Date(route.date).toLocaleDateString('fr-FR', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
