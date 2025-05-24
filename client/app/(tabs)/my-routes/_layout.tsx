@@ -107,7 +107,7 @@ useFocusEffect(
           <FontAwesome
             name={isStatsActive ? 'circle' : 'circle-o'}
             size={isStatsActive ? 20 : 15}
-            color={colors.primaryIcon}
+            color={colors.backgroundIcon}
           />
         </TouchableOpacity>
 
@@ -115,7 +115,7 @@ useFocusEffect(
           <FontAwesome
             name={isMyRoadsActive ? 'circle' : 'circle-o'}
             size={isStatsActive ? 15 : 20}
-            color={colors.primaryIcon}
+            color={colors.backgroundIcon}
           />
         </TouchableOpacity>
       </View>

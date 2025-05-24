@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Animated, Alert } from 'react-native';
-import { useRouter, usePathname, router } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AddRouteForm from '../../components/ui/addRoadForm';
@@ -95,10 +95,10 @@ export default function MyRoutes() {
           />
           <View style={styles.test}>
             <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-              <MaterialIcons name="add-box" size={40} color={colors.primaryIcon} />
+              <MaterialIcons name="post-add" size={40} color={colors.backgroundIcon} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.printButton} onPress={handlePrintAllRoutes}>
-              <Ionicons name="print-outline" size={40} color={colors.primaryIcon} />
+              <Ionicons name="print-outline" size={40} color={colors.backgroundIcon} />
             </TouchableOpacity>
           </View>
         </View>

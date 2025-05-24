@@ -337,7 +337,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     textInput:{
       width: '35%',
-      color: colors.primaryTextSoft,
+      color: colors.secondaryText,
     },
     groupForm: {
       flexDirection: 'row',
