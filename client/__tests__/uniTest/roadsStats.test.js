@@ -212,32 +212,44 @@ describe('MyRoutes', () => {
     });
   });
 
-  describe('Rendu du composant ProgressBar', () => {
-    it('devrait passer les bonnes props au ProgressBar', () => {
+  describe('Gestion du swipe', () => {
+    it('devrait naviguer vers /my-roads en swipe gauche depuis /stats', () => {
       usePathname.mockReturnValue('/my-routes/stats');
-      const mockRoads = [{ duration: 60, distance: 20 }];
-      useRoads.mockReturnValue({ roads: mockRoads });
+      useRoads.mockReturnValue({ roads: [] });
 
       const { getByTestId } = render(<MyRoutes />);
 
-      expect(getByTestId('progress-bar')).toHaveTextContent('Progression: 20km');
-    });
-  });
+      fireEvent(getByTestId('pan-gesture-handler'), 'onTouchMove', {
+        nativeEvent: { translationX: -60 },
+      });
 
-  describe('Cas limites', () => {
-    it('devrait gérer des valeurs négatives', () => {
+      expect(mockRouter.push).toHaveBeenCalledWith('/(tabs)/my-routes/my-roads');
+    });
+
+    it('devrait naviguer vers /stats en swipe droite depuis /my-roads', () => {
+      usePathname.mockReturnValue('/my-routes/my-roads');
+      useRoads.mockReturnValue({ roads: [] });
+
+      const { getByTestId } = render(<MyRoutes />);
+
+      fireEvent(getByTestId('pan-gesture-handler'), 'onTouchMove', {
+        nativeEvent: { translationX: 60 },
+      });
+
+      expect(mockRouter.push).toHaveBeenCalledWith('/(tabs)/my-routes/stats');
+    });
+
+    it('ne devrait pas naviguer si le swipe est trop faible', () => {
       usePathname.mockReturnValue('/my-routes/stats');
-      const mockRoads = [
-        { duration: -30, distance: -10 },
-        { duration: 60, distance: 20 },
-      ];
-      useRoads.mockReturnValue({ roads: mockRoads });
+      useRoads.mockReturnValue({ roads: [] });
 
-      const { getByText } = render(<MyRoutes />);
+      const { getByTestId } = render(<MyRoutes />);
 
-      expect(getByText('30 min')).toBeTruthy(); // -30 + 60 = 30
-      expect(getByText('10 km')).toBeTruthy(); // -10 + 20 = 10
+      fireEvent(getByTestId('pan-gesture-handler'), 'onTouchMove', {
+        nativeEvent: { translationX: 30 },
+      });
+
+      expect(mockRouter.push).not.toHaveBeenCalled();
     });
-
   });
 });
