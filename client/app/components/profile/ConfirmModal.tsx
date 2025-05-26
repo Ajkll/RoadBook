@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { useTheme } from '../../constants/theme';
 
 interface ConfirmModalProps {
   showConfirmModal: boolean;
@@ -20,6 +21,7 @@ export default function ConfirmModal({
   setDeleteConfirmText,
   handleConfirmAction
 }: ConfirmModalProps) {
+  const { colors, dark } = useTheme();
   return (
     <Modal
       visible={showConfirmModal}
@@ -28,35 +30,40 @@ export default function ConfirmModal({
       onRequestClose={() => setShowConfirmModal(false)}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.ui.modal.background }]}>
+          <Text style={[styles.modalTitle, { color: colors.backgroundText }]}>
             {modalAction === 'logout' ? 'Déconnexion' : 'Suppression du compte'}
           </Text>
-          <Text style={styles.modalMessage}>{modalMessage}</Text>
+          <Text style={[styles.modalMessage, { color: colors.backgroundTextSoft }]}>{modalMessage}</Text>
           
           {modalAction === 'delete' && (
             <TextInput
-              style={styles.confirmInput}
+              style={[styles.confirmInput, { 
+                borderColor: colors.border, 
+                backgroundColor: colors.background,
+                color: colors.backgroundText
+              }]}
               value={deleteConfirmText}
               onChangeText={setDeleteConfirmText}
               placeholder="Tapez SUPPRIMER"
+              placeholderTextColor={colors.backgroundTextSoft}
             />
           )}
           
           <View style={styles.modalButtons}>
             <TouchableOpacity 
-              style={styles.modalCancelButton}
+              style={[styles.modalCancelButton, { borderColor: colors.border }]}
               onPress={() => {
                 setShowConfirmModal(false);
                 setDeleteConfirmText('');
               }}
             >
-              <Text style={styles.modalCancelText}>Annuler</Text>
+              <Text style={[styles.modalCancelText, { color: colors.backgroundTextSoft }]}>Annuler</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[
                 styles.modalConfirmButton, 
-                modalAction === 'delete' ? styles.modalDeleteButton : {}
+                { backgroundColor: modalAction === 'delete' ? colors.danger : colors.primary }
               ]}
               onPress={handleConfirmAction}
             >
@@ -80,7 +87,6 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: '80%',
-    backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
   },
@@ -88,16 +94,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#333',
   },
   modalMessage: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 20,
   },
   confirmInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -113,23 +116,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 5,
     marginRight: 10,
   },
   modalCancelText: {
-    color: '#666',
     fontWeight: '500',
   },
   modalConfirmButton: {
     padding: 10,
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#7CA7D8',
     borderRadius: 5,
   },
   modalDeleteButton: {
-    backgroundColor: '#FF6B6B',
+    // Conservé pour compatibilité descendante, utilise désormais les couleurs du thème
   },
   modalConfirmText: {
     color: 'white',

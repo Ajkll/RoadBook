@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, useColorScheme } from 'react-native';
+import { useTheme } from '../constants/theme';
 import { useSelector } from 'react-redux';
 import { 
   authApi, 
@@ -35,6 +36,10 @@ export default function Profile() {
   
   // Vérifier l'état de la connexion
   const isOnline = useSelector(selectIsInternetReachable);
+  
+  // Obtenir le thème actuel
+  const { colors, dark } = useTheme();
+  const colorScheme = useColorScheme();
   
   // État local
   const [user, setUser] = useState<User | null>(authUser);
@@ -551,13 +556,36 @@ export default function Profile() {
   };
   
   // Helper pour changer de mot de passe
-  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+  const handleChangePassword = async (currentPassword: string, newPassword: string, confirmPassword?: string) => {
     try {
       setSectionLoading(prev => ({ ...prev, security: true }));
+      
+      // Vérifier que les paramètres sont définis
+      if (!currentPassword || typeof currentPassword !== 'string') {
+        Alert.alert('Erreur', 'Veuillez entrer votre mot de passe actuel.');
+        return;
+      }
+      
+      if (!newPassword || typeof newPassword !== 'string') {
+        Alert.alert('Erreur', 'Veuillez entrer un nouveau mot de passe.');
+        return;
+      }
+      
+      // Si confirmPassword n'est pas fourni, vérifier qu'il est identique au newPassword
+      if (confirmPassword && confirmPassword !== newPassword) {
+        Alert.alert('Erreur', 'Les nouveaux mots de passe ne correspondent pas.');
+        return;
+      }
       
       // Vérification locale de la solidité du mot de passe
       if (newPassword.length < 8) {
         Alert.alert('Mot de passe trop court', 'Le mot de passe doit contenir au moins 8 caractères.');
+        return;
+      }
+      
+      // Vérifier que le nouveau mot de passe est différent de l'ancien
+      if (currentPassword === newPassword) {
+        Alert.alert('Erreur', 'Le nouveau mot de passe doit être différent de l\'ancien.');
         return;
       }
       
@@ -574,19 +602,75 @@ export default function Profile() {
         return;
       }
       
-      await usersApi.changePassword({
-        currentPassword,
-        newPassword
-      });
+      logger.info('Tentative de changement de mot de passe');
+      
+      // Utiliser l'API d'authentification pour changer le mot de passe avec confirmation
+      // Si confirmPassword n'est pas fourni explicitement, on utilise newPassword comme valeur par défaut
+      await authApi.changePassword(currentPassword, newPassword, confirmPassword || newPassword);
+      
+      logger.info('Mot de passe changé avec succès');
       
       Alert.alert(
         'Mot de passe mis à jour', 
         'Votre mot de passe a été changé avec succès. Vous devrez utiliser ce nouveau mot de passe lors de votre prochaine connexion.'
       );
     } catch (error) {
+      logger.error('Erreur lors du changement de mot de passe:', error);
+      
+      // Afficher un message d'erreur personnalisé selon le type d'erreur
+      if (error.message && error.message.includes('invalide')) {
+        Alert.alert(
+          'Données invalides', 
+          'Veuillez vérifier que tous les champs sont correctement remplis.'
+        );
+      } else if (error.message && error.message.includes('incorrect')) {
+        Alert.alert(
+          'Mot de passe incorrect', 
+          'Le mot de passe actuel que vous avez entré est incorrect.'
+        );
+      } else {
+        Alert.alert(
+          'Erreur de changement de mot de passe', 
+          error.message || 'Impossible de changer votre mot de passe. Veuillez réessayer plus tard.'
+        );
+      }
+    } finally {
+      setSectionLoading(prev => ({ ...prev, security: false }));
+    }
+  };
+  
+  // Gérer la demande de réinitialisation du mot de passe
+  const handleForgotPassword = async (email: string) => {
+    try {
+      setSectionLoading(prev => ({ ...prev, security: true }));
+      
+      // Vérifier que l'email est valide
+      if (!email || !email.includes('@')) {
+        Alert.alert('Email invalide', 'Veuillez entrer une adresse email valide.');
+        return;
+      }
+      
+      logger.info('Tentative de demande de réinitialisation de mot de passe');
+      
+      // Appeler l'API pour demander une réinitialisation de mot de passe
+      await authApi.requestPasswordReset(email);
+      
+      logger.info('Demande de réinitialisation de mot de passe envoyée');
+      
+      // Note: Pour des raisons de sécurité, nous affichons toujours un message de succès
+      // même si l'email n'existe pas dans la base de données
       Alert.alert(
-        'Erreur de changement de mot de passe', 
-        error.message || 'Impossible de changer votre mot de passe. Veuillez vérifier votre mot de passe actuel et réessayer.'
+        'Demande envoyée',
+        'Si cette adresse email est associée à un compte, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.'
+      );
+    } catch (error) {
+      logger.error('Erreur lors de la demande de réinitialisation de mot de passe:', error);
+      
+      // Note: pour des raisons de sécurité, même en cas d'erreur technique,
+      // on ne doit pas indiquer si l'email existe ou pas
+      Alert.alert(
+        'Demande envoyée',
+        'Si cette adresse email est associée à un compte, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.'
       );
     } finally {
       setSectionLoading(prev => ({ ...prev, security: false }));

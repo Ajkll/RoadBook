@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
+import { useTheme } from '../../constants/theme';
 import { User } from '../../types/auth.types';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +17,7 @@ export default function ProfileHeader({ user, updateProfilePicture }: ProfileHea
   const [uploading, setUploading] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const isOnline = useSelector(selectIsInternetReachable);
+  const { colors, dark } = useTheme();
 
   // Ouvrir le modal de sélection de la source de l'image
   const openPhotoOptions = () => {
@@ -152,7 +154,7 @@ export default function ProfileHeader({ user, updateProfilePicture }: ProfileHea
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <TouchableOpacity 
         style={styles.profileImageContainer}
         onPress={openPhotoOptions}
@@ -180,8 +182,8 @@ export default function ProfileHeader({ user, updateProfilePicture }: ProfileHea
           </>
         )}
       </TouchableOpacity>
-      <Text style={styles.userName}>{user.displayName}</Text>
-      <Text style={styles.userRole}>{user.role}</Text>
+      <Text style={[styles.userName, { color: colors.backgroundText }]}>{user.displayName}</Text>
+      <Text style={[styles.userRole, { color: colors.backgroundTextSoft }]}>{user.role}</Text>
       
       {/* Modal pour choisir la source de la photo */}
       <Modal
@@ -195,24 +197,24 @@ export default function ProfileHeader({ user, updateProfilePicture }: ProfileHea
           activeOpacity={1} 
           onPress={() => setShowPhotoOptions(false)}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Modifier votre photo de profil</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.ui.modal.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.backgroundText }]}>Modifier votre photo de profil</Text>
             
             <TouchableOpacity style={styles.optionButton} onPress={takePhoto}>
               <Ionicons name="camera" size={24} color="#7CA7D8" />
-              <Text style={styles.optionText}>Prendre une photo</Text>
+              <Text style={[styles.optionText, { color: colors.backgroundText }]}>Prendre une photo</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.optionButton} onPress={selectImageFromGallery}>
               <Ionicons name="images" size={24} color="#7CA7D8" />
-              <Text style={styles.optionText}>Choisir depuis la galerie</Text>
+              <Text style={[styles.optionText, { color: colors.backgroundText }]}>Choisir depuis la galerie</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.cancelButton} 
               onPress={() => setShowPhotoOptions(false)}
             >
-              <Text style={styles.cancelText}>Annuler</Text>
+              <Text style={[styles.cancelText, { color: colors.backgroundTextSoft }]}>Annuler</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -37,7 +37,7 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
     if (editingIndex === null) return;
 
     const numValue = Math.max(min, Math.min(max, parseFloat(editingValue) || min));
-    let newValues = [...sliderValue];
+    const newValues = [...sliderValue];
     newValues[editingIndex] = numValue;
 
     // Gestion des conflits min ou max

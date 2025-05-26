@@ -276,8 +276,8 @@ export const mapDriveSessionToSessionData = async ({
   const startTime = new Date(now.getTime() - elapsedTime * 1000);
 
   // Calculer la distance
-  let startLocation = 'Localisation inconnue';
-  let endLocation = 'Localisation inconnue';
+  const startLocation = 'Localisation inconnue';
+  const endLocation = 'Localisation inconnue';
   let distance = 0;
 
   if (roadInfo?.summary?.totalDistanceKm) {

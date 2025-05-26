@@ -32,16 +32,13 @@ export function notifyProfileUpdate(user: User): void {
   if (Platform.OS === 'web') {
     // Pour le web, utiliser l'API du navigateur
     try {
-      // Utiliser un événement personnalisé simple pour être compatible avec Hermes
-      const event = document.createEvent('CustomEvent');
-      event.initCustomEvent(PROFILE_UPDATED_EVENT, true, true, { user });
+      // Créer un simple événement pour les environnements sans CustomEvent
+      const event = new Event(PROFILE_UPDATED_EVENT);
+      // Ajouter les données utilisateur à l'événement
+      (event as any).detail = { user };
       window.dispatchEvent(event);
     } catch (error) {
-      logger.warn('Custom event not supported in this environment:', error);
-      // Fallback pour les anciens navigateurs ou environnements sans CustomEvent
-      const simpleEvent = new Event(PROFILE_UPDATED_EVENT);
-      (simpleEvent as any).detail = { user };
-      window.dispatchEvent(simpleEvent);
+      logger.warn('Event creation not supported in this environment:', error);
     }
   } else {
     // Pour les plateformes natives

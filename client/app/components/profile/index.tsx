@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useColorScheme } from 'react-native';
+import { useTheme } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { User } from '../../types/auth.types';
 import { 
@@ -73,6 +74,7 @@ interface ProfileScreenProps {
   handleRequestDataExport: () => void;
   handleDeactivateAccount: () => void;
   handleChangePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  handleForgotPassword?: (email: string) => Promise<void>;
   handleMarkAllNotificationsAsRead: () => Promise<void>;
   updateProfilePicture?: (uri: string) => Promise<void>;
   
@@ -114,10 +116,13 @@ export default function ProfileScreen({
   handleSavePrivacySettings,
   handleRequestDataExport,
   handleConfirmAction,
+  handleChangePassword,
+  handleForgotPassword,
   setNotifications,
   updateProfilePicture,
   onRetryLoading
 }: ProfileScreenProps) {
+  const { colors, dark } = useTheme();
   
   // Afficher un indicateur de chargement pendant le chargement initial
   if (loading && !user) {
@@ -160,7 +165,10 @@ export default function ProfileScreen({
             handleLogoutSession={handleLogoutSession}
             handleLogoutAllSessions={handleLogoutAllSessions}
             handleDeleteAccount={handleDeleteAccount}
+            handleChangePassword={handleChangePassword}
+            handleForgotPassword={handleForgotPassword}
             formatDate={formatDate}
+            sectionLoading={sectionLoading?.security}
           />
         );
       case 'notifications':
@@ -204,7 +212,7 @@ export default function ProfileScreen({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header avec photo de profil */}
       <ProfileHeader 
         user={user} 
@@ -220,14 +228,14 @@ export default function ProfileScreen({
       />
 
       {/* Contenu principal */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.content, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         {renderContent()}
       </ScrollView>
 
       {/* Bouton de déconnexion */}
       {!editing && (
         <TouchableOpacity 
-          style={styles.logoutButton} 
+          style={[styles.logoutButton, { backgroundColor: colors.danger }]} 
           onPress={handleLogout}
         >
           <Text style={styles.logoutButtonText}>Se déconnecter</Text>
@@ -255,20 +263,17 @@ export default function ProfileScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
     padding: 15,
   },
   logoutButton: {
-    backgroundColor: '#FF6B6B',
     paddingVertical: 15,
     alignItems: 'center',
     flexDirection: 'row',
