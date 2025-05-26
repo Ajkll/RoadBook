@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Touchable,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from './constants/theme';
-import { useSelector } from 'react-redux';
-import { selectIsInternetReachable } from './store/slices/networkSlice';
-import OfflineContent from './components/ui/OfflineContent';
-import GoBackHomeButton from './components/common/GoBackHomeButton';
+import { useNavigation } from '@react-navigation/native'; // Importation du hook de navigation
+import 'react-native-gesture-handler';
 
 interface ContactProps {
   name: string;
@@ -14,133 +18,117 @@ interface ContactProps {
   onPress: () => void;
 }
 
-const ContactItem: React.FC<ContactProps> = ({ name, message, onPress }) => {
-  const theme = useTheme();
-  const styles = makeStyles(theme);
-
-  return (
-    <TouchableOpacity style={styles.contact} onPress={onPress}>
-      <Icon
-        name="account-circle"
-        size={theme.typography.header.fontSize * 1.8}
-        color={theme.colors.primaryText}
-      />
-      <View style={styles.textContainer}>
-        <Text style={styles.text}>{name}</Text>
-        <Text style={styles.dernier_message}>{message}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
+const ContactItem: React.FC<ContactProps> = ({ name, message, onPress }) => (
+  <TouchableOpacity style={styles.contact} onPress={onPress}>
+    <Icon name="account-circle" size={50} color="#FFF" />
+    <View style={styles.textContainer}>
+      <Text style={styles.text}>{name}</Text>
+      <Text style={styles.dernier_message}>{message}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
 const BlackScreen: React.FC = () => {
-  const theme = useTheme();
-  const styles = makeStyles(theme);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const navigation = useNavigation();
-  const isConnected = useSelector(selectIsInternetReachable);
+  const [searchQuery, setSearchQuery] = useState<string>(''); // État pour le texte de recherche
+  const navigation = useNavigation(); // Hook pour la navigation
 
-  if (!isConnected) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Paiement</Text>
-          <OfflineContent message="Impossible de procéder au paiement. Vérifiez votre connexion internet." />
-          <GoBackHomeButton
-            containerStyle={{
-              marginBottom: theme.spacing.md,
-              marginTop: theme.spacing.xxl,
-              alignSelf: 'flex-start'
-            }}
-          />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
   const contacts = [
-    { name: 'Guillaume', message: 'Bonjour' },
-    { name: 'Julien', message: 'On peut se voir quand ?' },
-    { name: 'Romain', message: 'désolé je sais pas' },
-    { name: 'Jonathan', message: 'Tu es la ?' },
-    { name: 'Nathan', message: 'Oui je sais il me l a dis' },
-    { name: 'Lucas', message: 'D accord on fait ça' },
+    { name: 'Guillaume', messages: ['Bonjour', 'Comment ça va ?', 'À bientôt !'] },
+    { name: 'Julien', messages: ['On peut se voir quand ?', 'Tu es dispo demain ?'] },
+    { name: 'Romain', messages: ['Désolé je sais pas', 'Peut-être la semaine prochaine'] },
+    { name: 'Jonathan', messages: ['Tu es là ?', 'On se rejoint à 14h ?'] },
+    { name: 'Nathan', messages: ['Oui je sais, il me l’a dit', 'D’accord'] },
+    { name: 'Lucas', messages: ['D’accord, on fait ça', 'Ça marche, on se voit à 16h.'] },
   ];
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filtrage des contacts selon le texte de recherche
+  const filteredContacts = contacts.filter(
+    (contact) => contact.name.toLowerCase().includes(searchQuery.toLowerCase()) // Recherche par nom
   );
 
-  const handleContactPress = (contact: {name: string; message: string}) => {
+  // Fonction pour gérer le clic sur un contact
+  const handleContactPress = (contact: { name: string; messages: string[] }) => {
     navigation.navigate('ConversationScreen', {
       contactName: contact.name,
-      contactMessage: contact.message,
+      contactMessages: contact.messages,
     });
   };
 
   return (
     <View style={styles.container}>
+      {/* Barre de recherche */}
       <TextInput
         style={styles.searchBar}
         placeholder="Rechercher..."
-        placeholderTextColor={theme.colors.backgroundTextSoft}
         value={searchQuery}
-        onChangeText={setSearchQuery}
+        onChangeText={setSearchQuery} // Met à jour la recherche
       />
 
-      <ScrollView style={styles.scrollView}>
+      {/* Liste des contacts filtrée */}
+      <ScrollView style={{ flex: 1 }}>
         {filteredContacts.map((contact, index) => (
           <ContactItem
             key={index}
             name={contact.name}
-            message={contact.message}
-            onPress={() => handleContactPress(contact)}
+            message={contact.messages[contact.messages.length - 1]}
+            onPress={() => handleContactPress(contact)} // Passer le contact sélectionné à la fonction
           />
         ))}
       </ScrollView>
+
+      {/* ajout d'un second bouton */}
+      <TouchableOpacity
+        style={styles.file_actu_boutton}
+        onPress={() => navigation.navigate('file_actu')}
+      >
+        <Text style={styles.file_actu}>Fil actualité</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-const makeStyles = (theme) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: theme.spacing.xl,
-    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: '#212121',
+    paddingTop: 30,
+    paddingHorizontal: 20,
   },
   searchBar: {
     height: 40,
-    borderRadius: theme.borderRadius.medium,
-    paddingLeft: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    color: theme.colors.backgroundText,
-    backgroundColor: theme.colors.secondary,
-    ...theme.shadow.sm,
+    borderRadius: 8,
+    paddingLeft: 10,
+    marginBottom: 20,
+    color: 'white',
+    backgroundColor: '#303030',
   },
   contact: {
     flexDirection: 'row',
-    marginTop: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    marginTop: 15,
   },
   textContainer: {
-    marginLeft: theme.spacing.md,
+    marginLeft: 10,
     justifyContent: 'center',
-    flex: 1,
   },
   text: {
-    color: theme.colors.backgroundText,
-    fontSize: theme.typography.title.fontSize,
-    fontWeight: theme.typography.title.fontWeight,
+    color: 'white',
+    fontSize: 18,
   },
   dernier_message: {
-    color: theme.colors.backgroundTextSoft,
-    fontSize: theme.typography.body.fontSize,
-    marginTop: theme.spacing.xs,
+    color: 'white',
+    fontSize: 14,
+    marginTop: 5,
   },
-  scrollView: {
-    flex: 1,
+  file_actu_boutton: {
+    backgroundColor: 'red',
+    padding: 10,
+    width: 100,
+    borderRadius: 10,
+  },
+
+  file_actu: {
+    color: 'white',
+    textAlign: 'center',
   },
 });
 
