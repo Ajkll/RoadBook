@@ -19,7 +19,7 @@ import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
 import Toast from 'react-native-toast-message';
 
-// Import des services marketplace
+// Import des services marketplace CORRIGÉS
 import {
   purchaseItem,
   recordPurchase,
@@ -296,7 +296,7 @@ const PaymentScreen: React.FC = () => {
       // 1. Simuler le traitement du paiement
       await simulatePaymentProcessing(paymentMethod, { cardNumber, expiry, cvc });
 
-      // 2. Traiter l'achat dans le marketplace
+      // 2. Traiter l'achat dans le marketplace - CORRECTION ICI
       const userId = currentUser.id || currentUser.uid;
       const userName = currentUser.displayName || currentUser.name || currentUser.email || 'Acheteur anonyme';
 
@@ -307,10 +307,10 @@ const PaymentScreen: React.FC = () => {
         sellerId: params.sellerId
       });
 
-      // Marquer l'article comme vendu et créer la transaction
-      await purchaseItem(effectiveItemId, userId);
+      // CORRECTION: Utiliser la nouvelle fonction purchaseItem qui intègre déjà tout
+      await purchaseItem(effectiveItemId, userId, userName);
 
-      // Enregistrer l'achat
+      // OPTIONNEL: Enregistrer l'achat séparément si nécessaire
       await recordPurchase(effectiveItemId, userId, userName);
 
       console.log('✅ Achat marketplace terminé avec succès');
@@ -335,7 +335,7 @@ const PaymentScreen: React.FC = () => {
 
       // Redirection vers la confirmation
       router.push({
-        pathname: '/paymentConfirmation',
+        pathname: '/paymentConfirmation', // Chemin correct pour app/paymentConfirmation.tsx
         params: {
           products: JSON.stringify(products),
           totalPrice: parsedProduct.price.toFixed(2),
@@ -361,6 +361,8 @@ const PaymentScreen: React.FC = () => {
           errorMsg = 'Votre carte a été refusée';
         } else if (error.message.includes('Fonds insuffisants')) {
           errorMsg = 'Fonds insuffisants sur votre carte';
+        } else if (error.message.includes('supprimé')) {
+          errorMsg = 'Cet article a été retiré de la vente';
         } else {
           errorMsg = error.message;
         }
@@ -441,11 +443,21 @@ const PaymentScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Paiement</Text>
 
-        {/* Informations sur l'article */}
+        {/* Informations sur l'article - AMÉLIORÉES */}
         <View style={styles.itemInfo}>
           <Text style={styles.itemLabel}>Article à acheter:</Text>
           <Text style={styles.itemTitle}>{parsedProduct.title}</Text>
-          <Text style={styles.itemSeller}>Vendeur: {parsedProduct.sellerName}</Text>
+          <Text style={styles.itemSeller}>
+            Vendeur: {parsedProduct.sellerName}
+          </Text>
+          <Text style={styles.itemPrice}>
+            Prix: €{parsedProduct.price.toFixed(2)}
+          </Text>
+          {parsedProduct.description && (
+            <Text style={styles.itemDescription} numberOfLines={2}>
+              {parsedProduct.description}
+            </Text>
+          )}
           {__DEV__ && (
             <Text style={styles.itemDebug}>ID: {effectiveItemId}</Text>
           )}
@@ -456,14 +468,16 @@ const PaymentScreen: React.FC = () => {
           {products.map((product, index) => (
             <View key={index} style={styles.productContainer}>
               <Text style={[styles.value, styles.productName]}>{product.name}</Text>
-              <Text style={styles.productPrice}>{product.price.toFixed(2)}€</Text>
+              <Text style={styles.productPrice}>€{product.price.toFixed(2)}</Text>
             </View>
           ))}
 
-          <Text style={styles.label}>Total à payer:</Text>
-          <Text style={styles.value}>
-            {products.reduce((acc, product) => acc + product.price, 0).toFixed(2)}€
-          </Text>
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalLabel}>Total à payer:</Text>
+            <Text style={styles.totalValue}>
+              €{products.reduce((acc, product) => acc + product.price, 0).toFixed(2)}
+            </Text>
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Méthode de paiement</Text>
@@ -575,7 +589,7 @@ const PaymentScreen: React.FC = () => {
         >
           <Text style={styles.buttonText}>
             {paymentMethod === 'card'
-              ? `Payer ${parsedProduct.price.toFixed(2)}€ par Carte`
+              ? `Payer €${parsedProduct.price.toFixed(2)} par Carte`
               : paymentMethod === 'paypal'
               ? 'Continuer avec PayPal'
               : paymentMethod === 'google'
@@ -671,19 +685,21 @@ const makeStyles = (theme: any) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.backgroundTextSoft,
   },
-  // Styles pour les informations de l'article
+  // Styles pour les informations de l'article - AMÉLIORÉS
   itemInfo: {
     marginBottom: theme.spacing.lg,
     backgroundColor: theme.colors.ui.card.background,
     borderRadius: theme.borderRadius.medium,
     padding: theme.spacing.md,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: theme.colors.primary,
   },
   itemLabel: {
     fontSize: theme.typography.caption.fontSize,
     color: theme.colors.backgroundTextSoft,
     marginBottom: theme.spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   itemTitle: {
     fontSize: theme.typography.title.fontSize,
@@ -694,6 +710,19 @@ const makeStyles = (theme: any) => StyleSheet.create({
   itemSeller: {
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.backgroundTextSoft,
+    marginBottom: theme.spacing.xs,
+  },
+  itemPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
+  },
+  itemDescription: {
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.backgroundTextSoft,
+    fontStyle: 'italic',
+    marginBottom: theme.spacing.xs,
   },
   itemDebug: {
     fontSize: 10,
@@ -719,6 +748,25 @@ const makeStyles = (theme: any) => StyleSheet.create({
     fontWeight: theme.typography.title.fontWeight,
     marginBottom: theme.spacing.sm,
     color: theme.colors.backgroundText,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 2,
+    borderTopColor: theme.colors.primary,
+    marginTop: theme.spacing.md,
+  },
+  totalLabel: {
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: 'bold',
+    color: theme.colors.backgroundText,
+  },
+  totalValue: {
+    fontSize: theme.typography.title.fontSize,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   },
   sectionTitle: {
     fontSize: theme.typography.title.fontSize,
@@ -802,6 +850,7 @@ const makeStyles = (theme: any) => StyleSheet.create({
     flex: 1,
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.backgroundText,
+    fontWeight: '600',
   },
   // Styles pour les informations de test
   testInfo: {

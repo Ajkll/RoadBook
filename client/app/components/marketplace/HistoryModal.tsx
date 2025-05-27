@@ -17,13 +17,23 @@ interface HistoryModalProps {
   onClose: () => void;
   currentUser: any;
   transactions: Array<Purchase | MarketplaceItem>;
+  userBalance?: {
+    totalEarned: number;
+    totalSpent: number;
+    balance: number;
+    totalSales: number;
+    totalPurchases: number;
+    activeListing: number;
+    deletedItems: number;
+  };
 }
 
 const HistoryModal: React.FC<HistoryModalProps> = ({
   visible,
   onClose,
   currentUser,
-  transactions
+  transactions,
+  userBalance
 }) => {
   const { colors, spacing } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -35,17 +45,37 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
       console.log('📊 HistoryModal ouvert avec:');
       console.log('👤 CurrentUser:', currentUser?.id || currentUser?.uid);
       console.log('📋 Transactions:', transactions?.length || 0);
-      console.log('🔍 Première transaction:', transactions?.[0]);
+      console.log('💰 Balance:', userBalance);
 
       if (transactions && transactions.length > 0) {
         console.log('📈 Types de transactions:');
         transactions.forEach((item, index) => {
           const isPurchase = 'buyerId' in item;
-          console.log(`  ${index + 1}: ${isPurchase ? 'Achat' : 'Vente'} - ${isPurchase ? (item as Purchase).itemData?.title : (item as MarketplaceItem).title}`);
+          const isDeleted = !isPurchase && (item as MarketplaceItem).isDeleted;
+          const isSold = !isPurchase && (item as MarketplaceItem).isSold;
+
+          let title = '';
+          let price = 0;
+
+          if (isPurchase) {
+            const purchase = item as Purchase;
+            title = purchase.itemData?.title || 'Article inconnu';
+            price = purchase.price || purchase.itemData?.price || 0;
+          } else {
+            const marketItem = item as MarketplaceItem;
+            title = marketItem.title || 'Article sans titre';
+            price = marketItem.price || 0;
+          }
+
+          console.log(`  ${index + 1}: ${
+            isPurchase ? 'Achat' :
+            isDeleted ? 'Article supprimé' :
+            isSold ? 'Vente réalisée' : 'Article en vente'
+          } - ${title} (€${price})`);
         });
       }
     }
-  }, [visible, currentUser, transactions]);
+  }, [visible, currentUser, transactions, userBalance]);
 
   React.useEffect(() => {
     if (visible) {
@@ -95,38 +125,58 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
           : new Date(purchase.purchaseDate);
       } else {
         const marketItem = item as MarketplaceItem;
-        date = marketItem.createdAt instanceof Date
-          ? marketItem.createdAt
-          : new Date(marketItem.createdAt);
+        // Utiliser la date de vente, suppression, ou création selon le cas
+        if (marketItem.purchaseDate) {
+          date = marketItem.purchaseDate instanceof Date
+            ? marketItem.purchaseDate
+            : new Date(marketItem.purchaseDate);
+        } else if (marketItem.deletedAt) {
+          date = marketItem.deletedAt instanceof Date
+            ? marketItem.deletedAt
+            : new Date(marketItem.deletedAt);
+        } else {
+          date = marketItem.createdAt instanceof Date
+            ? marketItem.createdAt
+            : new Date(marketItem.createdAt);
+        }
       }
 
       const title = isPurchase
         ? (item as Purchase).itemData?.title || 'Article inconnu'
-        : (item as MarketplaceItem).title;
+        : (item as MarketplaceItem).title || 'Article sans titre';
 
       const amount = isPurchase
-        ? (item as Purchase).itemData?.price || (item as Purchase).price || 0
-        : (item as MarketplaceItem).price;
+        ? (item as Purchase).price || (item as Purchase).itemData?.price || 0
+        : (item as MarketplaceItem).price || 0;
 
-      // Amélioration de la logique pour l'autre partie
+      // Logique améliorée pour déterminer le type et statut
       let otherParty = '';
       let transactionType = '';
       let statusColor = colors.backgroundTextSoft;
+      let icon = 'help-outline';
 
       if (isPurchase) {
         transactionType = 'Achat';
         otherParty = (item as Purchase).itemData?.sellerName || 'Vendeur inconnu';
         statusColor = colors.error; // Rouge pour les achats (sortie d'argent)
+        icon = 'arrow-down-outline';
       } else {
         const marketItem = item as MarketplaceItem;
-        if (marketItem.isSold) {
+        if (marketItem.isDeleted) {
+          transactionType = 'Supprimé';
+          otherParty = 'Article retiré de la vente';
+          statusColor = colors.backgroundTextSoft; // Gris pour les supprimés
+          icon = 'trash-outline';
+        } else if (marketItem.isSold) {
           transactionType = 'Vendu';
           otherParty = marketItem.buyerName || 'Article vendu';
           statusColor = colors.success; // Vert pour les ventes (entrée d'argent)
+          icon = 'arrow-up-outline';
         } else {
           transactionType = 'En vente';
           otherParty = 'Article disponible';
           statusColor = colors.primary; // Bleu pour les articles en vente
+          icon = 'storefront-outline';
         }
       }
 
@@ -154,7 +204,12 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
             </Text>
             <View style={styles.amountContainer}>
               <Text style={[styles.transactionAmount, { color: statusColor }]}>
-                {isPurchase ? '-' : '+'}€{amount.toFixed(2)}
+                {isPurchase
+                  ? `-€${amount.toFixed(2)}`
+                  : (item as MarketplaceItem).isSold
+                    ? `+€${amount.toFixed(2)}`
+                    : `€${amount.toFixed(2)}`
+                }
               </Text>
             </View>
           </View>
@@ -162,7 +217,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
           <View style={styles.transactionMeta}>
             <View style={styles.transactionTypeContainer}>
               <Ionicons
-                name={isPurchase ? 'arrow-down-outline' : 'arrow-up-outline'}
+                name={icon as any}
                 size={16}
                 color={statusColor}
               />
@@ -185,10 +240,20 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
             })}
           </Text>
 
+          {/* Statut additionnel pour les articles supprimés */}
+          {!isPurchase && (item as MarketplaceItem).isDeleted && (
+            <View style={[styles.statusBadge, { backgroundColor: colors.backgroundTextSoft }]}>
+              <Text style={[styles.statusText, { color: colors.background }]}>
+                Retiré de la vente
+              </Text>
+            </View>
+          )}
+
           {/* Debug info en mode développement */}
           {__DEV__ && (
             <Text style={[styles.debugInfo, { color: colors.backgroundTextSoft }]}>
-              Debug: {isPurchase ? 'Achat' : 'Vente'} | ID: {item.id || 'N/A'}
+              Debug: {isPurchase ? 'Achat' : 'Vente'} | ID: {item.id || 'N/A'} |
+              {!isPurchase && ` Sold: ${(item as MarketplaceItem).isSold} | Deleted: ${(item as MarketplaceItem).isDeleted}`}
             </Text>
           )}
         </View>
@@ -205,34 +270,47 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
     }
   }, [colors, spacing]);
 
-  const calculateTotalBalance = useCallback(() => {
-    try {
-      let balance = 0;
-      transactions.forEach(item => {
-        const isPurchase = 'buyerId' in item;
-        const amount = isPurchase
-          ? (item as Purchase).itemData?.price || (item as Purchase).price || 0
-          : (item as MarketplaceItem).price;
-
-        if (isPurchase) {
-          balance -= amount; // Soustraction pour les achats
-        } else if ((item as MarketplaceItem).isSold) {
-          balance += amount; // Addition pour les ventes
-        }
-      });
-      return balance;
-    } catch (error) {
-      console.error('❌ Erreur calcul balance:', error);
-      return 0;
-    }
-  }, [transactions]);
-
   if (!visible) return null;
 
-  const totalBalance = calculateTotalBalance();
+  // Utiliser userBalance si disponible, sinon calculer à partir des transactions
+  const balance = userBalance || {
+    totalEarned: 0,
+    totalSpent: 0,
+    balance: 0,
+    totalSales: 0,
+    totalPurchases: 0,
+    activeListing: 0,
+    deletedItems: 0
+  };
+
+  // Si pas de userBalance, calculer à partir des transactions
+  if (!userBalance && transactions) {
+    transactions.forEach(item => {
+      const isPurchase = 'buyerId' in item;
+      const amount = isPurchase
+        ? (item as Purchase).itemData?.price || (item as Purchase).price || 0
+        : (item as MarketplaceItem).price;
+
+      if (isPurchase) {
+        balance.totalSpent += amount;
+        balance.totalPurchases += 1;
+      } else {
+        const marketItem = item as MarketplaceItem;
+        if (marketItem.isSold) {
+          balance.totalEarned += amount;
+          balance.totalSales += 1;
+        } else if (marketItem.isDeleted) {
+          balance.deletedItems += 1;
+        } else {
+          balance.activeListing += 1;
+        }
+      }
+    });
+
+    balance.balance = balance.totalEarned - balance.totalSpent;
+  }
+
   const totalTransactions = transactions?.length || 0;
-  const purchases = transactions?.filter(item => 'buyerId' in item).length || 0;
-  const sales = transactions?.filter(item => !('buyerId' in item) && (item as MarketplaceItem).isSold).length || 0;
 
   return (
     <View style={styles.modalOverlay}>
@@ -281,32 +359,86 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               User: {currentUser?.id || currentUser?.uid || 'Non connecté'}
             </Text>
             <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              Transactions: {totalTransactions} | Achats: {purchases} | Ventes: {sales}
+              Total transactions: {totalTransactions}
+            </Text>
+            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
+              Balance calculée: {balance.balance.toFixed(2)}€
             </Text>
           </View>
         )}
 
-        {/* Résumé financier */}
+        {/* Résumé financier amélioré */}
         {totalTransactions > 0 && (
           <View style={[styles.summaryContainer, { padding: spacing.md, backgroundColor: colors.ui.card.background }]}>
-            <View style={styles.summaryRow}>
+            {/* Balance principale */}
+            <View style={[styles.mainBalanceContainer, { marginBottom: spacing.md }]}>
+              <Text style={[styles.balanceLabel, { color: colors.backgroundTextSoft }]}>
+                Balance totale
+              </Text>
+              <Text style={[
+                styles.mainBalance,
+                { color: balance.balance >= 0 ? colors.success : colors.error }
+              ]}>
+                {balance.balance >= 0 ? '+' : ''}€{balance.balance.toFixed(2)}
+              </Text>
+            </View>
+
+            {/* Détails financiers */}
+            <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
-                  Balance totale
+                  Gains totaux
                 </Text>
-                <Text style={[
-                  styles.summaryValue,
-                  { color: totalBalance >= 0 ? colors.success : colors.error }
-                ]}>
-                  {totalBalance >= 0 ? '+' : ''}€{totalBalance.toFixed(2)}
+                <Text style={[styles.summaryValue, { color: colors.success }]}>
+                  +€{balance.totalEarned.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
-                  Achats / Ventes
+                  Dépenses totales
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.error }]}>
+                  -€{balance.totalSpent.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Statistiques d'activité */}
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
+                  Articles vendus
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.backgroundText }]}>
-                  {purchases} / {sales}
+                  {balance.totalSales}
+                </Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
+                  Articles achetés
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.backgroundText }]}>
+                  {balance.totalPurchases}
+                </Text>
+              </View>
+            </View>
+
+            {/* Statut des annonces */}
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
+                  En vente
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                  {balance.activeListing}
+                </Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
+                  Supprimés
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.backgroundTextSoft }]}>
+                  {balance.deletedItems}
                 </Text>
               </View>
             </View>
@@ -419,19 +551,34 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
   },
-  summaryRow: {
+  mainBalanceContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  balanceLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  mainBalance: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  summaryGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   summaryItem: {
     alignItems: 'center',
+    flex: 1,
   },
   summaryLabel: {
     fontSize: 12,
     marginBottom: 4,
+    textAlign: 'center',
   },
   summaryValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   transactionItem: {
@@ -491,6 +638,17 @@ const styles = StyleSheet.create({
   },
   transactionDate: {
     fontSize: 12,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,

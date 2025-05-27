@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { FlatList, View, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useTheme } from '../../constants/theme';
 import MarketplaceItemCard from './MarketplaceItemCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,100 +8,206 @@ interface MarketplaceListProps {
   items: MarketplaceItem[];
   currentUser: any;
   loading: boolean;
+  refreshing: boolean;
   onRefresh: () => Promise<void>;
   onDeleteItem: (itemId: string) => void;
+  onBuyItem: (itemId: string) => void;
 }
 
 const MarketplaceList: React.FC<MarketplaceListProps> = ({
   items,
   currentUser,
   loading,
+  refreshing,
   onRefresh,
-  onDeleteItem
+  onDeleteItem,
+  onBuyItem
 }) => {
-  const { colors } = useTheme();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const { colors, spacing } = useTheme();
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await onRefresh();
-    setRefreshing(false);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('❌ Erreur lors du rafraîchissement:', error);
+    }
+  };
+
+  // Filtrer les articles disponibles (non vendus, non supprimés)
+  const availableItems = items.filter(item => !item.isSold && !item.isDeleted);
+
+  console.log('📋 MarketplaceList render:', {
+    totalItems: items.length,
+    availableItems: availableItems.length,
+    loading,
+    refreshing
+  });
+
+  const renderItem = ({ item }) => (
+    <MarketplaceItemCard
+      item={item}
+      currentUser={currentUser}
+      onDeleteItem={onDeleteItem}
+      onBuyItem={onBuyItem}
+    />
+  );
+
+  const renderEmptyComponent = () => {
+    if (loading && !refreshing) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.backgroundTextSoft }]}>
+            Chargement des articles...
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="storefront-outline" size={80} color={colors.backgroundTextSoft} />
+        <Text style={[styles.emptyTitle, { color: colors.backgroundText }]}>
+          Aucun article disponible
+        </Text>
+        <Text style={[styles.emptyText, { color: colors.backgroundTextSoft }]}>
+          {items.length === 0
+            ? 'Soyez le premier à publier un article !'
+            : 'Tous les articles ont été vendus ou supprimés.'
+          }
+        </Text>
+
+        {/* Debug info en mode développement */}
+        {__DEV__ && (
+          <View style={[styles.debugInfo, { backgroundColor: colors.ui.card.background }]}>
+            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
+              🔍 Debug: {items.length} articles total, {availableItems.length} disponibles
+            </Text>
+            {items.length > 0 && (
+              <>
+                <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
+                  • Vendus: {items.filter(i => i.isSold).length}
+                </Text>
+                <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
+                  • Supprimés: {items.filter(i => i.isDeleted).length}
+                </Text>
+              </>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderFooter = () => {
+    if (loading && availableItems.length > 0) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={[styles.loadingMoreText, { color: colors.backgroundTextSoft }]}>
+            Chargement...
+          </Text>
+        </View>
+      );
+    }
+    return null;
   };
 
   return (
     <FlatList
-      data={items}
-      renderItem={({ item }) => (
-        <MarketplaceItemCard
-          item={item}
-          currentUser={currentUser}
-          onDeleteItem={onDeleteItem}
-        />
-      )}
-      keyExtractor={item => item.id}
+      data={availableItems} // Utiliser les articles filtrés
+      renderItem={renderItem}
+      keyExtractor={(item) => item.id || Math.random().toString()}
       contentContainerStyle={[
         styles.gridContainer,
-        items.length === 0 && { flex: 1 } // Prend toute la hauteur si vide
+        availableItems.length === 0 && { flex: 1 }
       ]}
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
       numColumns={2}
-      columnWrapperStyle={styles.columnWrapper}
-      ListEmptyComponent={
-        loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cart-outline" size={64} color={colors.backgroundTextSoft} />
-            <Text style={[styles.emptyText, { color: colors.backgroundTextSoft }]}>
-              Aucun article trouvé
-            </Text>
-          </View>
-        )
-      }
-      ListFooterComponent={
-        items.length > 0 && loading ? (
-          <View style={styles.loadingMoreContainer}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
-        ) : null
-      }
+      columnWrapperStyle={availableItems.length > 0 ? styles.columnWrapper : undefined}
+      ListEmptyComponent={renderEmptyComponent}
+      ListFooterComponent={renderFooter}
+      showsVerticalScrollIndicator={false}
+      // Amélioration des performances
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={100}
+      windowSize={10}
+      // Gestion des erreurs
+      onContentSizeChange={(width, height) => {
+        console.log('📏 Liste content size:', { width, height, itemsCount: availableItems.length });
+      }}
     />
   );
 };
 
 const styles = StyleSheet.create({
   gridContainer: {
-    padding: 8,
-    minHeight: '100%' // Garantit que le contenu prend toute la hauteur
+    padding: 12,
+    paddingBottom: 20,
   },
   columnWrapper: {
     justifyContent: 'space-between',
-    gap: 12 // Espacement entre les colonnes
+    paddingHorizontal: 4,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   emptyText: {
-    marginTop: 16,
     fontSize: 16,
-    textAlign: 'center'
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
   },
   loadingMoreContainer: {
-    paddingVertical: 16,
-    alignItems: 'center'
-  }
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    marginTop: 8,
+    fontSize: 14,
+  },
+  debugInfo: {
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    minWidth: 280,
+  },
+  debugText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    marginBottom: 4,
+  },
 });
 
 export default MarketplaceList;

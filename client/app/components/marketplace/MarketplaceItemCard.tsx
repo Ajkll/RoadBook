@@ -3,42 +3,112 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../constants/theme';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MarketplaceItemCardProps {
   item: MarketplaceItem;
   currentUser: any;
   onDeleteItem: (itemId: string) => void;
+  onBuyItem: (itemId: string) => void; // Fonction de navigation vers le paiement
 }
 
 const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
   item,
   currentUser,
-  onDeleteItem
+  onDeleteItem,
+  onBuyItem
 }) => {
-  const { colors, borderRadius } = useTheme();
+  const { colors, borderRadius, spacing } = useTheme();
+
+  // Calculer le temps depuis la publication
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) {
+      return 'À l\'instant';
+    } else if (diffInHours < 24) {
+      return `Il y a ${diffInHours}h`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) {
+        return `Il y a ${diffInDays}j`;
+      } else {
+        return date.toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'short'
+        });
+      }
+    }
+  };
+
+  const handleBuy = () => {
+    if (!item.id) {
+      console.error('❌ Tentative de navigation vers paiement sans ID:', item);
+      return;
+    }
+    console.log('🛒 Navigation vers paiement pour article:', item.id);
+    onBuyItem(item.id);
+  };
+
+  const handleDelete = () => {
+    if (!item.id) {
+      console.error('❌ Tentative de suppression sans ID:', item);
+      return;
+    }
+    onDeleteItem(item.id);
+  };
+
+  const isOwner = currentUser && (item.sellerId === currentUser.id || item.sellerId === currentUser.uid);
+  const canBuy = currentUser && !isOwner && !item.isSold && !item.isDeleted;
 
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        <Image
-          source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
-          style={[styles.image, { borderRadius: borderRadius.small }]}
-          resizeMode="cover"
-        />
+        {/* Image avec placeholder */}
+        <View style={[styles.imageContainer, { borderRadius: borderRadius.small }]}>
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={[styles.image, { borderRadius: borderRadius.small }]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.placeholderImage, {
+              backgroundColor: colors.ui.card.background,
+              borderRadius: borderRadius.small
+            }]}>
+              <Ionicons
+                name="image-outline"
+                size={40}
+                color={colors.backgroundTextSoft}
+              />
+            </View>
+          )}
+
+          {/* Badge de statut si nécessaire */}
+          {item.isSold && (
+            <View style={[styles.statusBadge, { backgroundColor: colors.success }]}>
+              <Text style={styles.statusText}>VENDU</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.details}>
+          {/* Titre */}
           <Text
             style={[styles.title, { color: colors.backgroundText }]}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {item.title}
           </Text>
 
-          <Text style={[styles.price, { color: colors.ui.button.primary }]}>
-            {item.price.toFixed(2)}€
+          {/* Prix */}
+          <Text style={[styles.price, { color: colors.primary }]}>
+            €{item.price.toFixed(2)}
           </Text>
 
+          {/* Informations vendeur */}
           <View style={styles.sellerContainer}>
             {item.sellerAvatar ? (
               <Image
@@ -47,43 +117,74 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
               />
             ) : (
               <View style={[styles.avatar, { backgroundColor: colors.ui.card.background }]}>
-                <Text style={{ color: colors.backgroundText }}>
+                <Text style={[styles.avatarText, { color: colors.backgroundText }]}>
                   {item.sellerName?.charAt(0)?.toUpperCase() || '?'}
                 </Text>
               </View>
             )}
-            <Text
-              style={[styles.sellerName, { color: colors.backgroundTextSoft }]}
-              numberOfLines={1}
-            >
-              {item.sellerName}
-            </Text>
+            <View style={styles.sellerInfo}>
+              <Text
+                style={[styles.sellerName, { color: colors.backgroundTextSoft }]}
+                numberOfLines={1}
+              >
+                {item.sellerName}
+              </Text>
+              <Text style={[styles.timeAgo, { color: colors.backgroundTextSoft }]}>
+                {getTimeAgo(item.createdAt)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Boutons d'action */}
+          <View style={styles.actionsContainer}>
+            {canBuy && (
+              <Button
+                label="Acheter"
+                onPress={handleBuy}
+                type="primary"
+                small
+                style={[styles.button, { flex: 1 }]}
+                icon="card-outline"
+              />
+            )}
+
+            {isOwner && (
+              <Button
+                label="Supprimer"
+                onPress={handleDelete}
+                type="danger"
+                small
+                style={[styles.button, canBuy && { marginLeft: spacing.xs }]}
+                icon="trash-outline"
+              />
+            )}
+
+            {!currentUser && (
+              <View style={[styles.loginPrompt, { backgroundColor: colors.ui.card.background }]}>
+                <Text style={[styles.loginText, { color: colors.backgroundTextSoft }]}>
+                  Connectez-vous pour acheter
+                </Text>
+              </View>
+            )}
+
+            {currentUser && !canBuy && !isOwner && (
+              <View style={[styles.unavailableContainer, { backgroundColor: colors.ui.card.background }]}>
+                <Text style={[styles.unavailableText, { color: colors.backgroundTextSoft }]}>
+                  {item.isSold ? 'Article vendu' : 'Non disponible'}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {currentUser && item.sellerId !== currentUser.id && !item.isSold && (
-          <Button
-            label="Acheter"
-            onPress={() => router.push({
-              pathname: '/PaymentScreen',
-              params: {
-                product: JSON.stringify(item),
-                sellerId: item.sellerId
-              }
-            })}
-            small
-            style={styles.button}
-          />
-        )}
-
-        {currentUser && item.sellerId === currentUser.id && (
-          <Button
-            label="Supprimer"
-            onPress={() => onDeleteItem(item.id)}
-            type="danger"
-            small
-            style={styles.button}
-          />
+        {/* Debug info en mode développement */}
+        {__DEV__ && (
+          <View style={[styles.debugContainer, { backgroundColor: colors.ui.card.background }]}>
+            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
+              ID: {item.id || 'MANQUANT'} | Sold: {item.isSold ? 'Oui' : 'Non'} |
+              Deleted: {item.isDeleted ? 'Oui' : 'Non'}
+            </Text>
+          </View>
         )}
       </Card>
     </View>
@@ -96,46 +197,121 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   card: {
-    flex: 1
+    flex: 1,
+    overflow: 'hidden'
+  },
+  imageContainer: {
+    position: 'relative',
   },
   image: {
     width: '100%',
     aspectRatio: 1,
-    marginBottom: 8
+  },
+  placeholderImage: {
+    width: '100%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   details: {
-    padding: 8
+    padding: 12,
+    flex: 1,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4
+    marginBottom: 6,
+    lineHeight: 20,
   },
   price: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8
+    marginBottom: 12,
   },
   sellerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 12,
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     marginRight: 8,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  sellerInfo: {
+    flex: 1,
   },
   sellerName: {
-    fontSize: 12,
-    flex: 1
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  timeAgo: {
+    fontSize: 11,
+  },
+  actionsContainer: {
+    marginTop: 8,
   },
   button: {
-    marginTop: 8
-  }
+    marginBottom: 4,
+  },
+  loginPrompt: {
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  loginText: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  unavailableContainer: {
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  unavailableText: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  debugContainer: {
+    padding: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  debugText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+  },
 });
 
 export default MarketplaceItemCard;

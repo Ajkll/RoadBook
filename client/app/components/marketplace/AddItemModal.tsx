@@ -10,15 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Alert
+  Alert,
+  Linking
 } from 'react-native';
 import { useTheme } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Input from "../common/Input";
 import Button from '../common/Button';
 import Toast from 'react-native-toast-message';
-// Ajoutez cette importation
-import * as ImagePicker from 'expo-image-picker';
+// Image picker temporairement en commentaire
+// import * as ImagePicker from 'expo-image-picker';
 
 interface AddItemModalProps {
   visible: boolean;
@@ -78,7 +79,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   }, [visible, fadeAnim, slideAnim]);
 
-  // Fonction pour demander les permissions
+  /* Image picker functions - Temporairement en commentaire
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -90,7 +91,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
           {
             text: 'Paramètres',
             onPress: () => {
-              // Ouvrir les paramètres de l'app si possible
               if (Platform.OS === 'ios') {
                 Linking.openURL('app-settings:');
               } else {
@@ -105,109 +105,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     return true;
   };
 
-  const validateForm = useCallback(() => {
-    const errors: Record<string, string> = {};
-
-    // Validation temporaire sans image requise
-    if (!newItem.title.trim()) {
-      errors.title = 'Le titre est requis';
-    } else if (newItem.title.length < 3) {
-      errors.title = 'Le titre doit contenir au moins 3 caractères';
-    } else if (newItem.title.length > 50) {
-      errors.title = 'Le titre ne peut pas dépasser 50 caractères';
-    }
-
-    if (!newItem.description.trim()) {
-      errors.description = 'La description est requise';
-    } else if (newItem.description.length < 10) {
-      errors.description = 'La description doit contenir au moins 10 caractères';
-    } else if (newItem.description.length > 500) {
-      errors.description = 'La description ne peut pas dépasser 500 caractères';
-    }
-
-    if (newItem.price <= 0) {
-      errors.price = 'Le prix doit être supérieur à 0';
-    } else if (newItem.price > 10000) {
-      errors.price = 'Le prix ne peut pas dépasser 10 000€';
-    }
-
-    // Image validation temporairement désactivée
-    // if (!selectedImage) {
-    //   errors.image = 'Une image est requise';
-    // }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [newItem, selectedImage]);
-
-  const handleSubmit = useCallback(async () => {
-    if (!validateForm()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Formulaire incomplet',
-        text2: 'Veuillez corriger les erreurs et réessayer',
-        position: 'bottom'
-      });
-      return;
-    }
-
-    try {
-      const success = await onSubmit({
-        ...newItem,
-        sellerName: currentUser?.displayName || currentUser?.name || 'Anonyme',
-        sellerId: currentUser?.id || currentUser?.uid
-      }, selectedImage!);
-
-      if (success) {
-        resetForm();
-        Toast.show({
-          type: 'success',
-          text1: 'Article publié',
-          text2: 'Votre article a été publié avec succès',
-          position: 'bottom'
-        });
-        onClose();
-      }
-    } catch (error) {
-      console.error('Error submitting item:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Une erreur est survenue lors de la publication',
-        position: 'bottom'
-      });
-    }
-  }, [newItem, selectedImage, currentUser, onSubmit, onClose, validateForm]);
-
-  const resetForm = useCallback(() => {
-    setNewItem(INITIAL_ITEM_STATE);
-    setSelectedImage(null);
-    setValidationErrors({});
-  }, []);
-
-  const handleClose = useCallback(() => {
-    if (newItem.title || newItem.description || newItem.price > 0 || selectedImage) {
-      Alert.alert(
-        'Abandonner les modifications',
-        'Êtes-vous sûr de vouloir fermer ? Vos modifications seront perdues.',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          {
-            text: 'Fermer',
-            style: 'destructive',
-            onPress: () => {
-              resetForm();
-              onClose();
-            }
-          }
-        ]
-      );
-    } else {
-      onClose();
-    }
-  }, [newItem, selectedImage, resetForm, onClose]);
-
-  // Fonction pour sélectionner une image depuis la galerie
   const selectImageFromGallery = async () => {
     try {
       const hasPermission = await requestPermissions();
@@ -242,7 +139,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
-  // Fonction pour prendre une photo avec la caméra
   const takePhotoWithCamera = async () => {
     try {
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -282,7 +178,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
-  // Fonction principale pour gérer la sélection d'image
   const handleImageSelection = useCallback(async () => {
     Alert.alert(
       'Sélectionner une image',
@@ -302,14 +197,202 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
       ]
     );
   }, []);
+  */
+
+  const validateForm = useCallback(() => {
+    console.log('🔍 Début de la validation du formulaire...');
+
+    const errors: Record<string, string> = {};
+
+    // Validation du titre
+    console.log('📝 Validation du titre:', newItem.title);
+    if (!newItem.title.trim()) {
+      errors.title = 'Le titre est requis';
+      console.log('❌ Titre vide');
+    } else if (newItem.title.length < 3) {
+      errors.title = 'Le titre doit contenir au moins 3 caractères';
+      console.log('❌ Titre trop court:', newItem.title.length);
+    } else if (newItem.title.length > 50) {
+      errors.title = 'Le titre ne peut pas dépasser 50 caractères';
+      console.log('❌ Titre trop long:', newItem.title.length);
+    } else {
+      console.log('✅ Titre valide');
+    }
+
+    // Validation de la description
+    console.log('📝 Validation de la description:', newItem.description);
+    if (!newItem.description.trim()) {
+      errors.description = 'La description est requise';
+      console.log('❌ Description vide');
+    } else if (newItem.description.length < 10) {
+      errors.description = 'La description doit contenir au moins 10 caractères';
+      console.log('❌ Description trop courte:', newItem.description.length);
+    } else if (newItem.description.length > 500) {
+      errors.description = 'La description ne peut pas dépasser 500 caractères';
+      console.log('❌ Description trop longue:', newItem.description.length);
+    } else {
+      console.log('✅ Description valide');
+    }
+
+    // Validation du prix
+    console.log('💰 Validation du prix:', newItem.price);
+    if (newItem.price <= 0) {
+      errors.price = 'Le prix doit être supérieur à 0';
+      console.log('❌ Prix invalide:', newItem.price);
+    } else if (newItem.price > 10000) {
+      errors.price = 'Le prix ne peut pas dépasser 10 000€';
+      console.log('❌ Prix trop élevé:', newItem.price);
+    } else {
+      console.log('✅ Prix valide');
+    }
+
+    // Image validation temporairement désactivée
+    // if (!selectedImage) {
+    //   errors.image = 'Une image est requise';
+    // }
+
+    console.log('🔍 Erreurs trouvées:', errors);
+    console.log('📊 Nombre d\'erreurs:', Object.keys(errors).length);
+
+    setValidationErrors(errors);
+    const isValid = Object.keys(errors).length === 0;
+    console.log('✅ Formulaire valide:', isValid);
+
+    return isValid;
+  }, [newItem, selectedImage]);
+
+  const handleSubmit = useCallback(async () => {
+    console.log('📝 Tentative de soumission du formulaire...');
+
+    // Debug des données avant validation
+    console.log('📋 Données du formulaire:', {
+      title: newItem.title,
+      titleLength: newItem.title.length,
+      description: newItem.description,
+      descriptionLength: newItem.description.length,
+      price: newItem.price,
+      selectedImage: selectedImage ? 'Oui' : 'Non',
+      currentUser: currentUser ? 'Connecté' : 'Non connecté'
+    });
+
+    if (!validateForm()) {
+      console.log('❌ Validation échouée');
+      console.log('🔍 Erreurs de validation:', validationErrors);
+      Toast.show({
+        type: 'error',
+        text1: 'Formulaire incomplet',
+        text2: 'Veuillez corriger les erreurs et réessayer',
+        position: 'bottom'
+      });
+      return;
+    }
+
+    console.log('✅ Validation réussie');
+
+    if (!currentUser?.id && !currentUser?.uid) {
+      console.log('❌ Utilisateur non connecté');
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Utilisateur non connecté',
+        position: 'bottom'
+      });
+      return;
+    }
+
+    console.log('👤 Utilisateur connecté:', {
+      id: currentUser.id || currentUser.uid,
+      name: currentUser.displayName || currentUser.name || currentUser.email
+    });
+
+    try {
+      console.log('✅ Validation réussie, envoi des données...');
+
+      const itemData = {
+        ...newItem,
+        sellerName: currentUser?.displayName || currentUser?.name || currentUser?.email || 'Anonyme',
+        sellerId: currentUser?.id || currentUser?.uid,
+        sellerAvatar: currentUser?.photoURL || currentUser?.avatar || '',
+        imageUrl: '', // Pas d'image pour le moment
+      };
+
+      console.log('📦 Données à soumettre:', itemData);
+
+      const success = await onSubmit(itemData, selectedImage || '');
+
+      console.log('📤 Résultat de la soumission:', success);
+
+      if (success) {
+        console.log('✅ Article ajouté avec succès');
+        resetForm();
+        Toast.show({
+          type: 'success',
+          text1: 'Article publié',
+          text2: 'Votre article a été publié avec succès',
+          position: 'bottom'
+        });
+        onClose();
+      } else {
+        console.log('❌ Échec de la publication');
+        Toast.show({
+          type: 'error',
+          text1: 'Erreur',
+          text2: 'Échec de la publication de l\'article',
+          position: 'bottom'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error submitting item:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Une erreur est survenue lors de la publication: ' + (error.message || 'Erreur inconnue'),
+        position: 'bottom'
+      });
+    }
+  }, [newItem, selectedImage, currentUser, onSubmit, onClose, validateForm, validationErrors, resetForm]);
+
+  const resetForm = useCallback(() => {
+    console.log('🔄 Réinitialisation du formulaire');
+    setNewItem(INITIAL_ITEM_STATE);
+    setSelectedImage(null);
+    setValidationErrors({});
+  }, []);
+
+  const handleClose = useCallback(() => {
+    if (newItem.title || newItem.description || newItem.price > 0 || selectedImage) {
+      Alert.alert(
+        'Abandonner les modifications',
+        'Êtes-vous sûr de vouloir fermer ? Vos modifications seront perdues.',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Fermer',
+            style: 'destructive',
+            onPress: () => {
+              resetForm();
+              onClose();
+            }
+          }
+        ]
+      );
+    } else {
+      onClose();
+    }
+  }, [newItem, selectedImage, resetForm, onClose]);
 
   const handlePriceChange = useCallback((text: string) => {
-    // Allow only numbers and decimal point
+    // Permettre seulement les chiffres et le point décimal
     const cleanText = text.replace(/[^0-9.]/g, '');
     const num = parseFloat(cleanText);
     setNewItem(prev => ({
       ...prev,
-      price: isNaN(num) ? 0 : Math.round(num * 100) / 100 // Round to 2 decimal places
+      price: isNaN(num) ? 0 : Math.round(num * 100) / 100 // Arrondir à 2 décimales
     }));
 
     if (validationErrors.price) {
@@ -374,6 +457,12 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             style={{ marginBottom: spacing.sm }}
           />
 
+          <View style={styles.characterCount}>
+            <Text style={[styles.characterCountText, { color: colors.backgroundTextSoft }]}>
+              {newItem.title.length}/50 caractères
+            </Text>
+          </View>
+
           <Input
             placeholder="Description détaillée"
             multiline
@@ -390,6 +479,12 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             style={{ height: 100, marginBottom: spacing.sm }}
           />
 
+          <View style={styles.characterCount}>
+            <Text style={[styles.characterCountText, { color: colors.backgroundTextSoft }]}>
+              {newItem.description.length}/500 caractères
+            </Text>
+          </View>
+
           <Input
             placeholder="Prix en euros"
             keyboardType="decimal-pad"
@@ -404,29 +499,29 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             }
           />
 
-          {/* Bouton de sélection d'image temporairement désactivé */}
-          {/* <Button
+          {/* Message informatif pour les images */}
+          <View style={[styles.infoContainer, { backgroundColor: colors.ui.card.background, marginBottom: spacing.sm }]}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.backgroundTextSoft} />
+            <Text style={[styles.infoText, { color: colors.backgroundTextSoft }]}>
+              La fonctionnalité d'ajout d'images est temporairement désactivée. Vous pouvez publier votre article sans image.
+            </Text>
+          </View>
+
+          {/* Bouton de sélection d'image temporairement en commentaire */}
+          {/*
+          <Button
             label={selectedImage ? "Changer l'image" : "Sélectionner une image"}
             icon={selectedImage ? "camera" : "image-outline"}
             onPress={handleImageSelection}
             type="secondary"
             style={{ marginBottom: spacing.sm }}
-          /> */}
+          />
 
-          {/* Message informatif à la place */}
-          <View style={[styles.infoContainer, { backgroundColor: colors.ui.card.background, marginBottom: spacing.sm }]}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.backgroundTextSoft} />
-            <Text style={[styles.infoText, { color: colors.backgroundTextSoft }]}>
-              La fonctionnalité d'ajout d'images est temporairement désactivée
-            </Text>
-          </View>
-
-          {/* Validation d'image temporairement désactivée */}
-          {/* {validationErrors.image && (
+          {validationErrors.image && (
             <Text style={[styles.errorText, { color: colors.error, marginBottom: spacing.sm }]}>
               {validationErrors.image}
             </Text>
-          )} */}
+          )}
 
           {selectedImage && (
             <View style={[styles.imageContainer, { marginBottom: spacing.md }]}>
@@ -449,6 +544,30 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
               </TouchableOpacity>
             </View>
           )}
+          */}
+
+          {/* Aperçu des informations */}
+          <View style={[styles.previewContainer, { backgroundColor: colors.ui.card.background, marginBottom: spacing.md }]}>
+            <Text style={[styles.previewTitle, { color: colors.backgroundText }]}>
+              Aperçu de votre article
+            </Text>
+            <View style={styles.previewContent}>
+              <Text style={[styles.previewItemTitle, { color: colors.backgroundText }]}>
+                {newItem.title || 'Titre de l\'article'}
+              </Text>
+              <Text style={[styles.previewPrice, { color: colors.primary }]}>
+                {newItem.price > 0 ? `${newItem.price.toFixed(2)}€` : '0.00€'}
+              </Text>
+              <Text style={[styles.previewSeller, { color: colors.backgroundTextSoft }]}>
+                Vendeur: {currentUser?.displayName || currentUser?.name || currentUser?.email || 'Vous'}
+              </Text>
+              {newItem.description && (
+                <Text style={[styles.previewDescription, { color: colors.backgroundTextSoft }]} numberOfLines={3}>
+                  {newItem.description}
+                </Text>
+              )}
+            </View>
+          </View>
 
           <View style={[styles.modalButtons, { marginTop: spacing.md }]}>
             <Button
@@ -460,7 +579,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             />
 
             <Button
-              label={isUploading ? 'Publication...' : 'Publier'}
+              label={isUploading ? 'Publication...' : 'Publier l\'article'}
               onPress={handleSubmit}
               disabled={isUploading}
               type="primary"
@@ -477,7 +596,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
                 style={{ marginVertical: spacing.md }}
               />
               <Text style={[styles.uploadingText, { color: colors.backgroundTextSoft }]}>
-                Publication en cours...
+                Publication en cours... Veuillez patienter.
               </Text>
             </View>
           )}
@@ -536,10 +655,59 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  characterCount: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
+  },
+  characterCountText: {
+    fontSize: 12,
+  },
   currencySymbol: {
     fontSize: 16,
     fontWeight: 'bold',
     marginRight: 8,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  infoText: {
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  previewContainer: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  previewContent: {
+    gap: 8,
+  },
+  previewItemTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  previewPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  previewSeller: {
+    fontSize: 14,
+  },
+  previewDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   imageContainer: {
     position: 'relative',
@@ -570,23 +738,11 @@ const styles = StyleSheet.create({
   uploadingText: {
     fontSize: 14,
     marginTop: 8,
+    textAlign: 'center',
   },
   errorText: {
     fontSize: 12,
     marginTop: -8,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  infoText: {
-    fontSize: 14,
-    marginLeft: 8,
-    flex: 1,
   },
 });
 

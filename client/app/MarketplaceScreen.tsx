@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl, Alert, Text } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Text } from 'react-native';
 import { useTheme } from './constants/theme';
 import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
@@ -11,6 +11,7 @@ import MarketplaceHeader from './components/marketplace/MarketplaceHeader';
 import MarketplaceList from './components/marketplace/MarketplaceList';
 import AddItemModal from './components/marketplace/AddItemModal';
 import HistoryModal from './components/marketplace/HistoryModal';
+import Toast from 'react-native-toast-message';
 
 // Import du diagnostic
 import { diagnoseMarketplaceData } from './services/firebase/marketplace';
@@ -34,8 +35,11 @@ const MarketplaceScreen = () => {
     loadItems,
     addItem,
     deleteItem,
+    navigateToPayment, // Fonction de navigation vers le paiement
     userTransactions,
-    loadUserTransactions
+    userBalance,
+    loadUserTransactions,
+    stats
   } = useMarketplace();
 
   // === DIAGNOSTIC AU CHARGEMENT ===
@@ -43,18 +47,16 @@ const MarketplaceScreen = () => {
     if (__DEV__) {
       console.log('🩺 Lancement du diagnostic marketplace...');
 
-      // Diagnostic automatique
       const runDiagnostic = async () => {
         try {
-          const stats = await diagnoseMarketplaceData();
-          if (stats) {
-            console.log('📊 Résultats du diagnostic:', stats);
+          const diagnosticStats = await diagnoseMarketplaceData();
+          if (diagnosticStats) {
+            console.log('📊 Résultats du diagnostic:', diagnosticStats);
 
-            // Alerte si des problèmes sont détectés
-            if (stats.emptyId > 0 || stats.withoutId > 0) {
+            if (diagnosticStats.withoutId > 0 || diagnosticStats.emptyId > 0) {
               Alert.alert(
                 '⚠️ Problème détecté',
-                `${stats.emptyId + stats.withoutId} articles ont des IDs manquants. Cela peut causer des problèmes lors des achats.`,
+                `${diagnosticStats.withoutId + diagnosticStats.emptyId} articles ont des IDs manquants.`,
                 [
                   { text: 'Ignorer', style: 'cancel' },
                   {
@@ -70,7 +72,6 @@ const MarketplaceScreen = () => {
         }
       };
 
-      // Lancer le diagnostic après un délai pour laisser le temps aux données de se charger
       setTimeout(runDiagnostic, 2000);
     }
   }, []);
@@ -79,187 +80,133 @@ const MarketplaceScreen = () => {
   useEffect(() => {
     if (__DEV__ && items.length > 0) {
       console.log('🔍 Debug des articles chargés dans MarketplaceScreen:');
-      items.slice(0, 3).forEach((item, index) => {
-        console.log(`Article ${index + 1}:`, {
-          id: item.id,
-          title: item.title,
-          hasId: !!item.id,
-          idType: typeof item.id,
-          sellerId: item.sellerId,
-          price: item.price
-        });
-      });
+      console.log(`📦 Total: ${items.length} articles`);
+      console.log(`✅ Disponibles: ${stats.availableItems} articles`);
+      console.log(`👤 Mes articles: ${stats.userItems} articles`);
 
       const itemsWithoutId = items.filter(item => !item.id || item.id === '');
       if (itemsWithoutId.length > 0) {
-        console.warn('⚠️ Articles sans ID dans MarketplaceScreen:', itemsWithoutId);
+        console.warn('⚠️ Articles sans ID:', itemsWithoutId);
       }
     }
-  }, [items]);
+  }, [items, stats]);
 
-  // === FONCTION DE NAVIGATION VERS LE PAIEMENT AVEC VALIDATION ===
-  const navigateToPayment = useCallback((item) => {
-    console.log('🛒 Tentative de navigation vers le paiement:', item);
+  // === FONCTION DE NAVIGATION VERS LE PAIEMENT ===
+  const handleBuyItem = useCallback((itemId: string) => {
+    console.log('🛒 Tentative de navigation vers le paiement:', itemId);
 
-    // Validation complète avant navigation
-    if (!item.id || item.id === '') {
-      console.error('❌ Article sans ID:', item);
+    if (!itemId || itemId === '') {
+      console.error('❌ Article sans ID:', itemId);
       Alert.alert(
         'Erreur',
-        'Cet article n\'a pas d\'identifiant valide. Impossible de procéder à l\'achat.',
+        'Cet article n\'a pas d\'identifiant valide.',
         [{ text: 'OK' }]
       );
-      return false;
+      return;
     }
 
-    if (!item.sellerId || item.sellerId === '') {
-      console.error('❌ Vendeur sans ID:', item);
+    // Trouver l'article dans la liste
+    const item = items.find(i => i.id === itemId);
+    if (!item) {
       Alert.alert(
-        'Erreur',
-        'Informations du vendeur manquantes.',
+        'Article introuvable',
+        'Cet article n\'existe plus.',
         [{ text: 'OK' }]
       );
-      return false;
+      return;
     }
 
+    // Utiliser la fonction de navigation du hook
+    const success = navigateToPayment(item);
+    if (success) {
+      console.log('✅ Navigation vers le paiement réussie');
+    } else {
+      console.log('❌ Échec de la navigation vers le paiement');
+    }
+  }, [items, navigateToPayment]);
+
+  // Handlers pour les modals
+  const handleAddModalOpen = useCallback(() => {
     if (!currentUser) {
       Alert.alert(
         'Connexion requise',
-        'Vous devez être connecté pour acheter un article.',
+        'Vous devez être connecté pour ajouter un article.',
         [{ text: 'OK' }]
       );
-      return false;
+      return;
     }
-
-    const userId = currentUser.id || currentUser.uid;
-    if (item.sellerId === userId) {
-      Alert.alert(
-        'Achat impossible',
-        'Vous ne pouvez pas acheter votre propre article.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-
-    if (item.isSold) {
-      Alert.alert(
-        'Article indisponible',
-        'Cet article a déjà été vendu.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-
-    // Validation des données essentielles
-    if (!item.title || !item.price || item.price <= 0) {
-      console.error('❌ Données article incomplètes:', item);
-      Alert.alert(
-        'Erreur',
-        'Les informations de l\'article sont incomplètes.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-
-    try {
-      // Préparer les données avec validation
-      const productData = {
-        id: item.id,
-        title: item.title,
-        description: item.description || '',
-        price: item.price,
-        sellerName: item.sellerName,
-        sellerId: item.sellerId,
-        imageUrl: item.imageUrl || ''
-      };
-
-      console.log('✅ Navigation vers le paiement avec données validées:', {
-        productId: productData.id,
-        sellerId: productData.sellerId,
-        title: productData.title,
-        price: productData.price
-      });
-
-      router.push({
-        pathname: '/payment',
-        params: {
-          product: JSON.stringify(productData),
-          sellerId: item.sellerId,
-          itemId: item.id,
-          // Paramètres de backup au cas où
-          backupItemId: item.id,
-          sellerName: item.sellerName,
-          itemTitle: item.title,
-          itemPrice: item.price.toString()
-        }
-      });
-
-      return true;
-
-    } catch (error) {
-      console.error('❌ Erreur lors de la navigation:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de naviguer vers le paiement. Veuillez réessayer.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-  }, [currentUser, router]);
-
-  // Memoized handlers to prevent unnecessary re-renders
-  const handleAddModalOpen = useCallback(() => {
     setShowAddModal(true);
-  }, []);
+  }, [currentUser]);
 
   const handleAddModalClose = useCallback(() => {
     setShowAddModal(false);
   }, []);
 
   const handleHistoryModalOpen = useCallback(async () => {
+    if (!currentUser) {
+      Alert.alert(
+        'Connexion requise',
+        'Vous devez être connecté pour voir votre historique.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
+      console.log('📊 Ouverture historique...');
       await loadUserTransactions();
       setShowHistoryModal(true);
     } catch (error) {
-      console.error('Error loading user transactions:', error);
+      console.error('❌ Error loading user transactions:', error);
       Alert.alert(
         'Erreur',
         'Impossible de charger l\'historique des transactions.',
         [{ text: 'OK' }]
       );
     }
-  }, [loadUserTransactions]);
+  }, [currentUser, loadUserTransactions]);
 
   const handleHistoryModalClose = useCallback(() => {
     setShowHistoryModal(false);
   }, []);
 
   const handleRefresh = useCallback(async () => {
+    console.log('🔄 Rafraîchissement des données...');
     setIsRefreshing(true);
     try {
       await loadItems();
+      if (currentUser) {
+        await loadUserTransactions();
+      }
     } catch (error) {
-      console.error('Error refreshing items:', error);
+      console.error('❌ Error refreshing items:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de rafraîchir les données',
+        position: 'bottom'
+      });
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadItems]);
+  }, [loadItems, loadUserTransactions, currentUser]);
 
   const handleAddItem = useCallback(async (item, imageUri) => {
     try {
+      console.log('➕ Ajout nouvel article...');
       const success = await addItem(item, imageUri);
       if (success) {
-        // Refresh the list after adding an item
-        await loadItems();
+        console.log('✅ Article ajouté avec succès');
+        // La liste sera automatiquement rechargée par le hook
       }
       return success;
     } catch (error) {
-      console.error('Error adding item:', error);
+      console.error('❌ Error adding item:', error);
       return false;
     }
-  }, [addItem, loadItems]);
+  }, [addItem]);
 
-  const handleDeleteItem = useCallback(async (itemId) => {
+  const handleDeleteItem = useCallback(async (itemId: string) => {
     try {
       if (!itemId || itemId === '') {
         console.error('❌ Tentative de suppression avec ID manquant');
@@ -271,9 +218,13 @@ const MarketplaceScreen = () => {
         return;
       }
 
+      // Trouver l'article pour afficher son nom
+      const item = items.find(i => i.id === itemId);
+      const itemName = item ? item.title : 'cet article';
+
       Alert.alert(
         'Confirmer la suppression',
-        'Êtes-vous sûr de vouloir supprimer cet article ?',
+        `Êtes-vous sûr de vouloir retirer "${itemName}" de la vente ? L'article restera dans votre historique.`,
         [
           { text: 'Annuler', style: 'cancel' },
           {
@@ -281,11 +232,18 @@ const MarketplaceScreen = () => {
             style: 'destructive',
             onPress: async () => {
               try {
-                await deleteItem(itemId);
-                // Refresh the list after deleting an item
-                await loadItems();
+                console.log('🗑️ Suppression article:', itemId);
+                const success = await deleteItem(itemId);
+                if (success) {
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Article supprimé',
+                    text2: 'L\'article a été retiré de la vente',
+                    position: 'bottom'
+                  });
+                }
               } catch (error) {
-                console.error('Error deleting item:', error);
+                console.error('❌ Error deleting item:', error);
                 Alert.alert(
                   'Erreur',
                   'Impossible de supprimer l\'article.',
@@ -297,33 +255,29 @@ const MarketplaceScreen = () => {
         ]
       );
     } catch (error) {
-      console.error('Error in handleDeleteItem:', error);
+      console.error('❌ Error in handleDeleteItem:', error);
     }
-  }, [deleteItem, loadItems]);
-
-  // Memoized computed values
-  const itemsCount = useMemo(() => filteredItems.length, [filteredItems]);
-  const userItemsCount = useMemo(() =>
-    items.filter(item => item.sellerId === (currentUser?.id || currentUser?.uid)).length,
-    [items, currentUser]
-  );
+  }, [items, deleteItem]);
 
   // === FONCTION DE TEST MANUEL ===
   const runManualDiagnostic = useCallback(async () => {
     try {
       console.log('🔧 Diagnostic manuel lancé...');
-      const stats = await diagnoseMarketplaceData();
+      const diagnosticStats = await diagnoseMarketplaceData();
 
-      if (stats) {
+      if (diagnosticStats) {
         const message = `
-📊 Résultats du diagnostic:
-• Articles avec ID: ${stats.withId}
-• Articles sans ID: ${stats.withoutId}
-• ID vides: ${stats.emptyId}
-• ID null: ${stats.nullId}
-• ID undefined: ${stats.undefinedId}
+📊 Diagnostic Marketplace:
+• Articles actifs: ${diagnosticStats.active}
+• Articles vendus: ${diagnosticStats.sold}
+• Articles supprimés: ${diagnosticStats.deleted}
 
-Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.undefinedId} articles
+🔍 Analyse des IDs:
+• Avec ID valide: ${diagnosticStats.withId}
+• Sans ID: ${diagnosticStats.withoutId}
+• ID vides: ${diagnosticStats.emptyId}
+
+Total: ${diagnosticStats.withId + diagnosticStats.withoutId + diagnosticStats.emptyId} articles
         `;
 
         Alert.alert('Diagnostic Marketplace', message, [{ text: 'OK' }]);
@@ -353,9 +307,14 @@ Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.u
           onShowAddModal={handleAddModalOpen}
           onShowHistoryModal={handleHistoryModalOpen}
           currentUser={currentUser}
-          itemsCount={itemsCount}
-          userItemsCount={userItemsCount}
-          // Ajout du diagnostic manuel en mode dev
+          // Statistiques supplémentaires
+          stats={{
+            totalItems: stats.totalItems,
+            availableItems: stats.availableItems,
+            userItems: stats.userItems,
+            userBalance: userBalance
+          }}
+          // Debug en mode développement
           onDebugDiagnostic={__DEV__ ? runManualDiagnostic : undefined}
         />
 
@@ -365,6 +324,9 @@ Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.u
               size="large"
               color={colors.primary}
             />
+            <Text style={[styles.loadingText, { color: colors.backgroundTextSoft }]}>
+              Chargement des articles...
+            </Text>
           </View>
         ) : (
           <MarketplaceList
@@ -374,7 +336,7 @@ Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.u
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
             onDeleteItem={handleDeleteItem}
-            onBuyItem={navigateToPayment} // Fonction de navigation personnalisée
+            onBuyItem={handleBuyItem} // Fonction d'achat
           />
         )}
 
@@ -391,6 +353,7 @@ Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.u
           onClose={handleHistoryModalClose}
           currentUser={currentUser}
           transactions={userTransactions || []}
+          userBalance={userBalance} // Passer les données de balance
         />
 
         <GoBackHomeButton
@@ -401,7 +364,7 @@ Total: ${stats.withId + stats.withoutId + stats.emptyId + stats.nullId + stats.u
         {__DEV__ && (
           <View style={styles.debugContainer}>
             <Text style={styles.debugText}>
-              Debug: {items.length} articles | {items.filter(i => !i.id || i.id === '').length} sans ID
+              Debug: {stats.totalItems} total | {stats.availableItems} dispo | Balance: €{userBalance.balance.toFixed(2)}
             </Text>
           </View>
         )}
@@ -422,6 +385,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 50,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
   },
   backButton: {
     marginVertical: 20,
