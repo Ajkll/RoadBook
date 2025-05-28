@@ -39,44 +39,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  // Debug des transactions reçues
-  useEffect(() => {
-    if (visible) {
-      console.log('📊 HistoryModal ouvert avec:');
-      console.log('👤 CurrentUser:', currentUser?.id || currentUser?.uid);
-      console.log('📋 Transactions:', transactions?.length || 0);
-      console.log('💰 Balance:', userBalance);
-
-      if (transactions && transactions.length > 0) {
-        console.log('📈 Types de transactions:');
-        transactions.forEach((item, index) => {
-          const isPurchase = 'buyerId' in item;
-          const isDeleted = !isPurchase && (item as MarketplaceItem).isDeleted;
-          const isSold = !isPurchase && (item as MarketplaceItem).isSold;
-
-          let title = '';
-          let price = 0;
-
-          if (isPurchase) {
-            const purchase = item as Purchase;
-            title = purchase.itemData?.title || 'Article inconnu';
-            price = purchase.price || purchase.itemData?.price || 0;
-          } else {
-            const marketItem = item as MarketplaceItem;
-            title = marketItem.title || 'Article sans titre';
-            price = marketItem.price || 0;
-          }
-
-          console.log(`  ${index + 1}: ${
-            isPurchase ? 'Achat' :
-            isDeleted ? 'Article supprimé' :
-            isSold ? 'Vente réalisée' : 'Article en vente'
-          } - ${title} (€${price})`);
-        });
-      }
-    }
-  }, [visible, currentUser, transactions, userBalance]);
-
   React.useEffect(() => {
     if (visible) {
       Animated.parallel([
@@ -108,7 +70,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
   }, [visible, fadeAnim, slideAnim]);
 
   const handleBackdropPress = useCallback(() => {
-    console.log('❌ Fermeture HistoryModal via backdrop');
     onClose();
   }, [onClose]);
 
@@ -116,7 +77,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
     try {
       const isPurchase = 'buyerId' in item;
 
-      // Gestion sécurisée des dates
       let date: Date;
       if (isPurchase) {
         const purchase = item as Purchase;
@@ -125,7 +85,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
           : new Date(purchase.purchaseDate);
       } else {
         const marketItem = item as MarketplaceItem;
-        // Utiliser la date de vente, suppression, ou création selon le cas
         if (marketItem.purchaseDate) {
           date = marketItem.purchaseDate instanceof Date
             ? marketItem.purchaseDate
@@ -149,7 +108,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
         ? (item as Purchase).price || (item as Purchase).itemData?.price || 0
         : (item as MarketplaceItem).price || 0;
 
-      // Logique améliorée pour déterminer le type et statut
       let otherParty = '';
       let transactionType = '';
       let statusColor = colors.backgroundTextSoft;
@@ -158,24 +116,24 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
       if (isPurchase) {
         transactionType = 'Achat';
         otherParty = (item as Purchase).itemData?.sellerName || 'Vendeur inconnu';
-        statusColor = colors.error; // Rouge pour les achats (sortie d'argent)
+        statusColor = colors.error;
         icon = 'arrow-down-outline';
       } else {
         const marketItem = item as MarketplaceItem;
         if (marketItem.isDeleted) {
           transactionType = 'Supprimé';
           otherParty = 'Article retiré de la vente';
-          statusColor = colors.backgroundTextSoft; // Gris pour les supprimés
+          statusColor = colors.backgroundTextSoft;
           icon = 'trash-outline';
         } else if (marketItem.isSold) {
           transactionType = 'Vendu';
           otherParty = marketItem.buyerName || 'Article vendu';
-          statusColor = colors.success; // Vert pour les ventes (entrée d'argent)
+          statusColor = colors.success;
           icon = 'arrow-up-outline';
         } else {
           transactionType = 'En vente';
           otherParty = 'Article disponible';
-          statusColor = colors.primary; // Bleu pour les articles en vente
+          statusColor = colors.primary;
           icon = 'storefront-outline';
         }
       }
@@ -240,7 +198,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
             })}
           </Text>
 
-          {/* Statut additionnel pour les articles supprimés */}
           {!isPurchase && (item as MarketplaceItem).isDeleted && (
             <View style={[styles.statusBadge, { backgroundColor: colors.backgroundTextSoft }]}>
               <Text style={[styles.statusText, { color: colors.background }]}>
@@ -248,18 +205,9 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               </Text>
             </View>
           )}
-
-          {/* Debug info en mode développement */}
-          {__DEV__ && (
-            <Text style={[styles.debugInfo, { color: colors.backgroundTextSoft }]}>
-              Debug: {isPurchase ? 'Achat' : 'Vente'} | ID: {item.id || 'N/A'} |
-              {!isPurchase && ` Sold: ${(item as MarketplaceItem).isSold} | Deleted: ${(item as MarketplaceItem).isDeleted}`}
-            </Text>
-          )}
         </View>
       );
     } catch (error) {
-      console.error('❌ Erreur rendu transaction:', error, item);
       return (
         <View key={`error-${index}`} style={[styles.errorItem, { backgroundColor: colors.ui.card.background }]}>
           <Text style={[styles.errorText, { color: colors.error }]}>
@@ -272,7 +220,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
 
   if (!visible) return null;
 
-  // Utiliser userBalance si disponible, sinon calculer à partir des transactions
   const balance = userBalance || {
     totalEarned: 0,
     totalSpent: 0,
@@ -283,7 +230,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
     deletedItems: 0
   };
 
-  // Si pas de userBalance, calculer à partir des transactions
   if (!userBalance && transactions) {
     transactions.forEach(item => {
       const isPurchase = 'buyerId' in item;
@@ -349,28 +295,8 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Debug info en mode développement */}
-        {__DEV__ && (
-          <View style={[styles.debugContainer, { backgroundColor: colors.ui.card.background, margin: spacing.md }]}>
-            <Text style={[styles.debugTitle, { color: colors.backgroundText }]}>
-              🔍 Debug Info:
-            </Text>
-            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              User: {currentUser?.id || currentUser?.uid || 'Non connecté'}
-            </Text>
-            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              Total transactions: {totalTransactions}
-            </Text>
-            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              Balance calculée: {balance.balance.toFixed(2)}€
-            </Text>
-          </View>
-        )}
-
-        {/* Résumé financier amélioré */}
         {totalTransactions > 0 && (
           <View style={[styles.summaryContainer, { padding: spacing.md, backgroundColor: colors.ui.card.background }]}>
-            {/* Balance principale */}
             <View style={[styles.mainBalanceContainer, { marginBottom: spacing.md }]}>
               <Text style={[styles.balanceLabel, { color: colors.backgroundTextSoft }]}>
                 Balance totale
@@ -383,7 +309,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               </Text>
             </View>
 
-            {/* Détails financiers */}
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
@@ -403,7 +328,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               </View>
             </View>
 
-            {/* Statistiques d'activité */}
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
@@ -423,7 +347,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               </View>
             </View>
 
-            {/* Statut des annonces */}
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryLabel, { color: colors.backgroundTextSoft }]}>
@@ -462,11 +385,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
               <Text style={[styles.emptyText, { color: colors.backgroundTextSoft }]}>
                 Vos achats et ventes apparaîtront ici
               </Text>
-              {__DEV__ && (
-                <Text style={[styles.debugText, { color: colors.backgroundTextSoft, marginTop: 16 }]}>
-                  Debug: transactions = {transactions ? 'array vide' : 'null/undefined'}
-                </Text>
-              )}
             </View>
           ) : (
             transactions.map(renderTransactionItem)
@@ -525,26 +443,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
-  },
-  debugContainer: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  debugText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-  },
-  debugInfo: {
-    fontSize: 10,
-    fontFamily: 'monospace',
-    marginTop: 4,
   },
   summaryContainer: {
     marginHorizontal: 16,

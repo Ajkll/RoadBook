@@ -19,7 +19,6 @@ import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
 import Toast from 'react-native-toast-message';
 
-// Import des services marketplace CORRIGÉS
 import {
   purchaseItem,
   recordPurchase,
@@ -35,7 +34,6 @@ const PaymentScreen: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // États pour le paiement
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'google' | 'bancontact'>('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -45,98 +43,64 @@ const PaymentScreen: React.FC = () => {
   const [cardNumberError, setCardNumberError] = useState('');
   const [expiryError, setExpiryError] = useState('');
 
-  // États pour les données
   const [parsedProduct, setParsedProduct] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [initializationError, setInitializationError] = useState<string>('');
   const [effectiveItemId, setEffectiveItemId] = useState<string>('');
 
-  // Debug des paramètres reçus
-  useEffect(() => {
-    console.log('🔍 PaymentScreen - Tous les paramètres reçus:');
-    console.log('📦 product:', params.product);
-    console.log('🏪 sellerId:', params.sellerId);
-    console.log('🏷️ itemId:', params.itemId);
-    console.log('🔄 backupItemId:', params.backupItemId);
-    console.log('📋 Tous les params:', JSON.stringify(params, null, 2));
-  }, [params]);
-
-  // Initialisation avec fallbacks multiples pour l'ID
   useEffect(() => {
     const initializeWithFallback = () => {
       try {
-        console.log('🚀 Initialisation avec fallbacks...');
-
-        // === ÉTAPE 1: Récupérer l'itemId avec tous les fallbacks possibles ===
         let itemId = '';
 
-        // Tentative 1: itemId direct
         if (params.itemId && params.itemId !== '') {
           itemId = params.itemId as string;
-          console.log('✅ ItemId trouvé dans params.itemId:', itemId);
         }
 
-        // Tentative 2: backupItemId
         if (!itemId && params.backupItemId && params.backupItemId !== '') {
           itemId = params.backupItemId as string;
-          console.log('🔄 ItemId trouvé dans backupItemId:', itemId);
         }
 
-        // Tentative 3: Extraire depuis le JSON product
         if (!itemId && params.product) {
           try {
             const product = JSON.parse(params.product as string);
             if (product.id && product.id !== '') {
               itemId = product.id;
-              console.log('📦 ItemId trouvé dans product.id:', itemId);
             }
           } catch (e) {
-            console.warn('⚠️ Impossible de parser le product pour récupérer l\'ID');
+            // Ignore parsing error
           }
         }
 
-        // Tentative 4: Générer un ID temporaire si tout échoue (dernière option)
         if (!itemId) {
-          console.error('❌ Aucun itemId trouvé, génération d\'un ID temporaire');
           setInitializationError('ID de l\'article introuvable. Impossible de procéder à l\'achat.');
           return;
         }
 
-        console.log('🎯 ItemId final retenu:', itemId);
         setEffectiveItemId(itemId);
 
-        // === ÉTAPE 2: Parser et valider le produit ===
         if (!params.product) {
-          console.error('❌ Paramètre product manquant');
           setInitializationError('Données de l\'article manquantes');
           return;
         }
 
         const product = JSON.parse(params.product as string);
-        console.log('📦 Produit parsé:', product);
-
-        // S'assurer que le produit a l'ID correct
         product.id = itemId;
 
-        // Vérifier les données essentielles du produit
         if (!product.title || product.price === undefined || product.price === null) {
-          console.error('❌ Données produit incomplètes:', product);
           setInitializationError('Informations de l\'article incomplètes');
           return;
         }
 
         if (!params.sellerId) {
-          console.error('❌ SellerId manquant');
           setInitializationError('Informations du vendeur manquantes');
           return;
         }
 
         setParsedProduct(product);
         setInitializationError('');
-        console.log('✅ Initialisation réussie');
 
       } catch (error) {
-        console.error('❌ Erreur d\'initialisation:', error);
         setInitializationError('Erreur de chargement des données: ' + (error.message || 'Erreur inconnue'));
       }
     };
@@ -144,15 +108,12 @@ const PaymentScreen: React.FC = () => {
     initializeWithFallback();
   }, [params]);
 
-  // Charger l'utilisateur actuel
   useEffect(() => {
     const loadCurrentUser = async () => {
       try {
         const user = await authApi.getCurrentUser();
         setCurrentUser(user);
-        console.log('👤 Utilisateur chargé:', user?.id || user?.uid);
       } catch (error) {
-        console.error('❌ Erreur chargement utilisateur:', error);
         Alert.alert(
           'Erreur d\'authentification',
           'Impossible de charger les informations utilisateur. Veuillez vous reconnecter.',
@@ -166,7 +127,6 @@ const PaymentScreen: React.FC = () => {
     loadCurrentUser();
   }, []);
 
-  // Vérification que l'utilisateur ne peut pas acheter son propre article
   useEffect(() => {
     if (currentUser && params.sellerId && (currentUser.id === params.sellerId || currentUser.uid === params.sellerId)) {
       Alert.alert(
@@ -206,14 +166,12 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
-  // Simulation du traitement de paiement
   const simulatePaymentProcessing = async (
     method: string,
     details: { cardNumber?: string; expiry?: string; cvc?: string }
   ): Promise<void> => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Simuler différents cas d'échec pour les tests
         if (method === 'card' && details.cardNumber === '4000000000000002') {
           reject(new Error('Carte refusée'));
           return;
@@ -224,16 +182,12 @@ const PaymentScreen: React.FC = () => {
           return;
         }
 
-        // Succès par défaut
         resolve();
       }, 2000);
     });
   };
 
   const handlePayment = async () => {
-    console.log('💳 Début du processus de paiement...');
-
-    // Vérifications préliminaires
     if (!currentUser) {
       play('ERROR_SOUND');
       setErrorMessage('Utilisateur non connecté');
@@ -243,7 +197,6 @@ const PaymentScreen: React.FC = () => {
     if (!effectiveItemId || effectiveItemId === '') {
       play('ERROR_SOUND');
       setErrorMessage('ID de l\'article manquant');
-      console.error('❌ effectiveItemId manquant:', effectiveItemId);
       return;
     }
 
@@ -258,7 +211,6 @@ const PaymentScreen: React.FC = () => {
     setCardNumberError('');
     setExpiryError('');
 
-    // Validation des champs de paiement
     if (paymentMethod === 'card') {
       if (!cardNumber || !expiry || !cvc) {
         play('ERROR_SOUND');
@@ -291,29 +243,13 @@ const PaymentScreen: React.FC = () => {
     }
 
     try {
-      console.log('🔄 Traitement du paiement...');
-
-      // 1. Simuler le traitement du paiement
       await simulatePaymentProcessing(paymentMethod, { cardNumber, expiry, cvc });
 
-      // 2. Traiter l'achat dans le marketplace - CORRECTION ICI
       const userId = currentUser.id || currentUser.uid;
       const userName = currentUser.displayName || currentUser.name || currentUser.email || 'Acheteur anonyme';
 
-      console.log('🛒 Traitement de l\'achat marketplace:', {
-        itemId: effectiveItemId,
-        userId,
-        userName,
-        sellerId: params.sellerId
-      });
-
-      // CORRECTION: Utiliser la nouvelle fonction purchaseItem qui intègre déjà tout
       await purchaseItem(effectiveItemId, userId, userName);
-
-      // OPTIONNEL: Enregistrer l'achat séparément si nécessaire
       await recordPurchase(effectiveItemId, userId, userName);
-
-      console.log('✅ Achat marketplace terminé avec succès');
 
       play('SUCCESS_SOUND');
 
@@ -324,7 +260,6 @@ const PaymentScreen: React.FC = () => {
         position: 'bottom'
       });
 
-      // Préparer les données pour la confirmation
       const products = [{
         id: effectiveItemId,
         name: parsedProduct.title,
@@ -333,9 +268,8 @@ const PaymentScreen: React.FC = () => {
         sellerName: parsedProduct.sellerName
       }];
 
-      // Redirection vers la confirmation
       router.push({
-        pathname: '/paymentConfirmation', // Chemin correct pour app/paymentConfirmation.tsx
+        pathname: '/paymentConfirmation',
         params: {
           products: JSON.stringify(products),
           totalPrice: parsedProduct.price.toFixed(2),
@@ -345,7 +279,6 @@ const PaymentScreen: React.FC = () => {
       });
 
     } catch (error) {
-      console.error('❌ Erreur paiement/achat:', error);
       play('ERROR_SOUND');
 
       let errorMsg = 'Une erreur est survenue lors du paiement';
@@ -382,7 +315,6 @@ const PaymentScreen: React.FC = () => {
     }
   };
 
-  // Écran d'erreur si les données sont manquantes
   if (initializationError) {
     return (
       <SafeAreaView style={styles.container}>
@@ -397,28 +329,11 @@ const PaymentScreen: React.FC = () => {
           >
             <Text style={styles.backButtonText}>Retour</Text>
           </TouchableOpacity>
-
-          {/* Debug info en mode développement */}
-          {__DEV__ && (
-            <ScrollView style={styles.debugInfo}>
-              <Text style={styles.debugTitle}>🔍 Informations de debug:</Text>
-              <Text style={styles.debugText}>
-                Params reçus: {JSON.stringify(params, null, 2)}
-              </Text>
-              <Text style={styles.debugText}>
-                EffectiveItemId: {effectiveItemId || 'VIDE'}
-              </Text>
-              <Text style={styles.debugText}>
-                ParsedProduct: {parsedProduct ? JSON.stringify(parsedProduct, null, 2) : 'NULL'}
-              </Text>
-            </ScrollView>
-          )}
         </View>
       </SafeAreaView>
     );
   }
 
-  // Écran de chargement si l'utilisateur ou le produit ne sont pas encore chargés
   if (!currentUser || !parsedProduct) {
     return (
       <SafeAreaView style={styles.container}>
@@ -443,7 +358,6 @@ const PaymentScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Paiement</Text>
 
-        {/* Informations sur l'article - AMÉLIORÉES */}
         <View style={styles.itemInfo}>
           <Text style={styles.itemLabel}>Article à acheter:</Text>
           <Text style={styles.itemTitle}>{parsedProduct.title}</Text>
@@ -457,9 +371,6 @@ const PaymentScreen: React.FC = () => {
             <Text style={styles.itemDescription} numberOfLines={2}>
               {parsedProduct.description}
             </Text>
-          )}
-          {__DEV__ && (
-            <Text style={styles.itemDebug}>ID: {effectiveItemId}</Text>
           )}
         </View>
 
@@ -554,16 +465,6 @@ const PaymentScreen: React.FC = () => {
               onChangeText={setCVC}
               onBlur={() => validateCVC(cvc)}
             />
-
-            {/* Informations de test */}
-            {__DEV__ && (
-              <View style={styles.testInfo}>
-                <Text style={styles.testInfoTitle}>🧪 Cartes de test:</Text>
-                <Text style={styles.testInfoText}>• 4111111111111111 - Succès</Text>
-                <Text style={styles.testInfoText}>• 4000000000000002 - Carte refusée</Text>
-                <Text style={styles.testInfoText}>• 4000000000000119 - Fonds insuffisants</Text>
-              </View>
-            )}
           </>
         )}
 
@@ -624,7 +525,6 @@ const makeStyles = (theme: any) => StyleSheet.create({
     marginBottom: theme.spacing.lg,
     color: theme.colors.backgroundText,
   },
-  // Styles pour les erreurs
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -655,26 +555,6 @@ const makeStyles = (theme: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  debugInfo: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: theme.colors.ui.card.background,
-    borderRadius: 8,
-    width: '100%',
-    maxHeight: 300,
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: theme.colors.backgroundText,
-  },
-  debugText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: theme.colors.backgroundTextSoft,
-    marginBottom: 8,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -685,7 +565,6 @@ const makeStyles = (theme: any) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.backgroundTextSoft,
   },
-  // Styles pour les informations de l'article - AMÉLIORÉS
   itemInfo: {
     marginBottom: theme.spacing.lg,
     backgroundColor: theme.colors.ui.card.background,
@@ -723,12 +602,6 @@ const makeStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.backgroundTextSoft,
     fontStyle: 'italic',
     marginBottom: theme.spacing.xs,
-  },
-  itemDebug: {
-    fontSize: 10,
-    color: theme.colors.backgroundTextSoft,
-    fontFamily: 'monospace',
-    marginTop: 4,
   },
   summary: {
     marginBottom: theme.spacing.xl,
@@ -851,26 +724,6 @@ const makeStyles = (theme: any) => StyleSheet.create({
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.backgroundText,
     fontWeight: '600',
-  },
-  // Styles pour les informations de test
-  testInfo: {
-    backgroundColor: theme.colors.ui.card.background,
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.small,
-    marginTop: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.accent,
-  },
-  testInfoTitle: {
-    fontSize: theme.typography.caption.fontSize,
-    fontWeight: 'bold',
-    color: theme.colors.accent,
-    marginBottom: theme.spacing.xs,
-  },
-  testInfoText: {
-    fontSize: theme.typography.caption.fontSize,
-    color: theme.colors.backgroundTextSoft,
-    marginBottom: 2,
   },
 });
 

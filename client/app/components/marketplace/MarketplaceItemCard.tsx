@@ -9,7 +9,7 @@ interface MarketplaceItemCardProps {
   item: MarketplaceItem;
   currentUser: any;
   onDeleteItem: (itemId: string) => void;
-  onBuyItem: (itemId: string) => void; // Fonction de navigation vers le paiement
+  onBuyItem: (itemId: string) => void;
 }
 
 const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
@@ -20,7 +20,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
 }) => {
   const { colors, borderRadius, spacing } = useTheme();
 
-  // Calculer le temps depuis la publication
   const getTimeAgo = (date: Date) => {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -44,16 +43,13 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
 
   const handleBuy = () => {
     if (!item.id) {
-      console.error('❌ Tentative de navigation vers paiement sans ID:', item);
       return;
     }
-    console.log('🛒 Navigation vers paiement pour article:', item.id);
     onBuyItem(item.id);
   };
 
   const handleDelete = () => {
     if (!item.id) {
-      console.error('❌ Tentative de suppression sans ID:', item);
       return;
     }
     onDeleteItem(item.id);
@@ -65,7 +61,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        {/* Image avec placeholder */}
         <View style={[styles.imageContainer, { borderRadius: borderRadius.small }]}>
           {item.imageUrl ? (
             <Image
@@ -86,7 +81,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
             </View>
           )}
 
-          {/* Badge de statut si nécessaire */}
           {item.isSold && (
             <View style={[styles.statusBadge, { backgroundColor: colors.success }]}>
               <Text style={styles.statusText}>VENDU</Text>
@@ -95,7 +89,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
         </View>
 
         <View style={styles.details}>
-          {/* Titre */}
           <Text
             style={[styles.title, { color: colors.backgroundText }]}
             numberOfLines={2}
@@ -103,12 +96,10 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
             {item.title}
           </Text>
 
-          {/* Prix */}
           <Text style={[styles.price, { color: colors.primary }]}>
             €{item.price.toFixed(2)}
           </Text>
 
-          {/* Informations vendeur */}
           <View style={styles.sellerContainer}>
             {item.sellerAvatar ? (
               <Image
@@ -135,7 +126,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
             </View>
           </View>
 
-          {/* Boutons d'action */}
           <View style={styles.actionsContainer}>
             {canBuy && (
               <Button
@@ -176,16 +166,6 @@ const MarketplaceItemCard: React.FC<MarketplaceItemCardProps> = ({
             )}
           </View>
         </View>
-
-        {/* Debug info en mode développement */}
-        {__DEV__ && (
-          <View style={[styles.debugContainer, { backgroundColor: colors.ui.card.background }]}>
-            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              ID: {item.id || 'MANQUANT'} | Sold: {item.isSold ? 'Oui' : 'Non'} |
-              Deleted: {item.isDeleted ? 'Oui' : 'Non'}
-            </Text>
-          </View>
-        )}
       </Card>
     </View>
   );
@@ -302,15 +282,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-  debugContainer: {
-    padding: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  debugText: {
-    fontSize: 10,
-    fontFamily: 'monospace',
   },
 });
 

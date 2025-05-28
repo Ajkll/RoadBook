@@ -29,19 +29,12 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({
     try {
       await onRefresh();
     } catch (error) {
-      console.error('❌ Erreur lors du rafraîchissement:', error);
+      // Handle error silently or show appropriate message
     }
   };
 
   // Filtrer les articles disponibles (non vendus, non supprimés)
   const availableItems = items.filter(item => !item.isSold && !item.isDeleted);
-
-  console.log('📋 MarketplaceList render:', {
-    totalItems: items.length,
-    availableItems: availableItems.length,
-    loading,
-    refreshing
-  });
 
   const renderItem = ({ item }) => (
     <MarketplaceItemCard
@@ -76,25 +69,6 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({
             : 'Tous les articles ont été vendus ou supprimés.'
           }
         </Text>
-
-        {/* Debug info en mode développement */}
-        {__DEV__ && (
-          <View style={[styles.debugInfo, { backgroundColor: colors.ui.card.background }]}>
-            <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-              🔍 Debug: {items.length} articles total, {availableItems.length} disponibles
-            </Text>
-            {items.length > 0 && (
-              <>
-                <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-                  • Vendus: {items.filter(i => i.isSold).length}
-                </Text>
-                <Text style={[styles.debugText, { color: colors.backgroundTextSoft }]}>
-                  • Supprimés: {items.filter(i => i.isDeleted).length}
-                </Text>
-              </>
-            )}
-          </View>
-        )}
       </View>
     );
   };
@@ -115,7 +89,7 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({
 
   return (
     <FlatList
-      data={availableItems} // Utiliser les articles filtrés
+      data={availableItems}
       renderItem={renderItem}
       keyExtractor={(item) => item.id || Math.random().toString()}
       contentContainerStyle={[
@@ -135,15 +109,10 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({
       ListEmptyComponent={renderEmptyComponent}
       ListFooterComponent={renderFooter}
       showsVerticalScrollIndicator={false}
-      // Amélioration des performances
       removeClippedSubviews={true}
       maxToRenderPerBatch={10}
       updateCellsBatchingPeriod={100}
       windowSize={10}
-      // Gestion des erreurs
-      onContentSizeChange={(width, height) => {
-        console.log('📏 Liste content size:', { width, height, itemsCount: availableItems.length });
-      }}
     />
   );
 };
@@ -194,19 +163,6 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     marginTop: 8,
     fontSize: 14,
-  },
-  debugInfo: {
-    marginTop: 20,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    minWidth: 280,
-  },
-  debugText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    marginBottom: 4,
   },
 });
 

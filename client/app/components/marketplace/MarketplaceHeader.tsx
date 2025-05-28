@@ -21,7 +21,6 @@ interface MarketplaceHeaderProps {
       totalSpent: number;
     };
   };
-  onDebugDiagnostic?: () => void;
 }
 
 const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
@@ -30,28 +29,17 @@ const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
   onShowAddModal,
   onShowHistoryModal,
   currentUser,
-  stats,
-  onDebugDiagnostic
+  stats
 }) => {
   const { colors, spacing, borderRadius } = useTheme();
 
   return (
     <View style={[styles.header, { padding: spacing.md }]}>
-      {/* Titre et statistiques */}
       <View style={styles.titleSection}>
         <View style={styles.titleContainer}>
           <Text style={[styles.title, { color: colors.backgroundText }]}>
             Marketplace
           </Text>
-          {onDebugDiagnostic && (
-            <TouchableOpacity
-              onPress={onDebugDiagnostic}
-              style={styles.debugButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="bug-outline" size={20} color={colors.backgroundTextSoft} />
-            </TouchableOpacity>
-          )}
         </View>
 
         {stats && (
@@ -71,7 +59,6 @@ const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         )}
       </View>
 
-      {/* Barre de recherche */}
       <View style={styles.searchContainer}>
         <Input
           placeholder="Rechercher un produit ou vendeur"
@@ -82,7 +69,6 @@ const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         />
       </View>
 
-      {/* Boutons d'action */}
       <View style={styles.actionsContainer}>
         <View style={styles.buttonsContainer}>
           <Button
@@ -106,7 +92,6 @@ const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
           )}
         </View>
 
-        {/* Informations utilisateur */}
         {currentUser ? (
           <View style={[styles.userInfo, { backgroundColor: colors.ui.card.background }]}>
             <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
@@ -131,7 +116,6 @@ const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({
         )}
       </View>
 
-      {/* Résumé rapide des stats si disponible */}
       {stats && stats.totalItems > 0 && (
         <View style={[styles.quickStats, { backgroundColor: colors.ui.card.background }]}>
           <View style={styles.statItem}>
@@ -191,10 +175,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-  },
-  debugButton: {
-    padding: 4,
-    borderRadius: 4,
   },
   statsContainer: {
     marginTop: 4,

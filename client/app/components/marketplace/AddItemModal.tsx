@@ -18,8 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 import Input from "../common/Input";
 import Button from '../common/Button';
 import Toast from 'react-native-toast-message';
-// Image picker temporairement en commentaire
-// import * as ImagePicker from 'expo-image-picker';
 
 interface AddItemModalProps {
   visible: boolean;
@@ -79,205 +77,43 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   }, [visible, fadeAnim, slideAnim]);
 
-  /* Image picker functions - Temporairement en commentaire
-  const requestPermissions = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission requise',
-        'Nous avons besoin d\'accéder à votre galerie photo pour sélectionner une image.',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          {
-            text: 'Paramètres',
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('app-settings:');
-              } else {
-                Linking.openSettings();
-              }
-            }
-          }
-        ]
-      );
-      return false;
-    }
-    return true;
-  };
-
-  const selectImageFromGallery = async () => {
-    try {
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) return;
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: false,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-        setValidationErrors(prev => ({ ...prev, image: '' }));
-        Toast.show({
-          type: 'success',
-          text1: 'Image sélectionnée',
-          text2: 'Image ajoutée avec succès',
-          position: 'bottom'
-        });
-      }
-    } catch (error) {
-      console.error('Error selecting image from gallery:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de sélectionner l\'image',
-        position: 'bottom'
-      });
-    }
-  };
-
-  const takePhotoWithCamera = async () => {
-    try {
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      if (cameraPermission.status !== 'granted') {
-        Alert.alert(
-          'Permission requise',
-          'Nous avons besoin d\'accéder à votre caméra pour prendre une photo.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: false,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0].uri);
-        setValidationErrors(prev => ({ ...prev, image: '' }));
-        Toast.show({
-          type: 'success',
-          text1: 'Photo prise',
-          text2: 'Photo ajoutée avec succès',
-          position: 'bottom'
-        });
-      }
-    } catch (error) {
-      console.error('Error taking photo:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de prendre la photo',
-        position: 'bottom'
-      });
-    }
-  };
-
-  const handleImageSelection = useCallback(async () => {
-    Alert.alert(
-      'Sélectionner une image',
-      'Comment souhaitez-vous ajouter une image ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Galerie',
-          onPress: selectImageFromGallery,
-          style: 'default'
-        },
-        {
-          text: 'Caméra',
-          onPress: takePhotoWithCamera,
-          style: 'default'
-        }
-      ]
-    );
-  }, []);
-  */
-
   const validateForm = useCallback(() => {
-    console.log('🔍 Début de la validation du formulaire...');
-
     const errors: Record<string, string> = {};
 
-    // Validation du titre
-    console.log('📝 Validation du titre:', newItem.title);
     if (!newItem.title.trim()) {
       errors.title = 'Le titre est requis';
-      console.log('❌ Titre vide');
     } else if (newItem.title.length < 3) {
       errors.title = 'Le titre doit contenir au moins 3 caractères';
-      console.log('❌ Titre trop court:', newItem.title.length);
     } else if (newItem.title.length > 50) {
       errors.title = 'Le titre ne peut pas dépasser 50 caractères';
-      console.log('❌ Titre trop long:', newItem.title.length);
-    } else {
-      console.log('✅ Titre valide');
     }
 
-    // Validation de la description
-    console.log('📝 Validation de la description:', newItem.description);
     if (!newItem.description.trim()) {
       errors.description = 'La description est requise';
-      console.log('❌ Description vide');
     } else if (newItem.description.length < 10) {
       errors.description = 'La description doit contenir au moins 10 caractères';
-      console.log('❌ Description trop courte:', newItem.description.length);
     } else if (newItem.description.length > 500) {
       errors.description = 'La description ne peut pas dépasser 500 caractères';
-      console.log('❌ Description trop longue:', newItem.description.length);
-    } else {
-      console.log('✅ Description valide');
     }
 
-    // Validation du prix
-    console.log('💰 Validation du prix:', newItem.price);
     if (newItem.price <= 0) {
       errors.price = 'Le prix doit être supérieur à 0';
-      console.log('❌ Prix invalide:', newItem.price);
     } else if (newItem.price > 10000) {
       errors.price = 'Le prix ne peut pas dépasser 10 000€';
-      console.log('❌ Prix trop élevé:', newItem.price);
-    } else {
-      console.log('✅ Prix valide');
     }
 
-    // Image validation temporairement désactivée
-    // if (!selectedImage) {
-    //   errors.image = 'Une image est requise';
-    // }
-
-    console.log('🔍 Erreurs trouvées:', errors);
-    console.log('📊 Nombre d\'erreurs:', Object.keys(errors).length);
-
     setValidationErrors(errors);
-    const isValid = Object.keys(errors).length === 0;
-    console.log('✅ Formulaire valide:', isValid);
-
-    return isValid;
+    return Object.keys(errors).length === 0;
   }, [newItem, selectedImage]);
 
+  const resetForm = useCallback(() => {
+    setNewItem(INITIAL_ITEM_STATE);
+    setSelectedImage(null);
+    setValidationErrors({});
+  }, []);
+
   const handleSubmit = useCallback(async () => {
-    console.log('📝 Tentative de soumission du formulaire...');
-
-    // Debug des données avant validation
-    console.log('📋 Données du formulaire:', {
-      title: newItem.title,
-      titleLength: newItem.title.length,
-      description: newItem.description,
-      descriptionLength: newItem.description.length,
-      price: newItem.price,
-      selectedImage: selectedImage ? 'Oui' : 'Non',
-      currentUser: currentUser ? 'Connecté' : 'Non connecté'
-    });
-
     if (!validateForm()) {
-      console.log('❌ Validation échouée');
-      console.log('🔍 Erreurs de validation:', validationErrors);
       Toast.show({
         type: 'error',
         text1: 'Formulaire incomplet',
@@ -287,10 +123,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
       return;
     }
 
-    console.log('✅ Validation réussie');
-
     if (!currentUser?.id && !currentUser?.uid) {
-      console.log('❌ Utilisateur non connecté');
       Toast.show({
         type: 'error',
         text1: 'Erreur',
@@ -300,30 +133,18 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
       return;
     }
 
-    console.log('👤 Utilisateur connecté:', {
-      id: currentUser.id || currentUser.uid,
-      name: currentUser.displayName || currentUser.name || currentUser.email
-    });
-
     try {
-      console.log('✅ Validation réussie, envoi des données...');
-
       const itemData = {
         ...newItem,
         sellerName: currentUser?.displayName || currentUser?.name || currentUser?.email || 'Anonyme',
         sellerId: currentUser?.id || currentUser?.uid,
         sellerAvatar: currentUser?.photoURL || currentUser?.avatar || '',
-        imageUrl: '', // Pas d'image pour le moment
+        imageUrl: '',
       };
-
-      console.log('📦 Données à soumettre:', itemData);
 
       const success = await onSubmit(itemData, selectedImage || '');
 
-      console.log('📤 Résultat de la soumission:', success);
-
       if (success) {
-        console.log('✅ Article ajouté avec succès');
         resetForm();
         Toast.show({
           type: 'success',
@@ -333,7 +154,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
         });
         onClose();
       } else {
-        console.log('❌ Échec de la publication');
         Toast.show({
           type: 'error',
           text1: 'Erreur',
@@ -342,12 +162,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
         });
       }
     } catch (error) {
-      console.error('❌ Error submitting item:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
       Toast.show({
         type: 'error',
         text1: 'Erreur',
@@ -355,14 +169,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
         position: 'bottom'
       });
     }
-  }, [newItem, selectedImage, currentUser, onSubmit, onClose, validateForm, validationErrors, resetForm]);
-
-  const resetForm = useCallback(() => {
-    console.log('🔄 Réinitialisation du formulaire');
-    setNewItem(INITIAL_ITEM_STATE);
-    setSelectedImage(null);
-    setValidationErrors({});
-  }, []);
+  }, [newItem, selectedImage, currentUser, onSubmit, onClose, validateForm, resetForm]);
 
   const handleClose = useCallback(() => {
     if (newItem.title || newItem.description || newItem.price > 0 || selectedImage) {
@@ -387,12 +194,11 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
   }, [newItem, selectedImage, resetForm, onClose]);
 
   const handlePriceChange = useCallback((text: string) => {
-    // Permettre seulement les chiffres et le point décimal
     const cleanText = text.replace(/[^0-9.]/g, '');
     const num = parseFloat(cleanText);
     setNewItem(prev => ({
       ...prev,
-      price: isNaN(num) ? 0 : Math.round(num * 100) / 100 // Arrondir à 2 décimales
+      price: isNaN(num) ? 0 : Math.round(num * 100) / 100
     }));
 
     if (validationErrors.price) {
@@ -499,7 +305,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             }
           />
 
-          {/* Message informatif pour les images */}
           <View style={[styles.infoContainer, { backgroundColor: colors.ui.card.background, marginBottom: spacing.sm }]}>
             <Ionicons name="information-circle-outline" size={20} color={colors.backgroundTextSoft} />
             <Text style={[styles.infoText, { color: colors.backgroundTextSoft }]}>
@@ -507,46 +312,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
             </Text>
           </View>
 
-          {/* Bouton de sélection d'image temporairement en commentaire */}
-          {/*
-          <Button
-            label={selectedImage ? "Changer l'image" : "Sélectionner une image"}
-            icon={selectedImage ? "camera" : "image-outline"}
-            onPress={handleImageSelection}
-            type="secondary"
-            style={{ marginBottom: spacing.sm }}
-          />
-
-          {validationErrors.image && (
-            <Text style={[styles.errorText, { color: colors.error, marginBottom: spacing.sm }]}>
-              {validationErrors.image}
-            </Text>
-          )}
-
-          {selectedImage && (
-            <View style={[styles.imageContainer, { marginBottom: spacing.md }]}>
-              <Image
-                source={{ uri: selectedImage }}
-                style={[
-                  styles.previewImage,
-                  { borderRadius: borderRadius.small }
-                ]}
-                resizeMode="cover"
-              />
-              <TouchableOpacity
-                style={[styles.removeImageButton, { backgroundColor: colors.error }]}
-                onPress={() => {
-                  setSelectedImage(null);
-                  setValidationErrors(prev => ({ ...prev, image: 'Une image est requise' }));
-                }}
-              >
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            </View>
-          )}
-          */}
-
-          {/* Aperçu des informations */}
           <View style={[styles.previewContainer, { backgroundColor: colors.ui.card.background, marginBottom: spacing.md }]}>
             <Text style={[styles.previewTitle, { color: colors.backgroundText }]}>
               Aperçu de votre article
