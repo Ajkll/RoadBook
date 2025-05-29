@@ -44,6 +44,13 @@ export interface Purchase {
   price: number;
   buyerName: string;
   purchaseDate: Date;
+  // Nouveaux champs pour éviter les requêtes supplémentaires
+  itemTitle?: string;
+  sellerName?: string;
+  sellerId?: string;
+  itemDescription?: string;
+  itemImageUrl?: string;
+  // Garder itemData pour la compatibilité
   itemData?: MarketplaceItem;
 }
 
@@ -256,10 +263,27 @@ export const recordPurchase = async (
       throw new Error('ID de l\'acheteur manquant ou invalide');
     }
 
+    // Récupérer les détails de l'article pour l'enregistrement d'achat
+    const itemRef = doc(db, 'marketplace', itemId);
+    const itemSnap = await getDoc(itemRef);
+
+    if (!itemSnap.exists()) {
+      throw new Error("L'article n'existe pas");
+    }
+
+    const itemData = itemSnap.data();
+
+    // Créer un enregistrement d'achat séparé pour l'acheteur
     await addDoc(collection(db, 'purchases'), {
       itemId,
       buyerId,
       buyerName,
+      price: itemData.price,
+      sellerName: itemData.sellerName,
+      sellerId: itemData.sellerId,
+      itemTitle: itemData.title,
+      itemDescription: itemData.description || '',
+      itemImageUrl: itemData.imageUrl || '',
       purchaseDate: serverTimestamp(),
     });
 
@@ -294,87 +318,29 @@ export const getUserPurchases = async (userId: string): Promise<Purchase[]> => {
     const q = query(collection(db, 'purchases'), where('buyerId', '==', userId));
     const querySnapshot = await getDocs(q);
 
-    const purchases = await Promise.all(
-      querySnapshot.docs.map(async (docSnapshot) => {
-        const data = docSnapshot.data();
+    const purchases = querySnapshot.docs.map(docSnapshot => {
+      const data = docSnapshot.data();
 
-        let itemData: MarketplaceItem | undefined;
+      // Créer un objet Purchase avec les données stockées directement
+      const purchase: Purchase = {
+        id: docSnapshot.id,
+        itemId: data.itemId || '',
+        buyerId: data.buyerId,
+        price: data.price || 0,
+        buyerName: data.buyerName,
+        purchaseDate: data.purchaseDate?.toDate ? data.purchaseDate.toDate() : new Date(data.purchaseDate),
+        // Utiliser les détails stockés directement
+        itemTitle: data.itemTitle,
+        sellerName: data.sellerName,
+        sellerId: data.sellerId,
+        itemDescription: data.itemDescription,
+        itemImageUrl: data.itemImageUrl,
+      };
 
-        if (data.itemId && typeof data.itemId === 'string' && data.itemId.trim() !== '') {
-          try {
-            const itemDoc = await getDoc(doc(db, 'marketplace', data.itemId));
+      return purchase;
+    });
 
-            if (itemDoc.exists()) {
-              const itemDocData = itemDoc.data();
-              itemData = {
-                id: itemDoc.id,
-                ...itemDocData,
-                createdAt: itemDocData.createdAt?.toDate ? itemDocData.createdAt.toDate() : new Date(itemDocData.createdAt),
-                title: itemDocData.title || 'Article sans titre',
-                price: itemDocData.price || 0,
-                sellerName: itemDocData.sellerName || 'Vendeur inconnu',
-                description: itemDocData.description || '',
-                isSold: itemDocData.isSold || false,
-                isDeleted: itemDocData.isDeleted || false
-              } as MarketplaceItem;
-            } else {
-              itemData = {
-                id: data.itemId,
-                title: 'Article supprimé',
-                price: data.price || 0,
-                sellerName: 'Vendeur inconnu',
-                description: 'Cet article n\'existe plus',
-                sellerId: '',
-                imageUrl: '',
-                createdAt: new Date(),
-                isSold: true,
-                isDeleted: true
-              } as MarketplaceItem;
-            }
-          } catch (itemError) {
-            itemData = {
-              id: data.itemId || 'unknown',
-              title: 'Erreur de chargement',
-              price: data.price || 0,
-              sellerName: 'Vendeur inconnu',
-              description: 'Impossible de charger les détails',
-              sellerId: '',
-              imageUrl: '',
-              createdAt: new Date(),
-              isSold: true,
-              isDeleted: true
-            } as MarketplaceItem;
-          }
-        } else {
-          itemData = {
-            id: 'unknown',
-            title: 'Article sans ID',
-            price: data.price || 0,
-            sellerName: 'Vendeur inconnu',
-            description: 'Article sans identifiant',
-            sellerId: '',
-            imageUrl: '',
-            createdAt: new Date(),
-            isSold: true,
-            isDeleted: true
-          } as MarketplaceItem;
-        }
-
-        const purchase: Purchase = {
-          id: docSnapshot.id,
-          itemId: data.itemId || '',
-          buyerId: data.buyerId,
-          price: data.price || itemData.price || 0,
-          buyerName: data.buyerName,
-          purchaseDate: data.purchaseDate?.toDate ? data.purchaseDate.toDate() : new Date(data.purchaseDate),
-          itemData,
-        };
-
-        return purchase;
-      })
-    );
-
-    return purchases;
+    return purchases.sort((a, b) => b.purchaseDate.getTime() - a.purchaseDate.getTime());
   } catch (error) {
     logger.error('Error getting user purchases:', error);
     return [];

@@ -75,7 +75,8 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
 
   const renderTransactionItem = useCallback((item: Purchase | MarketplaceItem, index: number) => {
     try {
-      const isPurchase = 'buyerId' in item;
+      // CORRECTION: Vérifier si c'est un achat (Purchase) ou une vente (MarketplaceItem)
+      const isPurchase = 'buyerId' in item && item.buyerId === (currentUser?.id || currentUser?.uid);
 
       let date: Date;
       if (isPurchase) {
@@ -100,8 +101,9 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
         }
       }
 
+      // CORRECTION: Utiliser les bons champs selon le type
       const title = isPurchase
-        ? (item as Purchase).itemData?.title || 'Article inconnu'
+        ? (item as Purchase).itemTitle || (item as Purchase).itemData?.title || 'Article inconnu'
         : (item as MarketplaceItem).title || 'Article sans titre';
 
       const amount = isPurchase
@@ -114,11 +116,13 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
       let icon = 'help-outline';
 
       if (isPurchase) {
+        // C'est un ACHAT fait par l'utilisateur actuel
         transactionType = 'Achat';
-        otherParty = (item as Purchase).itemData?.sellerName || 'Vendeur inconnu';
-        statusColor = colors.error;
+        otherParty = (item as Purchase).sellerName || (item as Purchase).itemData?.sellerName || 'Vendeur inconnu';
+        statusColor = colors.error; // Rouge pour les dépenses
         icon = 'arrow-down-outline';
       } else {
+        // C'est un article VENDU par l'utilisateur actuel
         const marketItem = item as MarketplaceItem;
         if (marketItem.isDeleted) {
           transactionType = 'Supprimé';
@@ -128,7 +132,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
         } else if (marketItem.isSold) {
           transactionType = 'Vendu';
           otherParty = marketItem.buyerName || 'Article vendu';
-          statusColor = colors.success;
+          statusColor = colors.success; // Vert pour les gains
           icon = 'arrow-up-outline';
         } else {
           transactionType = 'En vente';
@@ -163,10 +167,10 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
             <View style={styles.amountContainer}>
               <Text style={[styles.transactionAmount, { color: statusColor }]}>
                 {isPurchase
-                  ? `-€${amount.toFixed(2)}`
+                  ? `-€${amount.toFixed(2)}` // Négatif pour les achats
                   : (item as MarketplaceItem).isSold
-                    ? `+€${amount.toFixed(2)}`
-                    : `€${amount.toFixed(2)}`
+                    ? `+€${amount.toFixed(2)}` // Positif pour les ventes
+                    : `€${amount.toFixed(2)}` // Neutre pour les articles en vente
                 }
               </Text>
             </View>
@@ -216,7 +220,7 @@ const HistoryModal: React.FC<HistoryModalProps> = ({
         </View>
       );
     }
-  }, [colors, spacing]);
+  }, [colors, spacing, currentUser]);
 
   if (!visible) return null;
 

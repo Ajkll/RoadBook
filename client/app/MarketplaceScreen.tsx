@@ -107,8 +107,9 @@ const MarketplaceScreen = () => {
     };
 
     try {
+      // CORRECTION: Assurer que le chemin est correct
       router.push({
-        pathname: '/PaymentScreen',
+        pathname: '/PaymentScreen', // Vérifiez que ce chemin correspond à votre structure
         params: {
           product: JSON.stringify(productData),
           sellerId: item.sellerId,
@@ -120,6 +121,7 @@ const MarketplaceScreen = () => {
         }
       });
     } catch (error) {
+      console.error('Navigation error:', error);
       Alert.alert(
         'Erreur de navigation',
         'Impossible d\'ouvrir l\'écran de paiement.',

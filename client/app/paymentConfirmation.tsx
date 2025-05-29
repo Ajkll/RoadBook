@@ -1,507 +1,272 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Button from './components/common/Button';
 import { useTheme } from './constants/theme';
-import GoBackHomeButton from './components/common/GoBackHomeButton';
-import { CopyToClipboard } from './components/common/ClipBoardCopy';
-import * as Clipboard from 'expo-clipboard';
-import Toast from 'react-native-toast-message';
-
-// AJOUT : Import pour envoyer les notifications (optionnel)
-// import { sendPurchaseNotification } from './services/notifications';
 
 const PaymentConfirmation: React.FC = () => {
-  const theme = useTheme();
   const router = useRouter();
-  const { products = '[]', totalPrice, sellerId, itemId } = useLocalSearchParams();
-  const [showCopied, setShowCopied] = useState(false);
+  const params = useLocalSearchParams();
+  const { colors, spacing, borderRadius } = useTheme();
 
-  let parsedProducts = [];
+  // Parse les données des paramètres
+  const products = params.products ? JSON.parse(params.products as string) : [];
+  const totalPrice = params.totalPrice || '0.00';
+  const success = params.success === 'true';
 
-  try {
-    parsedProducts = JSON.parse(products as string);
-  } catch (e) {
-    console.warn('Échec du parsing des produits', e);
-  }
-
-  const orderNumber = `CMD-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
-
-  // AJOUT : Effet pour envoyer les notifications après l'achat
-  useEffect(() => {
-    const sendNotifications = async () => {
-      try {
-        // Optionnel : Envoyer une notification au vendeur
-        // if (sellerId && itemId) {
-        //   await sendPurchaseNotification(sellerId, {
-        //     itemId,
-        //     itemName: parsedProducts[0]?.name,
-        //     buyerName: 'Acheteur', // Vous pouvez passer le nom de l'acheteur
-        //     amount: totalPrice
-        //   });
-        // }
-
-        // Afficher un toast de bienvenue
-        setTimeout(() => {
-          Toast.show({
-            type: 'success',
-            text1: '🎉 Achat confirmé',
-            text2: 'Le vendeur a été notifié de votre achat',
-            position: 'top',
-            visibilityTime: 4000,
-          });
-        }, 1000);
-
-      } catch (error) {
-        console.error('Error sending notifications:', error);
-      }
-    };
-
-    sendNotifications();
-  }, [sellerId, itemId, totalPrice]);
-
-  const handleCopyReceipt = async () => {
-    const receiptText = `
-🧾 Reçu d'achat - ${orderNumber}
-
-📅 Date: ${new Date().toLocaleDateString('fr-FR')}
-⏰ Heure: ${new Date().toLocaleTimeString('fr-FR')}
-
-🛍️ Articles achetés:
-${parsedProducts.map(p => `• ${p.name} - ${p.price.toFixed(2)}€`).join('\n')}
-
-💰 Total payé: ${totalPrice}€
-
-👤 Vendeur: ${parsedProducts[0]?.sellerName || 'Inconnu'}
-
-✅ Statut: Payé et confirmé
-
-Merci pour votre achat !
-    `.trim();
+  // CORRECTION: Fonction pour retourner au Marketplace
+  const handleBackToMarketplace = () => {
+    // Utiliser le chemin de retour passé en paramètre ou le chemin par défaut
+    const returnPath = params.returnPath || '/MarketplaceScreen';
 
     try {
-      await Clipboard.setStringAsync(receiptText);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 2000);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Reçu copié',
-        text2: 'Le reçu a été copié dans le presse-papiers',
-        position: 'bottom'
-      });
+      router.push(returnPath as string);
     } catch (error) {
-      console.error('Error copying receipt:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de copier le reçu',
-        position: 'bottom'
-      });
+      // Fallback si le chemin ne fonctionne pas
+      console.error('Error navigating to marketplace:', error);
+      router.push('/MarketplaceScreen');
     }
   };
 
-  // AJOUT : Fonction pour retourner au marketplace
-  const handleBackToMarketplace = () => {
-    router.replace('/marketplace'); // ou votre route marketplace
+  // CORRECTION: Fonction pour aller à l'accueil
+  const handleGoHome = () => {
+    try {
+      router.push('/');
+    } catch (error) {
+      console.error('Error navigating to home:', error);
+      router.replace('/');
+    }
   };
 
-  // AJOUT : Fonction pour voir l'historique des achats
-  const handleViewHistory = () => {
-    router.push('/marketplace?tab=history'); // ou votre route d'historique
-  };
+  const styles = makeStyles({ colors, spacing, borderRadius });
 
   return (
-    <View style={[styles.wrapper, { backgroundColor: theme.colors.primary }]}>
-      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: theme.spacing.lg }]}>
-        <Icon
-          name="check-circle"
-          size={200}
-          color={theme.colors.primaryText}
-          style={styles.icon}
-        />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Icône de succès */}
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name="checkmark-circle"
+            size={80}
+            color={colors.success}
+          />
+        </View>
 
-        <Text style={[styles.text_confirmation, {
-          color: theme.colors.primaryText,
-          fontSize: theme.typography.SuperTitle.fontSize,
-          fontWeight: theme.typography.SuperTitle.fontWeight,
-          marginHorizontal: theme.spacing.lg
-        }]}>
-          🎉 Achat confirmé !
+        {/* Titre et message principal */}
+        <Text style={styles.title}>
+          Paiement réussi !
         </Text>
 
-        <Text style={[styles.text_subtitle, {
-          color: theme.colors.primaryText,
-          fontSize: theme.typography.body.fontSize,
-          marginHorizontal: theme.spacing.lg,
-          marginBottom: theme.spacing.lg,
-          textAlign: 'center'
-        }]}>
-          Votre paiement a été traité avec succès
+        <Text style={styles.subtitle}>
+          Votre achat a été confirmé avec succès
         </Text>
 
-        <TouchableOpacity
-          style={[styles.achatContainer, {
-            backgroundColor: theme.colors.background,
-            borderRadius: theme.borderRadius.xlarge,
-            margin: theme.spacing.xl
-          }]}
-          onPress={handleCopyReceipt}
-          activeOpacity={0.9}
-        >
-          <View style={{padding: theme.spacing.xl}}>
-            <Icon
-              name="shopping-bag"
-              size={100}
-              color={theme.colors.primary}
-              style={[styles.icon, {alignSelf: 'center'}]}
-            />
+        {/* Détails de la commande */}
+        <View style={styles.orderDetails}>
+          <Text style={styles.sectionTitle}>Détails de votre achat</Text>
 
-            <Text style={[styles.orderNumber, {
-              color: theme.colors.primary,
-              fontSize: theme.typography.subtitle.fontSize,
-              marginBottom: theme.spacing.md,
-              textAlign: 'center',
-              fontWeight: 'bold'
-            }]}>
-              Commande: {orderNumber}
-            </Text>
-
-            {/* AJOUT : Informations sur la transaction */}
-            <View style={styles.transactionInfo}>
-              <Text style={[styles.transactionLabel, { color: theme.colors.backgroundTextSoft }]}>
-                📅 {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              {itemId && (
-                <Text style={[styles.transactionLabel, { color: theme.colors.backgroundTextSoft }]}>
-                  🏷️ Article ID: {itemId}
-                </Text>
-              )}
+          {products.map((product: any, index: number) => (
+            <View key={index} style={styles.productItem}>
+              <View style={styles.productInfo}>
+                <Text style={styles.productName}>{product.name}</Text>
+                <Text style={styles.sellerName}>Vendeur: {product.sellerName}</Text>
+              </View>
+              <Text style={styles.productPrice}>€{product.price.toFixed(2)}</Text>
             </View>
+          ))}
 
-            <View style={styles.productsContainer}>
-              {parsedProducts.map((product, index) => (
-                <View key={index} style={styles.productRow}>
-                  <Text style={[styles.productName, {
-                    color: theme.colors.primary,
-                    fontSize: theme.typography.body.fontSize
-                  }]}>
-                    {product.name}
-                  </Text>
-                  <Text style={[styles.productPrice, {
-                    color: theme.colors.primary,
-                    fontSize: theme.typography.body.fontSize
-                  }]}>
-                    {product.price.toFixed(2)}€
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* AJOUT : Informations vendeur */}
-            <View style={[styles.sellerSection, {
-              backgroundColor: theme.colors.ui.card.background,
-              borderRadius: theme.borderRadius.medium,
-              padding: theme.spacing.md,
-              marginVertical: theme.spacing.md
-            }]}>
-              <Text style={[styles.sellerLabel, { color: theme.colors.backgroundTextSoft }]}>
-                👤 Vendeur:
-              </Text>
-              <Text style={[styles.sellerName, { color: theme.colors.backgroundText }]}>
-                {parsedProducts[0]?.sellerName || 'Vendeur inconnu'}
-              </Text>
-              {sellerId && (
-                <Text style={[styles.sellerId, { color: theme.colors.backgroundTextSoft }]}>
-                  ID: {sellerId}
-                </Text>
-              )}
-            </View>
-
-            <View style={[styles.totalRow, {
-              borderTopColor: theme.colors.primary,
-              borderTopWidth: 2,
-              marginTop: theme.spacing.md,
-              paddingTop: theme.spacing.md
-            }]}>
-              <Text style={[styles.totalText, {
-                color: theme.colors.primary,
-                fontSize: theme.typography.title.fontSize,
-                fontWeight: 'bold'
-              }]}>
-                Total payé
-              </Text>
-              <Text style={[styles.totalPrice, {
-                color: theme.colors.primary,
-                fontSize: theme.typography.title.fontSize,
-                fontWeight: 'bold'
-              }]}>
-                {totalPrice}€
-              </Text>
-            </View>
-
-            {/* AJOUT : Statut de la transaction */}
-            <View style={[styles.statusSection, {
-              backgroundColor: theme.colors.success,
-              borderRadius: theme.borderRadius.small,
-              padding: theme.spacing.sm,
-              marginTop: theme.spacing.md,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }]}>
-              <Icon name="verified" size={20} color="white" />
-              <Text style={[styles.statusText, { color: 'white', marginLeft: theme.spacing.xs }]}>
-                Transaction confirmée
-              </Text>
-            </View>
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalLabel}>Total payé:</Text>
+            <Text style={styles.totalAmount}>€{totalPrice}</Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
-        {showCopied && (
-          <View style={[styles.clipboardFeedback, {backgroundColor: theme.colors.success}]}>
-            <Text style={{color: theme.colors.primaryText}}>Reçu copié dans le presse-papiers !</Text>
-          </View>
-        )}
-
-        <Text style={[styles.text, {
-          color: theme.colors.primaryText,
-          fontSize: theme.typography.body.fontSize,
-          marginHorizontal: theme.spacing.lg,
-          marginTop: theme.spacing.md,
-          textAlign: 'center'
-        }]}>
-          Merci pour votre achat ! Le vendeur a été notifié et vous pouvez maintenant consulter cet article dans votre historique d'achats.
-        </Text>
-
-        {/* AJOUT : Section d'actions étendues */}
-        <View style={[styles.actionSection, {
-          backgroundColor: theme.colors.background,
-          borderRadius: theme.borderRadius.large,
-          marginHorizontal: theme.spacing.lg,
-          marginTop: theme.spacing.lg,
-          padding: theme.spacing.md
-        }]}>
-          <Text style={[styles.actionTitle, {
-            color: theme.colors.backgroundText,
-            fontSize: theme.typography.subtitle.fontSize,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: theme.spacing.md
-          }]}>
-            Que souhaitez-vous faire maintenant ?
+        {/* Informations supplémentaires */}
+        <View style={styles.infoContainer}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.infoText}>
+            Vous pouvez retrouver cet achat dans votre historique des transactions.
           </Text>
+        </View>
 
-          <TouchableOpacity
-            style={[styles.actionButton, {
-              backgroundColor: theme.colors.primary,
-              borderRadius: theme.borderRadius.medium,
-              padding: theme.spacing.md,
-              marginBottom: theme.spacing.sm,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }]}
+        {/* Message de remerciement */}
+        <Text style={styles.thankYouText}>
+          Merci pour votre achat ! 🎉
+        </Text>
+
+        {/* Boutons de navigation CORRIGÉS */}
+        <View style={styles.buttonContainer}>
+          <Button
+            label="Retourner au Marketplace"
             onPress={handleBackToMarketplace}
-          >
-            <Icon name="storefront" size={24} color={theme.colors.primaryText} />
-            <Text style={[styles.actionButtonText, {
-              color: theme.colors.primaryText,
-              marginLeft: theme.spacing.sm,
-              fontSize: theme.typography.button.fontSize,
-              fontWeight: theme.typography.button.fontWeight
-            }]}>
-              Retour au Marketplace
-            </Text>
-          </TouchableOpacity>
+            type="primary"
+            icon="storefront-outline"
+            style={styles.primaryButton}
+          />
 
-          <TouchableOpacity
-            style={[styles.actionButton, {
-              backgroundColor: theme.colors.secondary,
-              borderRadius: theme.borderRadius.medium,
-              padding: theme.spacing.md,
-              marginBottom: theme.spacing.sm,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }]}
-            onPress={handleViewHistory}
-          >
-            <Icon name="history" size={24} color={theme.colors.secondaryText} />
-            <Text style={[styles.actionButtonText, {
-              color: theme.colors.secondaryText,
-              marginLeft: theme.spacing.sm,
-              fontSize: theme.typography.button.fontSize,
-              fontWeight: theme.typography.button.fontWeight
-            }]}>
-              Voir mes achats
-            </Text>
-          </TouchableOpacity>
+          <Button
+            label="Accueil"
+            onPress={handleGoHome}
+            type="secondary"
+            icon="home-outline"
+            style={styles.secondaryButton}
+          />
         </View>
 
-        <View style={[styles.bottomButtons, {backgroundColor: theme.colors.background}]}>
-          <View style={styles.buttonContainer}>
-            <CopyToClipboard
-              text={`🧾 Commande ${orderNumber}\n💰 Total: ${totalPrice}€\n📅 ${new Date().toLocaleDateString('fr-FR')}\n👤 Vendeur: ${parsedProducts[0]?.sellerName || 'Inconnu'}`}
-              showText={true}
-              textToShow="📋 Copier le reçu"
-              containerStyle={styles.copyButton}
-              textStyle={{color: theme.colors.primary}}
-              iconSize={20}
-            />
-            <GoBackHomeButton
-              containerStyle={styles.goBackButton}
-              textStyle={{color: theme.colors.primary}}
-            />
-          </View>
-        </View>
+        {/* Bouton alternatif si les boutons principaux ne fonctionnent pas */}
+        <TouchableOpacity
+          style={styles.fallbackButton}
+          onPress={() => {
+            try {
+              router.back();
+            } catch (error) {
+              router.push('/');
+            }
+          }}
+        >
+          <Text style={styles.fallbackButtonText}>← Retour</Text>
+        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
+const makeStyles = ({ colors, spacing, borderRadius }: any) => StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 20,
+    padding: spacing.lg,
   },
-  icon: {
-    marginBottom: 20,
+  iconContainer: {
+    marginBottom: spacing.xl,
   },
-  text_confirmation: {
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  text_subtitle: {
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-  text: {
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  achatContainer: {
-    width: '90%',
-    alignSelf: 'center',
-    overflow: 'hidden',
-  },
-  orderNumber: {
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.backgroundText,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
-  // AJOUT : Nouveaux styles
-  transactionInfo: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  transactionLabel: {
-    fontSize: 12,
+  subtitle: {
+    fontSize: 16,
+    color: colors.backgroundTextSoft,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xl,
   },
-  productsContainer: {
+  orderDetails: {
     width: '100%',
+    backgroundColor: colors.ui.card.background,
+    borderRadius: borderRadius.medium,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.ui.card.border,
   },
-  productRow: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.backgroundText,
+    marginBottom: spacing.md,
+  },
+  productItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ui.card.border,
+  },
+  productInfo: {
+    flex: 1,
   },
   productName: {
-    flex: 2,
-    textAlign: 'left',
-  },
-  productPrice: {
-    flex: 1,
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  sellerSection: {
-    alignItems: 'center',
-  },
-  sellerLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  sellerName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: colors.backgroundText,
     marginBottom: 2,
   },
-  sellerId: {
-    fontSize: 12,
+  sellerName: {
+    fontSize: 14,
+    color: colors.backgroundTextSoft,
   },
-  totalRow: {
+  productPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  totalContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-  },
-  totalText: {
-    textAlign: 'left',
-  },
-  totalPrice: {
-    textAlign: 'right',
-  },
-  statusSection: {
-    // styles définis inline
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionSection: {
-    // styles définis inline
-  },
-  actionTitle: {
-    // styles définis inline
-  },
-  actionButton: {
-    // styles définis inline
-  },
-  actionButtonText: {
-    // styles définis inline
-  },
-  clipboardFeedback: {
-    padding: 10,
-    borderRadius: 5,
-    marginHorizontal: 20,
-    marginBottom: 20,
     alignItems: 'center',
+    paddingTop: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 2,
+    borderTopColor: colors.primary,
   },
-  bottomButtons: {
-    width: '100%',
-    paddingVertical: 15,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: 20,
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.backgroundText,
+  },
+  totalAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.ui.card.background,
+    padding: spacing.md,
+    borderRadius: borderRadius.small,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  infoText: {
+    flex: 1,
+    marginLeft: spacing.sm,
+    fontSize: 14,
+    color: colors.backgroundTextSoft,
+  },
+  thankYouText: {
+    fontSize: 16,
+    color: colors.backgroundText,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    fontStyle: 'italic',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    width: '100%',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  copyButton: {
-    backgroundColor: 'white',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#DDD',
+  primaryButton: {
+    width: '100%',
   },
-  goBackButton: {
-    backgroundColor: 'white',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DDD',
+  secondaryButton: {
+    width: '100%',
+  },
+  fallbackButton: {
+    padding: spacing.sm,
+    alignItems: 'center',
+  },
+  fallbackButtonText: {
+    color: colors.backgroundTextSoft,
+    fontSize: 14,
   },
 });
 

@@ -4,6 +4,7 @@ import {
   addMarketplaceItem,
   deleteMarketplaceItem,
   purchaseItem,
+  recordPurchase,
   getUserPurchases,
   getUserSales,
   getTransactionHistory,
@@ -70,9 +71,11 @@ export const useMarketplace = () => {
 
       const [transactions, balance] = await Promise.all([
         getTransactionHistory(userId).catch(error => {
+          console.error('Error loading transactions:', error);
           return [];
         }),
         calculateUserBalance(userId).catch(error => {
+          console.error('Error calculating balance:', error);
           return {
             totalEarned: 0,
             totalSpent: 0,
@@ -91,11 +94,7 @@ export const useMarketplace = () => {
       return transactions;
 
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de charger les transactions',
-      });
+      console.error('Error in loadUserTransactions:', error);
 
       setUserTransactions([]);
       setUserBalance({
@@ -172,7 +171,7 @@ export const useMarketplace = () => {
     try {
       if (typeof router !== 'undefined' && router.push) {
         router.push({
-          pathname: '/payment',
+          pathname: '/PaymentScreen',
           params: {
             product: JSON.stringify(productData),
             sellerId: item.sellerId,
@@ -201,7 +200,7 @@ export const useMarketplace = () => {
       });
       return false;
     }
-  }, [currentUser]);
+  }, [currentUser, router]);
 
   const addItem = useCallback(async (
     item: Omit<MarketplaceItem, 'id' | 'createdAt' | 'imageUrl'>,
@@ -271,6 +270,55 @@ export const useMarketplace = () => {
     }
   }, [loadItems, loadUserTransactions]);
 
+  // Fonction buyItem CORRIGÉE pour les achats directs
+  const buyItem = useCallback(async (itemId: string): Promise<boolean> => {
+    if (!currentUser?.id && !currentUser?.uid) {
+      Toast.show({
+        type: 'error',
+        text1: 'Connexion requise',
+        text2: 'Vous devez être connecté pour acheter',
+      });
+      return false;
+    }
+
+    const item = items.find(i => i.id === itemId);
+    if (!item) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Article introuvable',
+      });
+      return false;
+    }
+
+    const userId = currentUser.id || currentUser.uid;
+    const userName = currentUser.displayName || currentUser.name || currentUser.email || 'Acheteur anonyme';
+
+    try {
+      await purchaseItem(itemId, userId, userName);
+      await recordPurchase(itemId, userId, userName);
+
+      // Recharger les données pour mettre à jour l'affichage
+      await loadItems();
+      await loadUserTransactions();
+
+      Toast.show({
+        type: 'success',
+        text1: 'Achat réussi',
+        text2: `Vous avez acheté "${item.title}"`,
+      });
+
+      return true;
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur d\'achat',
+        text2: error.message || 'Une erreur est survenue',
+      });
+      return false;
+    }
+  }, [currentUser, items, loadItems, loadUserTransactions]);
+
   useEffect(() => {
     if (searchText.trim() === '') {
       setFilteredItems(items);
@@ -308,12 +356,15 @@ export const useMarketplace = () => {
     userTransactions,
     userBalance,
 
+    // Fonctions principales
     loadItems,
     addItem,
     deleteItem,
+    buyItem, // Fonction d'achat corrigée
     navigateToPayment,
     loadUserTransactions,
 
+    // Statistiques
     stats: {
       totalItems: items.length,
       availableItems: items.filter(item => !item.isSold && !item.isDeleted).length,
