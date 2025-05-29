@@ -46,6 +46,7 @@ package-lock.json
 
 /credentials
 credentials.json
+keystore*.txt
 
-ogs/
+logs/
 *.log
