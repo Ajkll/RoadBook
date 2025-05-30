@@ -1,5 +1,5 @@
 import { Notification, NotificationType, PrismaClient } from '@prisma/client';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 
 /**
  * Create a new notification

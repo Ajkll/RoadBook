@@ -1,0 +1,30 @@
+; Zone file for bephec.org
+$TTL    3600
+@       IN      SOA     ns1.bephec.org. admin.bephec.org. (
+                        2023051001      ; Serial
+                        3600            ; Refresh
+                        1800            ; Retry
+                        604800          ; Expire
+                        86400 )         ; Negative Cache TTL
+
+; Serveurs de noms (NS records)
+@       IN      NS      ns1.bephec.org.
+
+; Serveur de noms - Adresse A
+ns1     IN      A       ${SERVER_IP}
+
+; Mail Exchanger (MX record)
+@       IN      MX      10      mail.bephec.org.
+mail    IN      A       ${SERVER_IP}
+
+; Adresses du domaine principal
+@       IN      A       ${SERVER_IP}
+www     IN      A       ${SERVER_IP}
+
+; Sous-domaines pour l'API et l'interface de test
+api     IN      A       ${SERVER_IP}
+test    IN      A       ${SERVER_IP}
+
+; Autres sous-domaines éventuels
+dev     IN      A       ${SERVER_IP}
+staging IN      A       ${SERVER_IP}

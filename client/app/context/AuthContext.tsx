@@ -1,5 +1,5 @@
 // client/app/context/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { User, LoginRequest, RegisterRequest } from '../types/auth.types';
 import { authApi } from '../services/api/auth.api';
 import {
@@ -10,6 +10,7 @@ import {
   STORAGE_KEYS,
 } from '../services/secureStorage';
 import { logger } from '../utils/logger';
+import { authEvents } from '../services/api/client';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ interface AuthContextType {
   refreshUserData: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
+  handleTokenError: (error: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,14 +44,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
-  // Flag to bypass login for development purposes
-  const bypassLogin = process.env.NODE_ENV === 'development'; // Bypass login only in development mode
+  // Flag to bypass login for development purposes - DÉSACTIVÉ
+  const bypassLogin = false; // Désactivé pour forcer l'authentification
+  
+  // Listen for auth failure events using EventEmitter
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      logger.warn('Auth failure event received in AuthContext');
+      if (isMounted.current) {
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        setUser(null);
+      }
+    };
+    
+    // Add event listener using EventEmitter
+    authEvents.on('auth:failure', handleAuthFailure);
+    
+    return () => {
+      isMounted.current = false;
+      // Remove event listener on cleanup
+      authEvents.off('auth:failure', handleAuthFailure);
+    };
+  }, []);
 
   // Effet pour charger l'utilisateur depuis le stockage sécurisé au démarrage
   useEffect(() => {
     const loadUserFromStorage = async () => {
       try {
+        // Bypass désactivé pour forcer l'authentification réelle
+        /*
         if (bypassLogin) {
           console.log('Bypassing login for development...');
           const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -57,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setIsLoading(false);
           return;
         }
+        */
 
         console.log('Loading user data from secure storage...');
         const { user, accessToken } = await getAuthData();
@@ -88,6 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
+      // Bypass désactivé pour forcer l'authentification réelle
+      /*
       if (bypassLogin) {
         console.log('Bypassing login for development...');
         const mockUser = { email: 'devuser@example.com', name: 'Dev User' }; // Mock user for dev
@@ -95,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
         return;
       }
+      */
 
       console.log('Sending login request:', credentials.email);
 
@@ -165,38 +194,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       console.log('==== LOGOUT ATTEMPT ====');
 
+      // First try to invalidate the session on the server
       try {
-        const refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
-        if (refreshToken) {
-          console.log('Attempting to invalidate session on server');
-          await authApi.logout();
-          console.log('Server logout successful');
-        } else {
-          console.log('No refresh token found, skipping server logout');
-        }
+        // Skip the getItem call that was causing issues and use the authApi directly
+        // It has its own error handling for missing tokens
+        console.log('Attempting to invalidate session on server');
+        await authApi.logout();
+        console.log('Server logout successful');
       } catch (serverError) {
         logger.error('Server logout failed:', serverError);
         console.log('Continuing with client-side logout despite server error');
       }
 
+      // Then clear local auth data regardless of server success/failure
       try {
         console.log('Clearing authentication data from secure storage');
         await clearAuthData();
         console.log('Authentication data cleared successfully');
       } catch (storageError) {
         logger.error('Error clearing auth data from storage:', storageError);
+        // Try to clear individual items if the complete clear fails
+        try {
+          await Promise.all([
+            saveItem(STORAGE_KEYS.ACCESS_TOKEN, ''),
+            saveItem(STORAGE_KEYS.REFRESH_TOKEN, ''),
+            saveItem(STORAGE_KEYS.USER, ''),
+          ]);
+          console.log('Fallback clearing of auth data succeeded');
+        } catch (fallbackError) {
+          logger.error('Even fallback clearing failed:', fallbackError);
+        }
       }
 
+      // Always reset the user state
       console.log('Resetting user state');
       setUser(null);
 
     } catch (err) {
       logger.error('==== LOGOUT ERROR ====', err);
-
+      
+      // Always make sure to clear auth data and user state, even on errors
       try {
         await clearAuthData();
       } catch {}
-
+      
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -209,10 +250,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('Refreshing user profile data');
 
       const updatedUser = await authApi.getCurrentUser();
+      
+      // Update the user state regardless of storage success
       setUser(updatedUser);
       console.log('User data refreshed successfully');
+      return updatedUser;
     } catch (err) {
       logger.error('Error refreshing user data:', err);
+      
+      // Check if this is a token error
+      if (err?.isRefreshError || 
+          (err?.originalError?.response?.status === 401) ||
+          (err?.response?.status === 401) ||
+          err.message?.includes('Session expirée')) {
+            
+        logger.warn('Token expired while refreshing user data, logging out');
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        
+        try {
+          // Attempt graceful logout
+          await logout();
+        } catch (logoutError) {
+          logger.error('Error during auto-logout:', logoutError);
+          // Force state reset as a last resort
+          setUser(null);
+          await clearAuthData().catch(e => logger.error('Failed to clear auth data:', e));
+        }
+      }
+      
+      // Rethrow the error so callers can handle it
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -239,6 +306,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const clearError = () => setError(null);
 
+  /**
+   * Handle token-related errors
+   * This function is especially useful when an API request fails due to token issues
+   */
+  const handleTokenError = async (error: any) => {
+    try {
+      // Check if this is a token-related error
+      if (error?.isRefreshError || 
+          (error?.originalError?.response?.status === 401) ||
+          (error?.response?.status === 401)) {
+        
+        logger.warn('Token error detected, logging out user');
+        
+        // If it's a refresh error, we should logout the user
+        setError('Votre session a expiré. Veuillez vous reconnecter.');
+        await logout();
+        
+        return;
+      }
+      
+      // If it's not a token error, just set the general error
+      const errorMessage = error.message || 'Une erreur est survenue';
+      setError(errorMessage);
+    } catch (err) {
+      logger.error('Error handling token error:', err);
+      setError('Problème d\'authentification. Veuillez vous reconnecter.');
+      await logout();
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -250,6 +347,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshUserData,
     refreshToken,
     clearError,
+    handleTokenError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

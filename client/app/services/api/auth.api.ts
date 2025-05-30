@@ -8,16 +8,19 @@ import {
   TokenRefreshResponse,
   User,
 } from '../../types/auth.types';
-import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
-import apiClient, { API_URL, TUNNEL_MODE } from './client'; // Import our central API client and configuration
+import { saveAuthData, getItem, clearAuthData, STORAGE_KEYS, saveItem } from '../secureStorage';
+import apiClient, { API_URL, API_CONFIG } from './client'; // Import our central API client and configuration
 import { logger } from '../../utils/logger';
+import { extractApiData, extractErrorMessage } from './utils';
 
-// Log API configuration for debugging
-console.log('🔄 AUTH API: Using URL from central API client:', API_URL);
-console.log('🔄 AUTH API: Tunnel mode from client:', TUNNEL_MODE ? 'Active' : 'Inactive');
+// Log API configuration for debugging only in development mode
+if (__DEV__) {
+  console.log('🔄 AUTH API: Using URL from central API client:', API_URL);
+  console.log('🔄 AUTH API: Using production API:', API_CONFIG.USING_PRODUCTION ? 'Yes' : 'No');
+}
 
 // Debug flag - easily toggle detailed logging
-const DEBUG = true;
+const DEBUG = false;
 
 // Utility for logging important information during development
 const logDebug = (message: string, data?: unknown) => {
@@ -74,7 +77,7 @@ const logError = (message: string, error: unknown) => {
 const logApiConfig = () => {
   logDebug(`Current API configuration:`, {
     url: API_URL,
-    tunnelMode: TUNNEL_MODE,
+    usingProduction: API_CONFIG.USING_PRODUCTION,
     baseURL: apiClient.defaults.baseURL,
     platform: Platform.OS
   });
@@ -155,23 +158,13 @@ export const authApi = {
 
     return measureRequestTime('Registration request', async () => {
       try {
-        // Send to user API endpoints as that's what the server expects
-        // Try both /users and /auth/register endpoints in case one fails
-        try {
-          // First try /users endpoint
-          const response = await apiClient.post<AuthResponse>('/users', data);
-          logDebug('Server response for registration:', response.data);
-          return response.data;
-        } catch (firstError) {
-          logError('First registration attempt failed, trying alternate endpoint', firstError);
-
-          // Fallback to /auth/register endpoint
-          const response = await apiClient.post<AuthResponse>('/auth/register', data);
-          logDebug('Server response for registration (fallback endpoint):', response.data);
-          return response.data;
-        }
+        // Use only the /auth/register endpoint since /users is not available
+        const response = await apiClient.post('/auth/register', data);
+        const authData = extractApiData<AuthResponse>(response);
+        logDebug('Server response for registration:', authData);
+        return authData;
       } catch (error) {
-        logError('Registration failed after all attempts', error);
+        logError('Registration failed', error);
         throw error;
       }
     });
@@ -183,7 +176,7 @@ export const authApi = {
     // Log API configuration using our centralized settings
     const connectionInfo = {
       apiUrl: API_URL,
-      tunnelMode: TUNNEL_MODE,
+      usingProduction: API_CONFIG.USING_PRODUCTION,
       platform: Platform.OS,
       hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A'
     };
@@ -192,26 +185,29 @@ export const authApi = {
 
     return measureRequestTime('Login request', async () => {
       try {
-        const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+        const response = await apiClient.post('/auth/login', credentials);
+        
+        // Use utility function to extract data regardless of response format
+        const authData = extractApiData<AuthResponse>(response);
 
         logDebug(`Login successful`, {
-          userId: response.data.user.id,
-          role: response.data.user.role,
-          displayName: response.data.user.displayName,
-          tokenReceived: !!response.data.accessToken,
+          userId: authData.user.id,
+          role: authData.user.role,
+          displayName: authData.user.displayName,
+          tokenReceived: !!authData.accessToken,
         });
 
         // Check if response contains expected data
-        if (!response.data.accessToken || !response.data.user) {
-          logError('Login response missing critical data', response.data);
+        if (!authData.accessToken || !authData.user) {
+          logError('Login response missing critical data', authData);
           throw new Error('Réponse du serveur invalide');
         }
 
         // Store authentication data securely
-        await saveAuthData(response.data.accessToken, response.data.refreshToken, response.data.user);
+        await saveAuthData(authData.accessToken, authData.refreshToken, authData.user);
 
         logDebug('Authentication data stored securely');
-        return response.data;
+        return authData;
       } catch (error) {
         // Provide specific error messages based on the server response
         if (error.response?.status === 401) {
@@ -233,16 +229,78 @@ export const authApi = {
     logDebug('Initiating logout process');
 
     return measureRequestTime('Logout request', async () => {
+      // First, ensure we're clearing local data regardless of server success
+      const clearLocalData = async () => {
+        try {
+          // Clear auth data from secure storage
+          await clearAuthData();
+          logDebug('Local authentication data cleared');
+          return true;
+        } catch (clearError) {
+          logError('Failed to clear auth data using clearAuthData', clearError);
+          
+          // Attempt clearing individual items as fallback
+          try {
+            logDebug('Attempting fallback clear method');
+            const keys = [STORAGE_KEYS.ACCESS_TOKEN, STORAGE_KEYS.REFRESH_TOKEN, STORAGE_KEYS.USER];
+            let success = true;
+            
+            for (const key of keys) {
+              try {
+                await saveItem(key, '');
+                logDebug(`Cleared ${key}`);
+              } catch (e) {
+                logError(`Failed to clear ${key}`, e);
+                success = false;
+              }
+            }
+            
+            return success;
+          } catch (fallbackError) {
+            logError('Complete failure clearing auth data', fallbackError);
+            return false;
+          }
+        }
+      };
+      
       try {
-        await apiClient.post('/auth/logout');
-        logDebug('Logout request successful');
+        // Try to get the refresh token, but don't fail if not found
+        let refreshToken = null;
+        try {
+          refreshToken = await getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        } catch (tokenError) {
+          logDebug('Error retrieving refresh token - may already be logged out');
+        }
+
+        // Parallel operations: try server logout and clear local data at the same time
+        const operations = [clearLocalData()];
+        
+        // Only attempt server logout if we have a token
+        if (refreshToken) {
+          operations.push(
+            apiClient.post('/auth/logout')
+              .then(() => {
+                logDebug('Logout request successful');
+                return true;
+              })
+              .catch(serverError => {
+                logError('Logout request failed on server', serverError);
+                logDebug('Proceeding with local logout despite server error');
+                return false;
+              })
+          );
+        } else {
+          logDebug('No refresh token found, skipping server logout');
+        }
+        
+        // Wait for all operations to complete
+        await Promise.all(operations);
+        logDebug('Logout process completed');
+        
       } catch (error) {
-        logError('Logout request failed', error);
-        // Continue with local logout regardless of server error
-        logDebug('Proceeding with local logout despite server error');
-      } finally {
-        await clearAuthData();
-        logDebug('Local authentication data cleared');
+        logError('Unexpected error during logout process', error);
+        // Still try to clear data as a last resort
+        await clearLocalData();
       }
     });
   },
@@ -262,22 +320,24 @@ export const authApi = {
         const tokenPreview = `${refreshToken.substring(0, 10)}...`;
         logDebug(`Using refresh token: ${tokenPreview}`);
 
-        const response = await apiClient.post<TokenRefreshResponse>('/auth/refresh-token', {
+        const response = await apiClient.post('/auth/refresh-token', {
           refreshToken,
         });
 
-        if (!response.data.accessToken) {
-          logError('Refresh token response missing access token', response.data);
+        const tokenData = extractApiData<TokenRefreshResponse>(response);
+
+        if (!tokenData.accessToken) {
+          logError('Refresh token response missing access token', tokenData);
           throw new Error('Invalid refresh token response');
         }
 
-        const accessTokenPreview = `${response.data.accessToken.substring(0, 10)}...`;
+        const accessTokenPreview = `${tokenData.accessToken.substring(0, 10)}...`;
         logDebug(`Received new access token: ${accessTokenPreview}`);
 
-        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
+        await saveItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.accessToken);
         logDebug('New access token stored securely');
 
-        return response.data;
+        return tokenData;
       } catch (error) {
         logError('Token refresh failed', error);
         throw new Error('Failed to refresh authentication token. Please login again.');
@@ -294,28 +354,237 @@ export const authApi = {
         const tokenPreview = token ? `${token.substring(0, 10)}...` : 'none';
         logDebug(`Using access token: ${tokenPreview}`);
 
-        const response = await apiClient.get<User>('/users/me');
+        // Utilisation de l'endpoint spécifié dans la documentation de l'API
+        const response = await apiClient.get('/users/me');
+        
+        // Check if we have a valid response
+        if (!response || !response.data) {
+          throw new Error('Réponse du serveur vide ou invalide');
+        }
+        
+        // Use utility function to extract data regardless of response format
+        const userData = extractApiData<User>(response);
+
+        // Validate user data
+        if (!userData || !userData.id) {
+          throw new Error('Données utilisateur manquantes ou invalides');
+        }
 
         logDebug('User profile fetched successfully', {
-          id: response.data.id,
-          email: response.data.email,
-          role: response.data.role,
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
         });
 
-        // Update stored user information
-        await saveItem(STORAGE_KEYS.USER, JSON.stringify(response.data));
-        logDebug('User profile saved to secure storage');
+        try {
+          // Update stored user information
+          await saveItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+          logDebug('User profile saved to secure storage');
+        } catch (storageError) {
+          logError('Failed to save user profile to storage', storageError);
+          // Continue anyway - don't fail the getCurrentUser request because of storage issues
+        }
 
-        return response.data;
+        return userData;
+      } catch (error) {
+        // Check if it's a token error
+        if (error.response?.status === 401 || error.message?.includes('expirée')) {
+          throw new Error('Session expirée. Veuillez vous reconnecter.');
+        } 
+        // Check if it's a network error
+        else if (!error.response && error.message?.includes('network')) {
+          throw new Error(
+            'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
+          );
+        }
+        // Check if response exists but has an unexpected format
+        else if (error.response?.data && error.response.status !== 200) {
+          const errorMessage = error.response.data.message || 'Erreur serveur';
+          throw new Error(`Erreur du serveur: ${errorMessage}`);
+        }
+        // Default error when response data format is unexpected
+        else if (error.message?.includes('manquantes') || error.message?.includes('invalide')) {
+          throw error; // Rethrow our validation errors
+        }
+        // Default fallback error
+        else {
+          console.error('Unexpected error in getCurrentUser:', error);
+          throw new Error('Impossible de récupérer votre profil. Veuillez réessayer plus tard.');
+        }
+      }
+    });
+  },
+  
+  // Mise à jour du profil utilisateur
+  updateUserProfile: async (userData: Partial<User>): Promise<User> => {
+    logDebug('Updating user profile');
+
+    return measureRequestTime('Update user profile request', async () => {
+      try {
+        // Utilisation de l'endpoint spécifié dans la documentation de l'API
+        const response = await apiClient.put('/users/me', userData);
+        
+        if (!response || !response.data) {
+          throw new Error('Réponse du serveur vide ou invalide');
+        }
+        
+        const updatedUserData = extractApiData<User>(response);
+
+        if (!updatedUserData || !updatedUserData.id) {
+          throw new Error('Données utilisateur mises à jour manquantes ou invalides');
+        }
+
+        logDebug('User profile updated successfully', {
+          id: updatedUserData.id,
+          displayName: updatedUserData.displayName,
+        });
+
+        // Mettre à jour les informations stockées
+        try {
+          // Récupérer d'abord les données actuelles
+          const currentUserJson = await getItem(STORAGE_KEYS.USER);
+          if (currentUserJson) {
+            const currentUser = JSON.parse(currentUserJson);
+            // Fusionner les données actuelles avec les données mises à jour
+            const mergedUser = { ...currentUser, ...updatedUserData };
+            await saveItem(STORAGE_KEYS.USER, JSON.stringify(mergedUser));
+            logDebug('Updated user profile saved to secure storage');
+          } else {
+            await saveItem(STORAGE_KEYS.USER, JSON.stringify(updatedUserData));
+          }
+        } catch (storageError) {
+          logError('Failed to save updated user profile to storage', storageError);
+        }
+
+        return updatedUserData;
       } catch (error) {
         if (error.response?.status === 401) {
           throw new Error('Session expirée. Veuillez vous reconnecter.');
+        } else if (error.response?.status === 400) {
+          const errorMessage = error.response.data.message || 'Données de profil invalides';
+          throw new Error(errorMessage);
         } else if (!error.response) {
           throw new Error(
             'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
           );
         } else {
-          throw new Error('Impossible de récupérer votre profil. Veuillez réessayer plus tard.');
+          throw new Error('La mise à jour du profil a échoué. Veuillez réessayer plus tard.');
+        }
+      }
+    });
+  },
+  
+  // Changement de mot de passe
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    logDebug('Changing user password');
+
+    return measureRequestTime('Change password request', async () => {
+      try {
+        // Utilisation de l'endpoint spécifié dans la documentation de l'API
+        await apiClient.put('/users/me/password', {
+          currentPassword,
+          newPassword,
+        });
+        
+        logDebug('Password changed successfully');
+      } catch (error) {
+        if (error.response?.status === 401) {
+          throw new Error('Mot de passe actuel incorrect.');
+        } else if (error.response?.status === 400) {
+          const errorMessage = error.response.data.message || 'Données de mot de passe invalides';
+          throw new Error(errorMessage);
+        } else if (!error.response) {
+          throw new Error(
+            'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
+          );
+        } else {
+          throw new Error('Le changement de mot de passe a échoué. Veuillez réessayer plus tard.');
+        }
+      }
+    });
+  },
+  
+  // Obtenir les sessions actives de l'utilisateur
+  getUserSessions: async (): Promise<any[]> => {
+    logDebug('Fetching user sessions');
+
+    // Fonction pour générer des données de session simulées
+    const getMockSessions = () => {
+      logDebug('Returning mock sessions data');
+      const deviceInfo = Platform.OS === 'ios' ? 'iPhone' : Platform.OS === 'android' ? 'Android' : 'Appareil';
+      return [{
+        id: 'session-current',
+        device: `${deviceInfo} actuel`,
+        location: 'Emplacement actuel',
+        lastActive: new Date().toISOString(),
+        current: true
+      }];
+    };
+
+    try {
+      // Récupérer l'ID de l'utilisateur actuel
+      const userJson = await getItem(STORAGE_KEYS.USER);
+      if (!userJson) {
+        logDebug('No user found in storage, returning mock data');
+        return getMockSessions();
+      }
+      
+      const user = JSON.parse(userJson);
+      
+      try {
+        // Tentative d'utilisation de l'endpoint API - NO MEASUREMENT to reduce logs
+        logDebug(`Attempting to fetch sessions for user ${user.id}`);
+        const response = await apiClient.get(`/users/${user.id}/sessions`);
+        
+        if (!response || !response.data) {
+          logDebug('Empty response from server, using mock data');
+          return getMockSessions();
+        }
+        
+        const sessions = extractApiData<any[]>(response);
+        logDebug(`${sessions.length} user sessions fetched successfully`);
+        return sessions;
+      } catch (apiError) {
+        // Si l'endpoint n'existe pas (404) ou autre erreur, utilisez des données simulées
+        logDebug(`API error: ${apiError.message}, status: ${apiError.response?.status}`);
+        
+        if (apiError.response?.status === 404) {
+          logDebug('Sessions API endpoint returned 404, using mock data');
+          return getMockSessions();
+        } else {
+          logDebug('Other API error, using mock data');
+          return getMockSessions();
+        }
+      }
+    } catch (error) {
+      // En cas d'erreur quelconque, retourner des données simulées au lieu de lever une exception
+      logDebug(`Unexpected error in getUserSessions: ${error.message}`);
+      return getMockSessions();
+    }
+  },
+  
+  // Révoquer une session spécifique
+  revokeSession: async (sessionId: string): Promise<void> => {
+    logDebug(`Revoking session: ${sessionId}`);
+
+    return measureRequestTime('Revoke session request', async () => {
+      try {
+        // Utilisation d'un endpoint hypothétique qui n'est pas explicitement dans la documentation
+        // Nous pourrions avoir besoin d'ajuster cela selon l'implémentation réelle de l'API
+        await apiClient.delete(`/auth/sessions/${sessionId}`);
+        
+        logDebug('Session successfully revoked');
+      } catch (error) {
+        if (error.response?.status === 401) {
+          throw new Error('Session expirée. Veuillez vous reconnecter.');
+        } else if (error.response?.status === 404) {
+          throw new Error('Session introuvable ou déjà révoquée.');
+        } else if (!error.response) {
+          throw new Error(
+            'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
+          );
+        } else {
+          throw new Error('Impossible de révoquer la session. Veuillez réessayer plus tard.');
         }
       }
     });
@@ -338,7 +607,7 @@ export const authApi = {
           details: {
             serverResponse: response.data,
             apiUrl: API_URL,
-            tunnelMode: TUNNEL_MODE,
+            usingProduction: API_CONFIG.USING_PRODUCTION,
             hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A',
             platform: Platform.OS,
             timestamp: new Date().toISOString(),
@@ -350,7 +619,7 @@ export const authApi = {
           details: {
             message: error.message,
             apiUrl: API_URL,
-            tunnelMode: TUNNEL_MODE,
+            usingProduction: API_CONFIG.USING_PRODUCTION,
             hostUri: require('expo-constants').default.expoConfig?.hostUri || 'N/A',
             platform: Platform.OS,
             networkError: !error.response,

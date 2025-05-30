@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ImageBackground, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../constants/theme';
 import { getWeatherImageSource, getWeatherDescription } from '../../utils/weatherUtils';
+import { Ionicons } from '@expo/vector-icons';
 
 interface WeatherCardProps {
   temperature?: number;
@@ -10,6 +11,8 @@ interface WeatherCardProps {
   visibility?: number;
   humidity?: number;
   loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 const WeatherCard: React.FC<WeatherCardProps> = ({
@@ -19,14 +22,36 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   visibility,
   humidity,
   loading = false,
+  error = null,
+  onRetry,
 }) => {
   const theme = useTheme();
   const styles = createStyles(theme);
 
   const weatherImage = useMemo(() => getWeatherImageSource(condition), [condition]);
-
   const weatherDesc = useMemo(() => getWeatherDescription(condition), [condition]);
+  
+  // Check if we have any meaningful weather data
+  const hasData = temperature !== undefined || condition !== undefined;
 
+  // If an error occurred during weather data fetching
+  if (error) {
+    return (
+      <View style={styles.errorCard}>
+        <Ionicons name="cloud-offline" size={40} color={theme.colors.error} />
+        <Text style={styles.errorTitle}>Données météo indisponibles</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        {onRetry && (
+          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+            <Ionicons name="refresh" size={16} color={theme.colors.primaryText} />
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // If data is still loading
   if (loading) {
     return (
       <View style={styles.loadingCard}>
@@ -36,6 +61,24 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     );
   }
 
+  // If we have no data after loading (but no explicit error)
+  if (!hasData) {
+    return (
+      <View style={styles.errorCard}>
+        <Ionicons name="cloudy" size={40} color={theme.colors.text} />
+        <Text style={styles.errorTitle}>Données météo indisponibles</Text>
+        <Text style={styles.errorText}>Aucune information météo n'a pu être récupérée.</Text>
+        {onRetry && (
+          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+            <Ionicons name="refresh" size={16} color={theme.colors.primaryText} />
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // Normal state with weather data
   return (
     <ImageBackground source={weatherImage} style={styles.card} imageStyle={styles.backgroundImage}>
       <View style={styles.overlay}>
@@ -79,6 +122,16 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.colors.loadingIndicator.background,
       ...theme.shadow.lg,
     },
+    errorCard: {
+      height: 220,
+      borderRadius: theme.borderRadius.medium,
+      marginVertical: theme.spacing.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.card,
+      padding: theme.spacing.md,
+      ...theme.shadow.lg,
+    },
     backgroundImage: {
       borderRadius: theme.borderRadius.medium,
       resizeMode: 'cover',
@@ -100,6 +153,20 @@ const createStyles = (theme: any) =>
       fontWeight: theme.typography.header.fontWeight,
       marginBottom: theme.spacing.xs,
       textAlign: 'center',
+    },
+    errorTitle: {
+      color: theme.colors.error,
+      fontSize: theme.typography.title.fontSize,
+      fontWeight: 'bold',
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
+      textAlign: 'center',
+    },
+    errorText: {
+      color: theme.colors.text,
+      fontSize: theme.typography.body.fontSize,
+      textAlign: 'center',
+      marginBottom: theme.spacing.md,
     },
     conditionText: {
       color: theme.colors.primaryText,
@@ -128,6 +195,22 @@ const createStyles = (theme: any) =>
       fontSize: theme.typography.body.fontSize,
       marginTop: theme.spacing.md,
       textAlign: 'center',
+    },
+    retryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.small,
+      justifyContent: 'center',
+      marginTop: theme.spacing.sm,
+    },
+    retryText: {
+      color: theme.colors.primaryText,
+      marginLeft: theme.spacing.xs,
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '600',
     },
   });
 

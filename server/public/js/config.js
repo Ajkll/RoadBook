@@ -3,7 +3,14 @@
  */
 
 // URL de base de l'API
-const API_URL = '/api';
+// Pour le développement local (chemin relatif)
+// const API_URL = '/api';
+
+// Pour utiliser le backend déployé sur Render
+const API_URL = 'https://roadbook-backend.onrender.com/api';
+
+// Si vous devez changer l'URL de l'API rapidement, vous pouvez utiliser la console:
+// window.API_URL = 'https://roadbook-backend.onrender.com/api';
 
 // Liste des modules disponibles
 const MODULES = [

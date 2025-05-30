@@ -2,14 +2,27 @@ import { Audio } from 'expo-av';
 import { SOUNDS, SoundKey } from '../constants/sound';
 import { logger } from './logger';
 
-let soundCache: Record<SoundKey, Audio.Sound | null> = {} as Record<SoundKey, Audio.Sound | null>;
+// Utiliser un Map pour une meilleure gestion de la mémoire et des références
+const soundCache = new Map<SoundKey, Audio.Sound | null>();
 let currentlyPlaying: SoundKey[] = [];
 
 const loadSound = async (key: SoundKey) => {
-  if (soundCache[key]) return soundCache[key];
+  // Vérifier si le son est déjà en cache et valide
+  if (soundCache.has(key) && soundCache.get(key)) {
+    const sound = soundCache.get(key);
+    try {
+      // Vérifier si le son est toujours valide
+      const status = await sound?.getStatusAsync();
+      if (status?.isLoaded) {
+        return sound;
+      }
+    } catch (e) {
+      // Le son n'est pas valide, on va le recharger
+    }
+  }
 
   try {
-    console.log(`Loading sound: ${key}`);
+    // Charger un nouveau son
     const { sound } = await Audio.Sound.createAsync(
       SOUNDS[key].asset,
       { shouldPlay: false },
@@ -22,10 +35,11 @@ const loadSound = async (key: SoundKey) => {
       }
     );
 
-    soundCache[key] = sound;
+    soundCache.set(key, sound);
     return sound;
   } catch (error) {
     logger.error(`Error loading sound ${key}:`, error);
+    soundCache.set(key, null);
     return null;
   }
 };
@@ -88,14 +102,20 @@ const playShortSound = async (key: SoundKey, volume: number) => {
 
 export const stopAllSounds = async () => {
   try {
-    await Promise.all(
-      currentlyPlaying.map(async (key) => {
-        const sound = soundCache[key];
-        if (sound) {
-          await sound.stopAsync();
+    for (const key of [...currentlyPlaying]) {
+      const sound = soundCache.get(key);
+      if (sound) {
+        try {
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded) {
+            await sound.stopAsync();
+          }
+        } catch (soundError) {
+          // Ignorer les erreurs si le son n'existe plus
+          soundCache.set(key, null);
         }
-      })
-    );
+      }
+    }
     currentlyPlaying = [];
   } catch (error) {
     logger.error('Error stopping sounds:', error);
@@ -104,15 +124,22 @@ export const stopAllSounds = async () => {
 
 export const unloadAllSounds = async () => {
   try {
-    await Promise.all(
-      Object.keys(soundCache).map(async (key) => {
-        const sound = soundCache[key as SoundKey];
-        if (sound) {
-          await sound.unloadAsync();
+    // Utiliser une approche séquentielle plus sûre pour éviter les erreurs
+    for (const key of soundCache.keys()) {
+      const sound = soundCache.get(key);
+      if (sound) {
+        try {
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded) {
+            await sound.unloadAsync();
+          }
+        } catch (soundError) {
+          // Ignorer silencieusement les erreurs individuelles
         }
-      })
-    );
-    soundCache = {} as Record<SoundKey, Audio.Sound | null>;
+      }
+    }
+    soundCache.clear();
+    currentlyPlaying = [];
   } catch (error) {
     logger.error('Error unloading sounds:', error);
   }

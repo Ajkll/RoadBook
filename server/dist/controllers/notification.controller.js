@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cleanupOldNotifications = exports.deleteAllNotifications = exports.deleteNotification = exports.markAllAsRead = exports.markAsRead = exports.getUnreadCount = exports.getUserNotifications = void 0;
 const notificationService = __importStar(require("../services/notification.service"));
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 const logger_1 = __importDefault(require("../utils/logger"));
 /**
  * Get all notifications for the authenticated user
@@ -140,7 +140,7 @@ const deleteNotification = async (req, res) => {
         }
         const { notificationId } = req.params;
         // Need to check ownership before deleting
-        const notification = await prisma_1.prisma.notification.findUnique({
+        const notification = await prisma_1.default.notification.findUnique({
             where: { id: notificationId },
         });
         if (!notification) {

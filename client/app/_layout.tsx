@@ -169,7 +169,7 @@ function RootNavigator() {
           name="StartDriveScreen"
           options={{ title: 'Démarrer', drawerLabel: 'Démarrer' }}
         />
-        <Drawer.Screen name="ProfileScreen" options={{ title: 'Profil', drawerLabel: 'Profil' }} />
+        <Drawer.Screen name="ProfileScreen" options={{ title: 'Profile', drawerLabel: 'Profile' }} />
       </Drawer>
       <OfflineToast />
     </>

@@ -1,7 +1,7 @@
 // client/app/services/api/client.ts
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { Platform } from 'react-native';
-import { getItem, STORAGE_KEYS } from '../secureStorage';
+import { getItem, saveItem, clearAuthData, STORAGE_KEYS } from '../secureStorage';
 import Constants from 'expo-constants';
 import { logger } from '../../utils/logger';
 
@@ -12,15 +12,20 @@ const ANDROID_EMULATOR_API = 'http://10.0.2.2:4002/api';
 const GITHUB_CODESPACE_URL =
   'https://yanstart-rainy-space-5rgx6q6xqpw367r5-4002.preview.app.github.dev/api';
 
+// URL de l'API de production (déployée sur Render)
+const PRODUCTION_API = 'https://roadbook-backend.onrender.com/api';
+
 // ===== NGROK CONFIG =====
 // IMPORTANT: Remplace cette URL par ton URL ngrok active
 // Exécute ngrok http 4002 dans un terminal et copie l'URL fournie ici
 const NGROK_URL = 'https://1234-abc-test.ngrok.io/api'; // REMPLACE CETTE URL!
 
 // ===== CONFIGURATION GLOBALE =====
-// Définir FORCE_NGROK = true pour utiliser ngrok systématiquement
+// Définir FORCE_PRODUCTION = true pour utiliser l'API de production systématiquement
+// Définir FORCE_NGROK = true pour utiliser ngrok systématiquement en développement
 // C'est l'option la plus fiable pour les tests sur appareil physique
-const FORCE_NGROK = true;
+const FORCE_PRODUCTION = true;
+const FORCE_NGROK = false;
 
 // ===== DÉTECTION D'ENVIRONNEMENT =====
 // Fonction améliorée pour détecter le type d'environnement
@@ -59,7 +64,13 @@ const detectEnvironment = () => {
 // ===== SÉLECTION DE L'URL DE L'API =====
 // Choisit l'URL appropriée en fonction de l'environnement
 const getApiUrl = () => {
-  // Si FORCE_NGROK est activé, toujours utiliser ngrok (option la plus fiable)
+  // Si FORCE_PRODUCTION est activé, toujours utiliser l'API de production
+  if (FORCE_PRODUCTION) {
+    console.log('🌍 Using PRODUCTION API URL (forced):', PRODUCTION_API);
+    return PRODUCTION_API;
+  }
+  
+  // Si FORCE_NGROK est activé, toujours utiliser ngrok (option pour le développement)
   if (FORCE_NGROK) {
     console.log('🌍 Using NGROK URL (forced):', NGROK_URL);
     return NGROK_URL;
@@ -82,8 +93,11 @@ const getApiUrl = () => {
       return ANDROID_EMULATOR_API;
 
     case 'physical':
-      // Sur appareils physiques, utiliser ngrok ou Codespace selon la configuration
-      if (FORCE_NGROK) {
+      // Sur appareils physiques, utiliser API de production, ngrok ou Codespace selon la configuration
+      if (FORCE_PRODUCTION) {
+        console.log('📱 Using PRODUCTION API for physical device:', PRODUCTION_API);
+        return PRODUCTION_API;
+      } else if (FORCE_NGROK) {
         console.log('📱 Using NGROK URL for physical device:', NGROK_URL);
         return NGROK_URL;
       } else {
@@ -92,9 +106,9 @@ const getApiUrl = () => {
       }
 
     default:
-      // En cas de doute, utiliser ngrok comme solution de repli
-      console.log('⚠️ Unknown environment, using NGROK URL as fallback');
-      return NGROK_URL;
+      // En cas de doute, utiliser l'API de production comme solution de repli
+      console.log('⚠️ Unknown environment, using PRODUCTION API as fallback');
+      return PRODUCTION_API;
   }
 };
 
@@ -108,7 +122,9 @@ export const API_CONFIG = {
   IS_PHYSICAL_DEVICE: env.environment === 'physical',
   IS_EMULATOR: env.environment === 'android-emulator' || env.environment === 'ios-simulator',
   IS_WEB: env.environment === 'web',
+  USING_PRODUCTION: FORCE_PRODUCTION || getApiUrl() === PRODUCTION_API,
   USING_NGROK: FORCE_NGROK || getApiUrl() === NGROK_URL,
+  PRODUCTION_API,
   NGROK_URL,
   GITHUB_CODESPACE_URL,
 };
@@ -117,20 +133,22 @@ export const API_CONFIG = {
 export const API_URL = API_CONFIG.API_URL;
 export const CODESPACE_BASE_URL = GITHUB_CODESPACE_URL;
 export const TUNNEL_MODE = API_CONFIG.IS_PHYSICAL_DEVICE;
-const DEBUG = true;
+const DEBUG = false;
 
-// Loguer la configuration finale
-console.log('🔧 API CLIENT CONFIGURATION:');
-console.log('🔧 API URL:', API_URL);
-console.log('🔧 Environment:', API_CONFIG.ENVIRONMENT);
-console.log('🔧 Using NGROK:', API_CONFIG.USING_NGROK ? 'YES' : 'NO');
-console.log('🔧 Platform:', Platform.OS);
+// Loguer la configuration finale une seule fois au démarrage
+if (__DEV__) {
+  console.log('🔧 API CLIENT CONFIGURATION:');
+  console.log('🔧 API URL:', API_URL);
+  console.log('🔧 Environment:', API_CONFIG.ENVIRONMENT);
+  console.log('🔧 Using NGROK:', API_CONFIG.USING_NGROK ? 'YES' : 'NO');
+  console.log('🔧 Platform:', Platform.OS);
+}
 
 // ===== CRÉATION DU CLIENT AXIOS =====
 // Créer une instance axios configurée
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // 15 secondes
+  timeout: 30000, // 30 secondes - Augmenté pour donner plus de temps pour les reconnexions
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -170,6 +188,49 @@ apiClient.interceptors.request.use(
 
 // ===== INTERCEPTEURS DE RÉPONSE =====
 // Gérer les erreurs et les réponses
+
+// Variable to track if a token refresh is in progress
+let isRefreshingToken = false;
+// Queue of requests to retry after token refresh
+let requestsQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (error: unknown) => void;
+  config: any;
+}> = [];
+
+// Process requests queue with new token
+const processQueue = (error: any = null, newToken: string | null = null) => {
+  requestsQueue.forEach(({ resolve, reject, config }) => {
+    if (error) {
+      reject(error);
+    } else {
+      // Update the Authorization header with the new token
+      if (newToken) {
+        config.headers.Authorization = `Bearer ${newToken}`;
+      }
+      // Retry the request with the updated config
+      resolve(axios(config));
+    }
+  });
+  // Clear the queue
+  requestsQueue = [];
+};
+
+// Global event emitter for auth events
+import EventEmitter from 'eventemitter3';
+export const authEvents = new EventEmitter();
+
+// Create a custom event for token refresh failures
+// This allows components to listen for auth failures and respond accordingly
+export const createAuthFailureEvent = () => {
+  // Use EventEmitter instead of DOM events
+  authEvents.emit('auth:failure', { 
+    message: 'Authentication failed, please login again' 
+  });
+  
+  logger.warn('Auth failure event emitted');
+};
+
 apiClient.interceptors.response.use(
   (response) => {
     if (DEBUG) {
@@ -180,6 +241,105 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     logger.error('Response interceptor error:', error.message);
+
+    // Get the original request config
+    const originalRequest = error.config as AxiosRequestConfig;
+    
+    // Retry logic for 500 server errors (potentially database connection issues)
+    // Only retry if it's a 500 error, has not exceeded retry limit, and is not a token refresh
+    if (
+      error.response?.status === 500 && 
+      !originalRequest._retryCount && 
+      originalRequest.url && 
+      !originalRequest.url.includes('refresh-token')
+    ) {
+      // Initialize or increment retry count
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      
+      // Maximum retry attempts
+      const MAX_RETRIES = 2;
+      
+      // If we're under the retry limit
+      if (originalRequest._retryCount <= MAX_RETRIES) {
+        logger.info(`Retrying request due to 500 error (attempt ${originalRequest._retryCount}/${MAX_RETRIES})`);
+        
+        // Wait with exponential backoff
+        const delay = Math.pow(2, originalRequest._retryCount) * 1000; // 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Retry the request
+        return axios(originalRequest);
+      }
+    }
+    
+    // Check if the error is due to an expired token (status 401)
+    // Also make sure we're not already trying to refresh the token and this isn't a token refresh request
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._isRetry &&
+      !originalRequest.url?.includes('refresh-token') &&
+      !isRefreshingToken
+    ) {
+      // Mark that we're in the process of refreshing the token
+      isRefreshingToken = true;
+      // Mark this request to avoid infinite retry loops
+      originalRequest._isRetry = true;
+
+      logger.info('Token expired, attempting to refresh...');
+
+      // Create a new promise that will be resolved when the token is refreshed
+      return new Promise((resolve, reject) => {
+        // Add to queue of requests to retry after token refresh
+        requestsQueue.push({ resolve, reject, config: originalRequest });
+
+        // Try to refresh the token
+        getItem(STORAGE_KEYS.REFRESH_TOKEN)
+          .then(refreshToken => {
+            if (!refreshToken) {
+              logger.error('No refresh token available');
+              processQueue(new Error('No refresh token available'));
+              isRefreshingToken = false;
+              return;
+            }
+
+            // Call the token refresh function
+            return axios.post(`${API_URL}/auth/refresh-token`, { refreshToken })
+              .then(response => {
+                const newToken = response.data.data?.accessToken || response.data.accessToken;
+                if (!newToken) {
+                  throw new Error('Invalid refresh token response');
+                }
+
+                // Save the new token
+                saveItem(STORAGE_KEYS.ACCESS_TOKEN, newToken)
+                  .then(() => {
+                    logger.info('Token refreshed successfully');
+                    
+                    // Update Authorization header for future requests
+                    apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    
+                    // Process all queued requests with the new token
+                    processQueue(null, newToken);
+                    isRefreshingToken = false;
+                  });
+              })
+              .catch(refreshError => {
+                logger.error('Token refresh failed:', refreshError);
+                // Process all queued requests with the error
+                processQueue(refreshError);
+                isRefreshingToken = false;
+                
+                // Clean up auth data since the refresh token is likely invalid
+                clearAuthData()
+                  .then(() => {
+                    // Notify the app that authentication has failed
+                    createAuthFailureEvent();
+                  });
+              });
+          });
+      });
+    }
 
     // Logguer les informations d'erreur détaillées
     if (error.response) {
@@ -206,13 +366,19 @@ apiClient.interceptors.response.use(
     }
 
     interface ErrorWithDetails extends Error {
-      originalError: AxiosError;
+      originalError: any;
       response: unknown;
+      isRefreshError?: boolean;
     }
 
     const enhancedError = new Error(errorMessage) as ErrorWithDetails;
     enhancedError.originalError = error;
     enhancedError.response = error.response;
+    
+    // Check if this is a refresh token error (could be useful for redirecting to login)
+    if (error.response?.status === 401 && (error.config?.url?.includes('refresh-token') || isRefreshingToken)) {
+      enhancedError.isRefreshError = true;
+    }
 
     return Promise.reject(enhancedError);
   }
@@ -227,7 +393,7 @@ export const testApiConnection = async () => {
     console.log('🔍 Environment:', API_CONFIG.ENVIRONMENT);
 
     const response = await axios.get(`${API_URL}/health`, {
-      timeout: 5000,
+      timeout: 10000, // 10 secondes pour le test
       headers: {
         Accept: 'application/json',
         'X-Client-Platform': Platform.OS,
@@ -244,17 +410,45 @@ export const testApiConnection = async () => {
       environment: API_CONFIG.ENVIRONMENT,
       platform: Platform.OS,
       hostUri: Constants.expoConfig?.hostUri || 'N/A',
+      connectionTime: `${Date.now()}`,
     };
   } catch (error) {
     logger.error('❌ API connection failed:', error);
+    
+    // Déterminer le type d'erreur pour un diagnostic plus précis
+    let errorType = 'unknown';
+    let errorDetails = {};
+    
+    if (error.code === 'ECONNABORTED') {
+      errorType = 'timeout';
+      errorDetails = { timeoutValue: '10000ms' };
+    } else if (!error.response) {
+      errorType = 'network';
+      errorDetails = { hasConnection: navigator.onLine };
+    } else if (error.response?.status >= 500) {
+      errorType = 'server';
+      errorDetails = { 
+        status: error.response.status,
+        serverError: error.response.data
+      };
+    } else {
+      errorType = 'client';
+      errorDetails = { 
+        status: error.response?.status,
+        message: error.message
+      };
+    }
+    
     return {
       success: false,
       message: error.message,
-      error: error,
+      errorType,
+      errorDetails,
       apiUrl: API_URL,
       environment: API_CONFIG.ENVIRONMENT,
       platform: Platform.OS,
       hostUri: Constants.expoConfig?.hostUri || 'N/A',
+      connectionTime: `${Date.now()}`,
     };
   }
 };

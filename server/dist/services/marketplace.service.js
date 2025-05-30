@@ -1,8 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchListings = exports.getPurchaseById = exports.getListingPurchases = exports.getUserPurchases = exports.createPurchase = exports.getSellerListings = exports.changeListingStatus = exports.deleteListing = exports.updateListing = exports.getListingById = exports.getListings = exports.createListing = void 0;
 const client_1 = require("@prisma/client");
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 /**
  * Create a new marketplace listing
  * @param sellerId ID of the seller
@@ -11,7 +14,7 @@ const prisma_1 = require("../config/prisma");
  */
 const createListing = async (sellerId, data) => {
     // Validate user role
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: sellerId },
         select: { role: true },
     });
@@ -23,7 +26,7 @@ const createListing = async (sellerId, data) => {
     if (data.price < 0) {
         throw new Error('Price cannot be negative');
     }
-    return prisma_1.prisma.marketplaceListing.create({
+    return prisma_1.default.marketplaceListing.create({
         data: {
             sellerId,
             title: data.title,
@@ -73,9 +76,9 @@ const getListings = async (params = {}, filters = {}) => {
         ];
     }
     // Count total listings
-    const total = await prisma_1.prisma.marketplaceListing.count({ where: whereClause });
+    const total = await prisma_1.default.marketplaceListing.count({ where: whereClause });
     // Get listings with pagination
-    const listings = await prisma_1.prisma.marketplaceListing.findMany({
+    const listings = await prisma_1.default.marketplaceListing.findMany({
         where: whereClause,
         skip,
         take: limit,
@@ -109,7 +112,7 @@ exports.getListings = getListings;
  * @returns Listing with details
  */
 const getListingById = async (listingId) => {
-    return prisma_1.prisma.marketplaceListing.findUnique({
+    return prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         include: {
             seller: {
@@ -140,7 +143,7 @@ exports.getListingById = getListingById;
  */
 const updateListing = async (listingId, userId, data) => {
     // Check if listing exists and belongs to user
-    const existingListing = await prisma_1.prisma.marketplaceListing.findUnique({
+    const existingListing = await prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         select: { sellerId: true },
     });
@@ -148,7 +151,7 @@ const updateListing = async (listingId, userId, data) => {
         throw new Error('Listing not found');
     }
     // Check permission - must be seller or admin
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -160,7 +163,7 @@ const updateListing = async (listingId, userId, data) => {
         throw new Error('Price cannot be negative');
     }
     // Update listing
-    return prisma_1.prisma.marketplaceListing.update({
+    return prisma_1.default.marketplaceListing.update({
         where: { id: listingId },
         data: data,
     });
@@ -174,7 +177,7 @@ exports.updateListing = updateListing;
  */
 const deleteListing = async (listingId, userId) => {
     // Check if listing exists and user has permission
-    const listing = await prisma_1.prisma.marketplaceListing.findUnique({
+    const listing = await prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         include: {
             purchases: {
@@ -187,7 +190,7 @@ const deleteListing = async (listingId, userId) => {
         throw new Error('Listing not found');
     }
     // Check permission
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -196,14 +199,14 @@ const deleteListing = async (listingId, userId) => {
     }
     // If there are purchases, archive instead of delete
     if (listing.purchases && listing.purchases.length > 0) {
-        await prisma_1.prisma.marketplaceListing.update({
+        await prisma_1.default.marketplaceListing.update({
             where: { id: listingId },
             data: { status: client_1.ListingStatus.ARCHIVED },
         });
         return true;
     }
     // If no purchases, delete the listing
-    await prisma_1.prisma.marketplaceListing.delete({ where: { id: listingId } });
+    await prisma_1.default.marketplaceListing.delete({ where: { id: listingId } });
     return true;
 };
 exports.deleteListing = deleteListing;
@@ -216,7 +219,7 @@ exports.deleteListing = deleteListing;
  */
 const changeListingStatus = async (listingId, userId, status) => {
     // Check if listing exists and user has permission
-    const listing = await prisma_1.prisma.marketplaceListing.findUnique({
+    const listing = await prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         select: { sellerId: true },
     });
@@ -224,7 +227,7 @@ const changeListingStatus = async (listingId, userId, status) => {
         throw new Error('Listing not found');
     }
     // Check permission
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -233,7 +236,7 @@ const changeListingStatus = async (listingId, userId, status) => {
     }
     // If attempting to publish, perform validation
     if (status === client_1.ListingStatus.ACTIVE) {
-        const completeCheck = await prisma_1.prisma.marketplaceListing.findUnique({
+        const completeCheck = await prisma_1.default.marketplaceListing.findUnique({
             where: { id: listingId },
             select: {
                 title: true,
@@ -252,7 +255,7 @@ const changeListingStatus = async (listingId, userId, status) => {
         }
     }
     // Update status
-    return prisma_1.prisma.marketplaceListing.update({
+    return prisma_1.default.marketplaceListing.update({
         where: { id: listingId },
         data: { status },
     });
@@ -268,9 +271,9 @@ const getSellerListings = async (sellerId, params = {}) => {
     const { page = 1, limit = 10, sort = 'createdAt', order = 'desc' } = params;
     const skip = (page - 1) * limit;
     // Count total listings by seller
-    const total = await prisma_1.prisma.marketplaceListing.count({ where: { sellerId } });
+    const total = await prisma_1.default.marketplaceListing.count({ where: { sellerId } });
     // Get listings with pagination
-    const listings = await prisma_1.prisma.marketplaceListing.findMany({
+    const listings = await prisma_1.default.marketplaceListing.findMany({
         where: { sellerId },
         skip,
         take: limit,
@@ -303,7 +306,7 @@ const createPurchase = async (listingId, buyerId, quantity = 1) => {
         throw new Error('Quantity must be greater than zero');
     }
     // Get listing details
-    const listing = await prisma_1.prisma.marketplaceListing.findUnique({
+    const listing = await prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         select: {
             id: true,
@@ -327,7 +330,7 @@ const createPurchase = async (listingId, buyerId, quantity = 1) => {
     // Calculate total price
     const totalPrice = listing.price * quantity;
     // Create purchase in transaction
-    const purchase = await prisma_1.prisma.$transaction(async (tx) => {
+    const purchase = await prisma_1.default.$transaction(async (tx) => {
         // Create purchase record
         const purchase = await tx.purchase.create({
             data: {
@@ -375,9 +378,9 @@ const getUserPurchases = async (userId, params = {}) => {
     const { page = 1, limit = 10, sort = 'purchaseDate', order = 'desc' } = params;
     const skip = (page - 1) * limit;
     // Count total purchases
-    const total = await prisma_1.prisma.purchase.count({ where: { buyerId: userId } });
+    const total = await prisma_1.default.purchase.count({ where: { buyerId: userId } });
     // Get purchases with pagination
-    const purchases = await prisma_1.prisma.purchase.findMany({
+    const purchases = await prisma_1.default.purchase.findMany({
         where: { buyerId: userId },
         skip,
         take: limit,
@@ -419,7 +422,7 @@ const getListingPurchases = async (listingId, sellerId, params = {}) => {
     const { page = 1, limit = 10, sort = 'purchaseDate', order = 'desc' } = params;
     const skip = (page - 1) * limit;
     // Check if listing belongs to seller
-    const listing = await prisma_1.prisma.marketplaceListing.findUnique({
+    const listing = await prisma_1.default.marketplaceListing.findUnique({
         where: { id: listingId },
         select: { sellerId: true },
     });
@@ -427,7 +430,7 @@ const getListingPurchases = async (listingId, sellerId, params = {}) => {
         throw new Error('Listing not found');
     }
     // Check permission
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: sellerId },
         select: { role: true },
     });
@@ -435,9 +438,9 @@ const getListingPurchases = async (listingId, sellerId, params = {}) => {
         throw new Error('You do not have permission to view these purchases');
     }
     // Count total purchases
-    const total = await prisma_1.prisma.purchase.count({ where: { listingId } });
+    const total = await prisma_1.default.purchase.count({ where: { listingId } });
     // Get purchases with pagination
-    const purchases = await prisma_1.prisma.purchase.findMany({
+    const purchases = await prisma_1.default.purchase.findMany({
         where: { listingId },
         skip,
         take: limit,
@@ -468,7 +471,7 @@ exports.getListingPurchases = getListingPurchases;
  * @returns Purchase details
  */
 const getPurchaseById = async (purchaseId, userId) => {
-    const purchase = await prisma_1.prisma.purchase.findUnique({
+    const purchase = await prisma_1.default.purchase.findUnique({
         where: { id: purchaseId },
         include: {
             listing: {
@@ -506,7 +509,7 @@ const getPurchaseById = async (purchaseId, userId) => {
         throw new Error('Purchase not found');
     }
     // Check if user is buyer, seller, or admin
-    const user = await prisma_1.prisma.user.findUnique({
+    const user = await prisma_1.default.user.findUnique({
         where: { id: userId },
         select: { role: true },
     });
@@ -540,9 +543,9 @@ const searchListings = async (query, params = {}) => {
         ],
     };
     // Count total matching listings
-    const total = await prisma_1.prisma.marketplaceListing.count({ where: whereClause });
+    const total = await prisma_1.default.marketplaceListing.count({ where: whereClause });
     // Get listings with pagination
-    const listings = await prisma_1.prisma.marketplaceListing.findMany({
+    const listings = await prisma_1.default.marketplaceListing.findMany({
         where: whereClause,
         skip,
         take: limit,

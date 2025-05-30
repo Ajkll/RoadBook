@@ -94,9 +94,7 @@ export async function initLogger() {
 const safeCapture = {
   message: (message: string, level: 'debug' | 'info' | 'warning' | 'error' | 'fatal' = 'info') => {
     if (!isSentryInitialized) {
-      if (__DEV__) {
-        console.warn(`Sentry not initialized, can't send message: ${message}`);
-      }
+      // Reduce noise by not logging in development mode
       return;
     }
     try {
@@ -112,9 +110,7 @@ const safeCapture = {
 
   exception: (error: Error) => {
     if (!isSentryInitialized) {
-      if (__DEV__) {
-        console.warn(`Sentry not initialized, can't send exception: ${error.message}`);
-      }
+      // Reduce noise by not logging in development mode
       return;
     }
     try {
@@ -132,7 +128,7 @@ const safeCapture = {
 export const logger = {
   debug: (message: string) => {
     loglevel.debug(`[DEBUG] ${message}`);
-    if (__DEV__) {
+    if (__DEV__ && enableDevLoggingForTesting) {
       safeCapture.message(`[DEBUG] ${message}`, 'debug');
     }
   },
@@ -168,14 +164,12 @@ export const logger = {
     if (isSentryInitialized) {
       try {
         Sentry.setUser(userData);
-        if (__DEV__) {
+        if (__DEV__ && enableDevLoggingForTesting) {
           console.log(`Sentry user set: ${JSON.stringify(userData)}`);
         }
       } catch (e) {
         console.warn('Error setting Sentry user:', e);
       }
-    } else if (__DEV__) {
-      console.warn(`Sentry not initialized, can't set user: ${JSON.stringify(userData)}`);
     }
   },
   addBreadcrumb: (breadcrumb: {
@@ -194,8 +188,6 @@ export const logger = {
       } catch (e) {
         console.warn('Error adding Sentry breadcrumb:', e);
       }
-    } else if (__DEV__) {
-      console.warn(`Sentry not initialized, can't add breadcrumb: ${breadcrumb.message}`);
     }
   },
 

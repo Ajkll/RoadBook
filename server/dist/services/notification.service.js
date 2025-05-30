@@ -1,12 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSessionValidationRequestNotification = exports.createBadgeEarnedNotification = exports.createCompetencyMasteredNotification = exports.createSessionReminderNotification = exports.aggregateSimilarNotifications = exports.cleanupOldNotifications = exports.deleteAllNotifications = exports.deleteNotification = exports.markAllAsRead = exports.markAsRead = exports.getUnreadCount = exports.getUserNotifications = exports.createNotificationForUsers = exports.createNotification = void 0;
-const prisma_1 = require("../config/prisma");
+const prisma_1 = __importDefault(require("../config/prisma"));
 /**
  * Create a new notification
  */
 const createNotification = async (userId, type, title, message, linkUrl) => {
-    return prisma_1.prisma.notification.create({
+    return prisma_1.default.notification.create({
         data: {
             userId,
             type,
@@ -21,7 +24,7 @@ exports.createNotification = createNotification;
  * Create notifications for multiple users
  */
 const createNotificationForUsers = async (userIds, type, title, message, linkUrl) => {
-    const notifications = await prisma_1.prisma.$transaction(userIds.map(userId => prisma_1.prisma.notification.create({
+    const notifications = await prisma_1.default.$transaction(userIds.map(userId => prisma_1.default.notification.create({
         data: {
             userId,
             type,
@@ -46,7 +49,7 @@ const getUserNotifications = async (userId, params = {}) => {
     }
     // Execute queries in parallel
     const [notifications, total, unreadCount] = await Promise.all([
-        prisma_1.prisma.notification.findMany({
+        prisma_1.default.notification.findMany({
             where: whereClause,
             orderBy: {
                 createdAt: 'desc',
@@ -54,10 +57,10 @@ const getUserNotifications = async (userId, params = {}) => {
             skip,
             take: limit,
         }),
-        prisma_1.prisma.notification.count({
+        prisma_1.default.notification.count({
             where: whereClause,
         }),
-        prisma_1.prisma.notification.count({
+        prisma_1.default.notification.count({
             where: {
                 userId,
                 isRead: false,
@@ -75,7 +78,7 @@ exports.getUserNotifications = getUserNotifications;
  * Get unread notification count for a user
  */
 const getUnreadCount = async (userId) => {
-    return prisma_1.prisma.notification.count({
+    return prisma_1.default.notification.count({
         where: {
             userId,
             isRead: false,
@@ -87,7 +90,7 @@ exports.getUnreadCount = getUnreadCount;
  * Mark notification as read
  */
 const markAsRead = async (notificationId) => {
-    return prisma_1.prisma.notification.update({
+    return prisma_1.default.notification.update({
         where: { id: notificationId },
         data: { isRead: true },
     });
@@ -97,7 +100,7 @@ exports.markAsRead = markAsRead;
  * Mark all notifications as read for a user
  */
 const markAllAsRead = async (userId) => {
-    const result = await prisma_1.prisma.notification.updateMany({
+    const result = await prisma_1.default.notification.updateMany({
         where: {
             userId,
             isRead: false,
@@ -114,7 +117,7 @@ exports.markAllAsRead = markAllAsRead;
  */
 const deleteNotification = async (notificationId) => {
     try {
-        await prisma_1.prisma.notification.delete({
+        await prisma_1.default.notification.delete({
             where: { id: notificationId },
         });
         return true;
@@ -128,7 +131,7 @@ exports.deleteNotification = deleteNotification;
  * Delete all notifications for a user
  */
 const deleteAllNotifications = async (userId) => {
-    const result = await prisma_1.prisma.notification.deleteMany({
+    const result = await prisma_1.default.notification.deleteMany({
         where: { userId },
     });
     return result.count;
@@ -141,7 +144,7 @@ exports.deleteAllNotifications = deleteAllNotifications;
 const cleanupOldNotifications = async (daysOld = 30) => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    const result = await prisma_1.prisma.notification.deleteMany({
+    const result = await prisma_1.default.notification.deleteMany({
         where: {
             isRead: true,
             createdAt: {
@@ -158,7 +161,7 @@ exports.cleanupOldNotifications = cleanupOldNotifications;
  */
 const aggregateSimilarNotifications = async (userId) => {
     // Get recent unread notifications
-    const recentNotifications = await prisma_1.prisma.notification.findMany({
+    const recentNotifications = await prisma_1.default.notification.findMany({
         where: {
             userId,
             isRead: false,
@@ -185,7 +188,7 @@ const aggregateSimilarNotifications = async (userId) => {
             // If more than 3 notifications of the same type, aggregate them
             const idsToDelete = notifications.slice(1).map(n => n.id);
             // Update first notification to indicate aggregation
-            await prisma_1.prisma.notification.update({
+            await prisma_1.default.notification.update({
                 where: { id: notifications[0].id },
                 data: {
                     message: `Vous avez ${notifications.length} notifications de ce type`,
@@ -193,7 +196,7 @@ const aggregateSimilarNotifications = async (userId) => {
                 },
             });
             // Delete the others
-            await prisma_1.prisma.notification.deleteMany({
+            await prisma_1.default.notification.deleteMany({
                 where: {
                     id: { in: idsToDelete },
                 },

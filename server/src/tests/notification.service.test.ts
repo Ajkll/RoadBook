@@ -2,7 +2,7 @@ import { PrismaClient, Notification, NotificationType } from '@prisma/client';
 import { DeepMockProxy, mockDeep, mockReset } from 'jest-mock-extended';
 import * as notificationService from '../services/notification.service';
 import { mockPrisma } from './mocks/prisma.mock';
-import { prisma } from '../config/prisma';
+import prisma from '../config/prisma';
 
 jest.mock('../config/prisma', () => ({
   prisma: mockPrisma,

@@ -1,6 +1,7 @@
-/*// client/app/services/api/roadbook.api.ts
+// client/app/services/api/roadbook.api.ts
 import apiClient from './client';
 import { Platform } from 'react-native';
+import { extractApiData, extractErrorMessage } from './utils';
 
 // Debug flag - easily toggle detailed logging
 const DEBUG = __DEV__;
@@ -9,16 +10,16 @@ const DEBUG = __DEV__;
 const logDebug = (message: string, data?: unknown) => {
   if (DEBUG) {
     if (data) {
-      console.log(`=� ROADBOOK API: ${message}`, data);
+      console.log(`🔹 ROADBOOK API: ${message}`, data);
     } else {
-      console.log(`=� ROADBOOK API: ${message}`);
+      console.log(`🔹 ROADBOOK API: ${message}`);
     }
   }
 };
 
 // Utility for logging errors
 const logError = (message: string, error: unknown) => {
-  console.error(`L ROADBOOK API ERROR: ${message}`, error);
+  console.error(`❌ ROADBOOK API ERROR: ${message}`, error);
 
   // Extract and log additional error details if available
   if (error.response) {
@@ -141,10 +142,11 @@ export const roadbookApi = {
 
     try {
       const url = status ? `/roadbooks?status=${status}` : '/roadbooks';
-      const response = await apiClient.get<ApiResponse<Roadbook[]>>(url);
+      const response = await apiClient.get(url);
 
-      logDebug(`Retrieved ${response.data.data.length} roadbooks`);
-      return response.data.data;
+      const roadbooks = extractApiData<Roadbook[]>(response);
+      logDebug(`Retrieved ${roadbooks.length} roadbooks`);
+      return roadbooks;
     } catch (error) {
       logError('Failed to fetch user roadbooks', error);
       throw new Error('Failed to load your roadbooks. Please try again later.');
@@ -156,10 +158,11 @@ export const roadbookApi = {
     logDebug('Creating new roadbook', { title: data.title });
 
     try {
-      const response = await apiClient.post<ApiResponse<Roadbook>>('/roadbooks', data);
+      const response = await apiClient.post('/roadbooks', data);
 
-      logDebug('Roadbook created successfully', { id: response.data.data.id });
-      return response.data.data;
+      const roadbook = extractApiData<Roadbook>(response);
+      logDebug('Roadbook created successfully', { id: roadbook.id });
+      return roadbook;
     } catch (error) {
       logError('Failed to create roadbook', error);
       throw new Error('Failed to create your roadbook. Please try again later.');
@@ -171,10 +174,11 @@ export const roadbookApi = {
     logDebug('Fetching roadbook details', { id });
 
     try {
-      const response = await apiClient.get<ApiResponse<Roadbook>>(`/roadbooks/${id}`);
+      const response = await apiClient.get(`/roadbooks/${id}`);
 
+      const roadbook = extractApiData<Roadbook>(response);
       logDebug('Roadbook details retrieved successfully');
-      return response.data.data;
+      return roadbook;
     } catch (error) {
       logError(`Failed to fetch roadbook ${id}`, error);
 
@@ -193,10 +197,11 @@ export const roadbookApi = {
     logDebug('Updating roadbook', { id, data });
 
     try {
-      const response = await apiClient.put<ApiResponse<Roadbook>>(`/roadbooks/${id}`, data);
+      const response = await apiClient.put(`/roadbooks/${id}`, data);
 
+      const roadbook = extractApiData<Roadbook>(response);
       logDebug('Roadbook updated successfully');
-      return response.data.data;
+      return roadbook;
     } catch (error) {
       logError(`Failed to update roadbook ${id}`, error);
 
@@ -215,8 +220,7 @@ export const roadbookApi = {
     logDebug('Deleting roadbook', { id });
 
     try {
-      await apiClient.delete<ApiResponse<void>>(`/roadbooks/${id}`);
-
+      await apiClient.delete(`/roadbooks/${id}`);
       logDebug('Roadbook deleted successfully');
     } catch (error) {
       logError(`Failed to delete roadbook ${id}`, error);
@@ -239,12 +243,13 @@ export const roadbookApi = {
     logDebug('Updating roadbook status', { id, status });
 
     try {
-      const response = await apiClient.patch<ApiResponse<Roadbook>>(`/roadbooks/${id}/status`, {
+      const response = await apiClient.patch(`/roadbooks/${id}/status`, {
         status,
       });
 
+      const roadbook = extractApiData<Roadbook>(response);
       logDebug('Roadbook status updated successfully');
-      return response.data.data;
+      return roadbook;
     } catch (error) {
       logError(`Failed to update roadbook status ${id}`, error);
 
@@ -263,12 +268,13 @@ export const roadbookApi = {
     logDebug('Assigning guide to roadbook', { id, guideId });
 
     try {
-      const response = await apiClient.post<ApiResponse<Roadbook>>(`/roadbooks/${id}/guide`, {
+      const response = await apiClient.post(`/roadbooks/${id}/guide`, {
         guideId,
       });
 
+      const roadbook = extractApiData<Roadbook>(response);
       logDebug('Guide assigned successfully');
-      return response.data.data;
+      return roadbook;
     } catch (error) {
       logError(`Failed to assign guide to roadbook ${id}`, error);
 
@@ -290,10 +296,11 @@ export const roadbookApi = {
 
     try {
       const url = status ? `/roadbooks/guided?status=${status}` : '/roadbooks/guided';
-      const response = await apiClient.get<ApiResponse<Roadbook[]>>(url);
+      const response = await apiClient.get(url);
 
-      logDebug(`Retrieved ${response.data.data.length} guided roadbooks`);
-      return response.data.data;
+      const roadbooks = extractApiData<Roadbook[]>(response);
+      logDebug(`Retrieved ${roadbooks.length} guided roadbooks`);
+      return roadbooks;
     } catch (error) {
       logError('Failed to fetch guided roadbooks', error);
 
@@ -310,10 +317,11 @@ export const roadbookApi = {
     logDebug('Fetching sessions for roadbook', { id });
 
     try {
-      const response = await apiClient.get<ApiResponse<Session[]>>(`/roadbooks/${id}/sessions`);
+      const response = await apiClient.get(`/roadbooks/${id}/sessions`);
 
-      logDebug(`Retrieved ${response.data.data.length} sessions`);
-      return response.data.data;
+      const sessions = extractApiData<Session[]>(response);
+      logDebug(`Retrieved ${sessions.length} sessions`);
+      return sessions;
     } catch (error) {
       logError(`Failed to fetch sessions for roadbook ${id}`, error);
 
@@ -332,13 +340,14 @@ export const roadbookApi = {
     logDebug('Creating new session', { roadbookId, date: data.date });
 
     try {
-      const response = await apiClient.post<ApiResponse<Session>>(
+      const response = await apiClient.post(
         `/roadbooks/${roadbookId}/sessions`,
         data
       );
 
-      logDebug('Session created successfully', { id: response.data.data.id });
-      return response.data.data;
+      const session = extractApiData<Session>(response);
+      logDebug('Session created successfully', { id: session.id });
+      return session;
     } catch (error) {
       logError(`Failed to create session for roadbook ${roadbookId}`, error);
 
@@ -357,12 +366,13 @@ export const roadbookApi = {
     logDebug('Fetching competency progress for roadbook', { id });
 
     try {
-      const response = await apiClient.get<ApiResponse<CompetencyProgress[]>>(
+      const response = await apiClient.get(
         `/roadbooks/${id}/competencies`
       );
 
-      logDebug(`Retrieved progress for ${response.data.data.length} competencies`);
-      return response.data.data;
+      const competencies = extractApiData<CompetencyProgress[]>(response);
+      logDebug(`Retrieved progress for ${competencies.length} competencies`);
+      return competencies;
     } catch (error) {
       logError(`Failed to fetch competency progress for roadbook ${id}`, error);
 
@@ -386,13 +396,14 @@ export const roadbookApi = {
     logDebug('Updating competency status', { roadbookId, competencyId, status });
 
     try {
-      const response = await apiClient.patch<ApiResponse<CompetencyProgress>>(
+      const response = await apiClient.patch(
         `/roadbooks/${roadbookId}/competencies/${competencyId}`,
         { status, notes }
       );
 
+      const competency = extractApiData<CompetencyProgress>(response);
       logDebug('Competency status updated successfully');
-      return response.data.data;
+      return competency;
     } catch (error) {
       logError(`Failed to update competency status for roadbook ${roadbookId}`, error);
 
@@ -455,4 +466,4 @@ export const roadbookApi = {
   },
 };
 
-export default roadbookApi;*/
+export default roadbookApi;

@@ -13,6 +13,7 @@ import {
 } from '../../store/slices/chronoSlice';
 import SessionEndModal from '../modals/SessionEndModal';
 import { useNotifications } from '../NotificationHandler';
+import { RootState } from '../../store/store';
 
 const BottomNavigation = () => {
   const router = useRouter();
@@ -44,7 +45,7 @@ const BottomNavigation = () => {
         setShowModal(true);
       }
     } else {
-      router.push('/(tabs)/start-drive');
+      router.replace('/(tabs)/start-drive');
     }
   };
 
@@ -73,7 +74,7 @@ const BottomNavigation = () => {
       <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/')}
+          onPress={() => router.replace('/(tabs)/')}
         >
           <Ionicons
             name={isActive('') ? 'home' : 'home-outline'}
@@ -90,7 +91,7 @@ const BottomNavigation = () => {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/explorer')}
+          onPress={() => router.replace('/(tabs)/explorer')}
         >
           <Ionicons
             name={isActive('explorer') ? 'search' : 'search-outline'}
@@ -130,7 +131,7 @@ const BottomNavigation = () => {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/my-routes')}
+          onPress={() => router.replace('/(tabs)/my-routes')}
         >
           <Ionicons
             name={isActive('my-routes') ? 'map' : 'map-outline'}
@@ -147,7 +148,7 @@ const BottomNavigation = () => {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/(tabs)/profile')}
+          onPress={() => router.replace('/(tabs)/profile')}
         >
           <Ionicons
             name={isActive('profile') ? 'person' : 'person-outline'}

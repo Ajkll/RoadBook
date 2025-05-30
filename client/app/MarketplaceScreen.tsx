@@ -1,393 +1,324 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  TextInput,
-  ActivityIndicator,
-  Dimensions,
-} from 'react-native';
-import {
-  addMarketplaceItem,
-  getMarketplaceItems,
-  MarketplaceItem,
-  pickImage,
-} from './services/firebase/marketplace';
-import Card from './components/common/Card';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Text } from 'react-native';
 import { useTheme } from './constants/theme';
-import Toast from 'react-native-toast-message';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useSelector } from 'react-redux';
 import { selectIsInternetReachable } from './store/slices/networkSlice';
+import { useMarketplace } from './hooks/useMarketplace';
+import { useRouter } from 'expo-router';
 import OfflineContent from './components/ui/OfflineContent';
-import { logger } from './utils/logger';
-
-const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 32) / 2 - 8; // 2 colonnes avec marges
+import GoBackHomeButton from './components/common/GoBackHomeButton';
+import MarketplaceHeader from './components/marketplace/MarketplaceHeader';
+import MarketplaceList from './components/marketplace/MarketplaceList';
+import AddItemModal from './components/marketplace/AddItemModal';
+import HistoryModal from './components/marketplace/HistoryModal';
+import Toast from 'react-native-toast-message';
 
 const MarketplaceScreen = () => {
-  const { colors, spacing, borderRadius } = useTheme();
-  const [items, setItems] = useState<MarketplaceItem[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newItem, setNewItem] = useState<Omit<MarketplaceItem, 'id' | 'createdAt' | 'imageUrl'>>({
-    title: '',
-    description: '',
-    price: 0,
-    sellerName: 'Anonymous',
-    sellerId: 'guest',
-  });
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const { colors } = useTheme();
+  const router = useRouter();
   const isConnected = useSelector(selectIsInternetReachable);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const {
+    items,
+    filteredItems,
+    searchText,
+    setSearchText,
+    currentUser,
+    isLoading,
+    isUploading,
+    loadItems,
+    addItem,
+    deleteItem,
+    buyItem,
+    userTransactions,
+    userBalance,
+    loadUserTransactions,
+    stats
+  } = useMarketplace();
+
+  const handleBuyItem = useCallback((itemId: string) => {
+    if (!itemId || itemId === '') {
+      Alert.alert(
+        'Erreur',
+        'Cet article n\'a pas d\'identifiant valide.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (!currentUser) {
+      Alert.alert(
+        'Connexion requise',
+        'Vous devez être connecté pour acheter un article.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const item = items.find(i => i.id === itemId);
+    if (!item) {
+      Alert.alert(
+        'Article introuvable',
+        'Cet article n\'existe plus.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const userId = currentUser.id || currentUser.uid;
+    if (item.sellerId === userId) {
+      Alert.alert(
+        'Achat impossible',
+        'Vous ne pouvez pas acheter votre propre article.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (item.isSold) {
+      Alert.alert(
+        'Article indisponible',
+        'Cet article a déjà été vendu.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (item.isDeleted) {
+      Alert.alert(
+        'Article indisponible',
+        'Cet article a été retiré de la vente.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const productData = {
+      id: item.id,
+      title: item.title,
+      description: item.description || '',
+      price: item.price,
+      sellerName: item.sellerName,
+      sellerId: item.sellerId,
+      imageUrl: item.imageUrl || ''
+    };
+
+    try {
+      // CORRECTION: Assurer que le chemin est correct
+      router.push({
+        pathname: '/PaymentScreen', // Vérifiez que ce chemin correspond à votre structure
+        params: {
+          product: JSON.stringify(productData),
+          sellerId: item.sellerId,
+          itemId: item.id,
+          backupItemId: item.id,
+          sellerName: item.sellerName,
+          itemTitle: item.title,
+          itemPrice: item.price.toString()
+        }
+      });
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Alert.alert(
+        'Erreur de navigation',
+        'Impossible d\'ouvrir l\'écran de paiement.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [items, currentUser, router]);
+
+  const handleAddModalOpen = useCallback(() => {
+    if (!currentUser) {
+      Alert.alert(
+        'Connexion requise',
+        'Vous devez être connecté pour ajouter un article.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    setShowAddModal(true);
+  }, [currentUser]);
+
+  const handleAddModalClose = useCallback(() => {
+    setShowAddModal(false);
+  }, []);
+
+  const handleHistoryModalOpen = useCallback(async () => {
+    if (!currentUser) {
+      Alert.alert(
+        'Connexion requise',
+        'Vous devez être connecté pour voir votre historique.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      await loadUserTransactions();
+      setShowHistoryModal(true);
+    } catch (error) {
+      Alert.alert(
+        'Erreur',
+        'Impossible de charger l\'historique des transactions.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [currentUser, loadUserTransactions]);
+
+  const handleHistoryModalClose = useCallback(() => {
+    setShowHistoryModal(false);
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await loadItems();
+      if (currentUser) {
+        await loadUserTransactions();
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de rafraîchir les données',
+        position: 'bottom'
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadItems, loadUserTransactions, currentUser]);
+
+  const handleAddItem = useCallback(async (item, imageUri) => {
+    try {
+      const success = await addItem(item, imageUri);
+      return success;
+    } catch (error) {
+      return false;
+    }
+  }, [addItem]);
+
+  const handleDeleteItem = useCallback(async (itemId: string) => {
+    try {
+      if (!itemId || itemId === '') {
+        Alert.alert(
+          'Erreur',
+          'Impossible de supprimer cet article (ID manquant).',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      const item = items.find(i => i.id === itemId);
+      const itemName = item ? item.title : 'cet article';
+
+      Alert.alert(
+        'Confirmer la suppression',
+        `Êtes-vous sûr de vouloir retirer "${itemName}" de la vente ? L'article restera dans votre historique.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Supprimer',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const success = await deleteItem(itemId);
+                if (success) {
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Article supprimé',
+                    text2: 'L\'article a été retiré de la vente',
+                    position: 'bottom'
+                  });
+                }
+              } catch (error) {
+                Alert.alert(
+                  'Erreur',
+                  'Impossible de supprimer l\'article.',
+                  [{ text: 'OK' }]
+                );
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      // Handle error silently
+    }
+  }, [items, deleteItem]);
 
   if (!isConnected) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Paiement</Text>
-          <OfflineContent message="Impossible de procéder au paiement. Vérifiez votre connexion internet." />
-          <GoBackHomeButton
-            containerStyle={{
-              alignSelf: 'flex-start'
-            }}
-          />
-        </ScrollView>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <OfflineContent message="Aucune connexion Internet disponible" />
+        <GoBackHomeButton
+          containerStyle={styles.backButtonOffline}
+        />
       </SafeAreaView>
     );
   }
 
-  useEffect(() => {
-    const load = async () => {
-      await loadItems();
-    };
-    load();
-  }, []);
-
-  const loadItems = async () => {
-    setRefreshing(true);
-    try {
-      const fetchedItems = await getMarketplaceItems();
-      setItems(fetchedItems);
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de charger les articles',
-        position: 'bottom',
-      });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleSelectImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== 'granted') {
-        Toast.show({
-          type: 'error',
-          text1: 'Permission refusée',
-          text2: 'Nous avons besoin d\'accéder à vos photos',
-          position: 'bottom',
-        });
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled && result.assets) {
-        setSelectedImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de sélectionner l\'image',
-        position: 'bottom',
-      });
-      logger.error(error);
-    }
-  };
-
-  const handleAddItem = async () => {
-    if (!newItem.title || !newItem.description || newItem.price <= 0) {
-      Toast.show({
-        type: 'error',
-        text1: 'Champs manquants',
-        text2: 'Veuillez remplir tous les champs requis',
-        position: 'bottom',
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      await addMarketplaceItem(newItem, selectedImage || '');
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Article ajouté avec succès',
-        position: 'bottom',
-      });
-      setShowAddModal(false);
-      setNewItem({
-        title: '',
-        description: '',
-        price: 0,
-        sellerName: 'Anonymous',
-        sellerId: 'guest',
-      });
-      setSelectedImage(null);
-      await loadItems();
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: "Échec de l'ajout de l'article",
-        position: 'bottom',
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const renderItem = ({ item }: { item: MarketplaceItem }) => (
-    <TouchableOpacity
-      style={styles.gridItem}
-      onPress={() => {
-        // Navigation vers le détail du produit
-        // router.push(`/marketplace/${item.id}`);
-      }}
-    >
-      <Card style={{ flex: 1 }}>
-        <Image
-          source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
-          style={[styles.gridImage, { borderRadius: borderRadius.small }]}
-          resizeMode="cover"
-        />
-        <View style={styles.gridDetails}>
-          <Text
-            style={[styles.itemTitle, { color: colors.backgroundText }]}
-            numberOfLines={1}
-          >
-            {item.title}
-          </Text>
-          <Text style={[styles.itemPrice, { color: colors.ui.button.primary }]}>
-            {item.price.toFixed(2)}€
-          </Text>
-          <Text
-            style={[styles.itemSeller, { color: colors.backgroundTextSoft }]}
-            numberOfLines={1}
-          >
-            Par: {item.sellerName}
-          </Text>
-        </View>
-      </Card>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* En-tête */}
-      <View style={[styles.header, { padding: spacing.md }]}>
-        <Text style={[styles.title, { color: colors.backgroundText }]}>
-          Marketplace
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.addButton,
-            {
-              backgroundColor: colors.ui.button.primary,
-              borderRadius: borderRadius.medium,
-            },
-          ]}
-          onPress={() => setShowAddModal(true)}
-        >
-          <Ionicons name="add" size={24} color={colors.ui.button.primaryText} />
-          <Text style={[styles.addButtonText, { color: colors.ui.button.primaryText }]}>
-            Ajouter
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <MarketplaceHeader
+          searchText={searchText}
+          setSearchText={setSearchText}
+          onShowAddModal={handleAddModalOpen}
+          onShowHistoryModal={handleHistoryModalOpen}
+          currentUser={currentUser}
+          stats={{
+            totalItems: stats.totalItems,
+            availableItems: stats.availableItems,
+            userItems: stats.userItems,
+            userBalance: userBalance
+          }}
+        />
 
-      {/* Liste des articles */}
-      <FlatList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.gridContainer}
-        refreshing={refreshing}
-        onRefresh={loadItems}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cart-outline" size={64} color={colors.backgroundTextSoft} />
-            <Text style={[styles.emptyText, { color: colors.backgroundTextSoft }]}>
-              Aucun article en vente pour le moment
+        {isLoading && !isRefreshing ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator
+              size="large"
+              color={colors.primary}
+            />
+            <Text style={[styles.loadingText, { color: colors.backgroundTextSoft }]}>
+              Chargement des articles...
             </Text>
           </View>
-        }
-      />
+        ) : (
+          <MarketplaceList
+            items={filteredItems}
+            currentUser={currentUser}
+            loading={isLoading}
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            onDeleteItem={handleDeleteItem}
+            onBuyItem={handleBuyItem}
+          />
+        )}
 
-      {/* Modal d'ajout */}
-      <Modal visible={showAddModal} animationType="slide">
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { padding: spacing.md }]}>
-            <Text style={[styles.modalTitle, { color: colors.backgroundText }]}>
-              Nouvel article
-            </Text>
-            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <Ionicons name="close" size={24} color={colors.backgroundText} />
-            </TouchableOpacity>
-          </View>
+        <AddItemModal
+          visible={showAddModal}
+          onClose={handleAddModalClose}
+          currentUser={currentUser}
+          onSubmit={handleAddItem}
+          isUploading={isUploading}
+        />
 
-          <View style={{ padding: spacing.md }}>
-            {/* Champs du formulaire */}
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  color: colors.backgroundText,
-                  backgroundColor: colors.ui.card.background,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-              placeholder="Titre"
-              placeholderTextColor={colors.backgroundTextSoft}
-              value={newItem.title}
-              onChangeText={(text) => setNewItem({ ...newItem, title: text })}
-            />
+        <HistoryModal
+          visible={showHistoryModal}
+          onClose={handleHistoryModalClose}
+          currentUser={currentUser}
+          transactions={userTransactions || []}
+          userBalance={userBalance}
+        />
 
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  color: colors.backgroundText,
-                  backgroundColor: colors.ui.card.background,
-                  marginBottom: spacing.sm,
-                  height: 100,
-                },
-              ]}
-              placeholder="Description"
-              placeholderTextColor={colors.backgroundTextSoft}
-              multiline
-              value={newItem.description}
-              onChangeText={(text) => setNewItem({ ...newItem, description: text })}
-            />
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  borderColor: colors.border,
-                  color: colors.backgroundText,
-                  backgroundColor: colors.ui.card.background,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-              placeholder="Prix"
-              placeholderTextColor={colors.backgroundTextSoft}
-              keyboardType="numeric"
-              value={newItem.price.toString()}
-              onChangeText={(text) => setNewItem({ ...newItem, price: parseFloat(text) || 0 })}
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.imagePicker,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: colors.ui.card.background,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-              onPress={handleSelectImage}
-            >
-              {selectedImage ? (
-                <Image
-                  source={{ uri: selectedImage }}
-                  style={[styles.previewImage, { borderRadius: borderRadius.small }]}
-                />
-              ) : (
-                <View style={styles.imagePickerContent}>
-                  <Ionicons
-                    name="image-outline"
-                    size={32}
-                    color={colors.backgroundTextSoft}
-                    style={styles.imagePickerIcon}
-                  />
-                  <Text style={[styles.imagePickerText, { color: colors.backgroundTextSoft }]}>
-                    Sélectionner une image
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Boutons de validation */}
-            <View style={[styles.modalButtons, { marginTop: spacing.sm }]}>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  {
-                    backgroundColor: colors.ui.button.secondary,
-                    borderRadius: borderRadius.medium,
-                    marginRight: spacing.sm,
-                  },
-                ]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.ui.button.secondaryText }]}>
-                  Annuler
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  {
-                    backgroundColor: colors.ui.button.primary,
-                    borderRadius: borderRadius.medium,
-                    opacity: isUploading ? 0.7 : 1,
-                  },
-                ]}
-                onPress={handleAddItem}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <ActivityIndicator color={colors.ui.button.primaryText} />
-                ) : (
-                  <Text style={[styles.modalButtonText, { color: colors.ui.button.primaryText }]}>
-                    Publier
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      <GoBackHomeButton
-        containerStyle={{
-          marginBottom: 10,
-          marginTop: 20,
-        }}
-      />
+        <GoBackHomeButton
+          containerStyle={styles.backButton}
+        />
+      </SafeAreaView>
     </View>
   );
 };
@@ -396,119 +327,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  safeArea: {
+    flex: 1,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  addButtonText: {
-    marginLeft: 8,
-    fontWeight: 'bold',
-  },
-  gridContainer: {
-    padding: 8,
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  gridItem: {
-    width: ITEM_WIDTH,
-    marginBottom: 16,
-  },
-  gridImage: {
-    width: '100%',
-    height: ITEM_WIDTH,
-  },
-  gridDetails: {
-    padding: 8,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  itemSeller: {
-    fontSize: 12,
-  },
-  emptyContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    paddingVertical: 50,
   },
-  emptyText: {
+  loadingText: {
     marginTop: 16,
     fontSize: 16,
-    textAlign: 'center',
   },
-  modalContainer: {
-    flex: 1,
+  backButton: {
+    marginVertical: 20,
+    alignSelf: 'center',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-  },
-  imagePicker: {
-    borderWidth: 1,
-    borderRadius: 8,
-    height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  imagePickerContent: {
-    alignItems: 'center',
-  },
-  imagePickerIcon: {
-    marginBottom: 8,
-  },
-  imagePickerText: {
-    fontSize: 14,
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalButtonText: {
-    fontWeight: 'bold',
-    fontSize: 16,
+  backButtonOffline: {
+    alignSelf: 'flex-start',
+    margin: 20,
   },
 });
 
