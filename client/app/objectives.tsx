@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   TextInput,
   Platform,
@@ -11,7 +10,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useTheme } from './constants/theme';
-import { LineChart } from 'react-native-chart-kit';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -20,31 +18,16 @@ import {
   registerForPushNotificationsAsync,
   scheduleMotivationalNotification,
 } from './utils/notifications';
-import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useNotifications } from './components/NotificationHandler';
 import { logger } from './utils/logger';
-
-const screenWidth = Dimensions.get('window').width;
-
-const chartDataSets = {
-  weekly: {
-    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-    data: [4, 6, 5, 8, 3, 10, 7],
-  },
-  monthly: {
-    labels: ['S1', 'S2', 'S3', 'S4'],
-    data: [15, 20, 18, 25],
-  },
-  yearly: {
-    labels: ['Jan', 'Fév', 'Mar', 'Avr'],
-    data: [80, 100, 95, 110],
-  },
-};
+import DistanceChart from './components/ui/DistanceChart';
+import WeeklySummary from './components/ui/WeeklySummary';
+import { sessionApi } from './services/api';
 
 const ObjectifScreen = () => {
   const theme = useTheme();
   const router = useRouter();
-  const { showSuccess, showInfo } = useNotifications();
+  const { showSuccess, showInfo, showError } = useNotifications();
 
   const [timeRange, setTimeRange] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   const [zone, setZone] = useState<'agglomeration' | 'hors-agglomeration'>('agglomeration');
@@ -75,31 +58,49 @@ const ObjectifScreen = () => {
     loadGoalData();
   }, []);
 
-  const chartData = {
-    labels: chartDataSets[timeRange].labels,
-    datasets: [{ data: chartDataSets[timeRange].data }],
-  };
-
   const onChangeDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (event.type === 'set' && selectedDate) {
       setDeadline(selectedDate);
     }
-
     if (Platform.OS !== 'ios') {
       setShowDatePicker(false);
     }
   };
 
   const handleAlert = async (frequency: 'daily' | 'weekly') => {
-    const kmLeft = 67 - 2000; // TODO: Remplacer 2000 par une vraie donnée
-    await registerForPushNotificationsAsync();
-    await scheduleMotivationalNotification(Math.max(kmLeft, 0), frequency);
-    setSelectedFrequency(frequency);
-    showInfo(
-      'Notification programmée',
-      `Vous serez notifié ${frequency === 'daily' ? 'quotidiennement' : 'hebdomadairement'} !`,
-      { position: 'bottom', visibilityTime: 4000 }
-    );
+    try {
+      const roadbookId = 'a6222aae-f8aa-4aa9-9fb4-6b3be9385221';
+      const sessions = await sessionApi.getUserSessions(roadbookId);
+      
+      // Total km parcourus
+      const totalDistance = sessions.reduce(
+        (sum: number, session: any) => sum + (session.distance || 0),
+        0
+      );
+
+      const goalKmNumber = parseFloat(goalKm);
+      if (isNaN(goalKmNumber)) {
+        showError("Objectif invalide", "Veuillez enregistrer un objectif valide avant de programmer une alerte.");
+        return;
+      }
+
+      const kmLeft = goalKmNumber - totalDistance;
+
+      await registerForPushNotificationsAsync();
+      await scheduleMotivationalNotification(Math.max(kmLeft, 0), frequency);
+      setSelectedFrequency(frequency);
+      showInfo(
+        'Notification programmée',
+        `Vous serez notifié ${frequency === 'daily' ? 'quotidiennement' : 'hebdomadairement'} !`,
+        { position: 'bottom', visibilityTime: 4000 }
+      );
+    } catch (error) {
+      logger.error("Erreur lors de la programmation des notifications", error);
+      showError(
+        "Erreur de notification",
+        "Impossible de programmer la notification. Veuillez réessayer."
+      );
+    }
   };
 
   return (
@@ -118,87 +119,27 @@ const ObjectifScreen = () => {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft color={theme.colors.primaryText} size={24} />
+              <ArrowLeft color={"#000000"} size={24} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.colors.primaryText }]}>Progression</Text>
+            <Text style={[styles.headerTitle, { color: "#000000" }]}>Progression</Text>
           </View>
-
-          {/* Section Filtres et Graphique */}
+          {/*Résumé de la semaine*/}
           <View style={[styles.cardSection, { backgroundColor: theme.colors.secondary }]}>
-            {/* Filtres Zone */}
-            <View style={styles.filterButtonsContainer}>
-              {['agglomeration', 'hors-agglomeration'].map((value) => (
-                <TouchableOpacity
-                  key={value}
-                  style={[
-                    styles.filterButton,
-                    zone === value && styles.activeButton,
-                    { backgroundColor: theme.colors.secondary }
-                  ]}
-                  onPress={() => setZone(value as typeof zone)}
-                >
-                  <Text style={[
-                    styles.filterButtonText,
-                    { color: theme.colors.secondaryText },
-                    zone === value && [styles.activeButtonText, { color: theme.colors.primary }]
-                  ]}>
-                    {value === 'agglomeration' ? 'Agglomération' : 'Hors agglomération'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Filtres Période */}
-            <View style={styles.filterButtonsContainer}>
-              {[
-                { label: 'Semaine', value: 'weekly' },
-                { label: 'Mois', value: 'monthly' },
-                { label: 'Année', value: 'yearly' },
-              ].map(({ label, value }) => (
-                <TouchableOpacity
-                  key={value}
-                  style={[
-                    styles.rangeButton,
-                    { backgroundColor: theme.colors.secondary },
-                    timeRange === value && styles.activeButton
-                  ]}
-                  onPress={() => setTimeRange(value as typeof timeRange)}
-                >
-                  <Text
-                    style={[
-                      styles.rangeButtonText,
-                      { color: theme.colors.secondaryText },
-                      timeRange === value && [styles.activeButtonText, { color: theme.colors.primary }]
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Graphique */}
-            <View style={{ alignItems: 'center' }}>
-              <LineChart
-                data={chartData}
-                width={screenWidth - 70}
-                height={250}
-                chartConfig={{
-                  backgroundColor: theme.colors.background,
-                  backgroundGradientFrom: theme.colors.background,
-                  backgroundGradientTo: theme.colors.background,
-                  decimalPlaces: 0,
-                  color: () => theme.colors.primaryText,
-                  labelColor: () => theme.colors.primaryText,
-                }}
-                style={styles.chart}
-              />
-            </View>
+            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+              Cette semaine
+            </Text>
+            <WeeklySummary/>
           </View>
-
+          {/* Graphique de distance */}
+          <View style={[styles.cardSection, { backgroundColor: theme.colors.secondary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+              Historique des distances parcourues
+            </Text>
+            <DistanceChart roadbookId="a6222aae-f8aa-4aa9-9fb4-6b3be9385221 " />
+          </View>
           {/* Section Objectif */}
           <View style={[styles.cardSection, { backgroundColor: theme.colors.secondary }]}>
-            <Text style={[styles.cardTitle, { color: theme.colors.primary }]}>Définir un objectif</Text>
+            <Text style={[styles.cardTitle, { color: theme.colors.primary }]}>Définir un objectif de distance (km)</Text>
             <TextInput
               value={goalKm}
               onChangeText={setGoalKm}
@@ -229,6 +170,12 @@ const ObjectifScreen = () => {
               ]}
               onPress={async () => {
                 try {
+                  const km = parseFloat(goalKm);
+                  if (isNaN(km) || km <= 0) {
+                    showError("Objectif invalide", "Veuillez entrer une distance valide en kilomètres.");
+                    return;
+                  }
+
                   await AsyncStorage.setItem('goalKm', goalKm);
                   await AsyncStorage.setItem('goalDate', deadline.toISOString());
                   showSuccess(
@@ -238,6 +185,10 @@ const ObjectifScreen = () => {
                   );
                 } catch (error) {
                   logger.error("Erreur lors de la sauvegarde de l'objectif", error);
+                  showError(
+                    'Erreur de sauvegarde',
+                    "Une erreur est survenue lors de l'enregistrement de votre objectif."
+                  );
                 }
               }}
             >
@@ -326,13 +277,21 @@ const ObjectifScreen = () => {
               )}
               <TouchableOpacity
                 onPress={async () => {
-                  setSelectedFrequency(null);
-                  await AsyncStorage.removeItem('notifFrequency');
-                  showInfo(
-                    'Notifications désactivées',
-                    'Vous ne recevrez plus de rappels',
-                    { position: 'bottom', visibilityTime: 3000 }
-                  );
+                  try {
+                    setSelectedFrequency(null);
+                    await AsyncStorage.removeItem('notifFrequency');
+                    showInfo(
+                      'Notifications désactivées',
+                      'Vous ne recevrez plus de rappels',
+                      { position: 'bottom', visibilityTime: 3000 }
+                    );
+                  } catch (error) {
+                    logger.error("Erreur lors de la désactivation des notifications", error);
+                    showError(
+                      'Erreur',
+                      "Impossible de désactiver les alertes pour le moment."
+                    );
+                  }
                 }}
                 style={[
                   styles.alertButton,
@@ -353,37 +312,16 @@ const ObjectifScreen = () => {
           </View>
         </View>
       </ScrollView>
-      <View style={[styles.cardSection, { backgroundColor: theme.colors.secondary }]}>
-        <GoBackHomeButton
-          containerStyle={{
-            bottom: 0,
-          }}
-        />
-      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  scrollContent: {
-    paddingBottom: 80,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    marginRight: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, padding: 20 },
+  scrollContent: { paddingBottom: 80 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  backButton: { marginRight: 10 },
+  headerTitle: { fontSize: 24, fontWeight: 'bold' },
   filterButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -402,26 +340,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
-  rangeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  rangeButtonText: {
-    fontWeight: '600',
-    fontSize: 13,
-  },
   activeButton: {
     borderColor: '#2B86EE',
     backgroundColor: '#fff',
   },
   activeButtonText: {
     color: '#2B86EE',
-  },
-  chart: {
-    marginVertical: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -455,7 +379,7 @@ const styles = StyleSheet.create({
   alertButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    textAlign : 'center',
+    textAlign: 'center',
   },
   cardSection: {
     borderRadius: 12,
@@ -485,5 +409,3 @@ const styles = StyleSheet.create({
 });
 
 export default ObjectifScreen;
-
-// to do : manque de la gestion d'erreur ici

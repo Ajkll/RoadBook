@@ -1,48 +1,54 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
-
+import { sessionApi } from '../../services/api/session.api';
 
 interface DistanceProgressBarProps {
   title: string;
-  distanceKm: number;
-  maxKm?: number;
 }
 
-const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ 
-  title, 
-  distanceKm = 0, 
-  maxKm = 1500 
-}) => {
+const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ title }) => {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [goalKm, setGoalKm] = useState<number | null>(null);
+  const [goalKm, setGoalKm] = useState<number>(0);
   const [goalDate, setGoalDate] = useState<string | null>(null);
+  const [distanceKm, setDistanceKm] = useState<number>(0);
 
   useFocusEffect(
     useCallback(() => {
-      const loadGoal = async () => {
-        const storedKm = await AsyncStorage.getItem('goalKm');
-        const storedDate = await AsyncStorage.getItem('goalDate');
-        if (storedKm) setGoalKm(Number(storedKm));
-        if (storedDate) setGoalDate(storedDate);
+      const fetchGoalAndDistance = async () => {
+        try {
+          const storedKm = await AsyncStorage.getItem('goalKm');
+          const storedDate = await AsyncStorage.getItem('goalDate');
+          if (storedKm) setGoalKm(Number(storedKm));
+          if (storedDate) setGoalDate(storedDate);
+
+          // Utilisation de sessionApi.getUserSessions()
+          const sessions = await sessionApi.getUserSessions();
+
+          const totalDistance = sessions.reduce((sum, session) => {
+            return sum + (session.distance || 0);
+          }, 0);
+
+          setDistanceKm(totalDistance);
+        } catch (error) {
+          console.error('Erreur lors du chargement des données de progression :', error);
+        }
       };
 
-      loadGoal();
+      fetchGoalAndDistance();
     }, [])
   );
 
-  // Calcul du pourcentage basé sur maxKm au lieu de goalKm
   const progress = useMemo(() => {
-    if (maxKm === 0) return 0;
-    return Math.min((distanceKm / maxKm) * 100, 100);
-  }, [distanceKm, maxKm]);
+    if (!goalKm || goalKm === 0) return 0;
+    return Math.min((distanceKm / goalKm) * 100, 100);
+  }, [distanceKm, goalKm]);
 
   const remainingDays = useMemo(() => {
     if (!goalDate) return null;
@@ -68,15 +74,15 @@ const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({
         </View>
 
         <Text style={styles.distanceText}>
-          {distanceKm} km parcourus / {maxKm} km
+          {distanceKm} km parcourus {goalKm ? `/ ${goalKm} km` : ''}
         </Text>
 
-        {/* Affichage du kilomètrage restant */}
-        <Text style={styles.remainingText}>
-          Restant : {Math.max(0, maxKm - distanceKm)} km
-        </Text>
+        {goalKm !== null && (
+          <Text style={styles.remainingText}>
+            Restant : {Math.max(0, goalKm - distanceKm).toFixed(1)} km
+          </Text>
+        )}
 
-        {goalKm && <Text style={styles.goalText}>🎯 Objectif personnel : {goalKm} km</Text>}
         {goalDate && (
           <Text style={styles.goalText}>
             📅 Jusqu'au : {new Date(goalDate).toLocaleDateString()}
@@ -116,13 +122,13 @@ const createStyles = (colors: ThemeColors) =>
     progressBackground: {
       width: '100%',
       height: 20,
-      backgroundColor: '#333333', // Fond noir/gris foncé
+      backgroundColor: '#333333',
       borderRadius: 10,
       overflow: 'hidden',
     },
     progressFill: {
       height: '100%',
-      backgroundColor: '#2B86EE', // Bleu pour le remplissage
+      backgroundColor: '#2B86EE',
       borderRadius: 10,
     },
     percentageBubble: {
