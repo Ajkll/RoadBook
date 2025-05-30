@@ -4,13 +4,17 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { MaterialCommunityIcons, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import PropTypes from 'prop-types';
-import { db } from '../../services/firebase/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { sessionApi } from '../../services/api';
+import { SessionData, WeatherType } from '../../types/session.types';
+import { Picker } from '@react-native-picker/picker';
+import { useRoads } from '../../context/RoadContext';
+
 
 AddRouteForm.propTypes = {
   visible: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  roadbookId: PropTypes.string.isRequired,
 };
 
 export default function AddRouteForm({ visible, onClose, onSave }) {
@@ -25,50 +29,72 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
   const [date, setDate] = useState(new Date());
   const [departureTime, setDepartureTime] = useState(new Date());
   const [arrivalTime, setArrivalTime] = useState(new Date());
+  const [departureLocation, setDepartureLocation] = useState('');
+  const [arrivalLocation, setArrivalLocation] = useState('');
+  const [distance, setDistance] = useState('');
+  const [selectedWeather, setSelectedWeather] = useState<WeatherType>('CLEAR');
 
-  const id = useRef<number>(2);
+  const id = useRef<number>(1);
 
-  const sendRoadsData = async (id, roadName, date, duration, distance) => {
-    try {
-      await addDoc(collection(db, 'roads'), {
-        id: id,
-        name: roadName,
-        date: date,
-        duration: duration,
-        distance: distance,
-      });
-    } catch (e) {
-      console.error('Erreur lors de l ajout du document : ', e);
-    }
+  const { refreshRoads } = useRoads();
+
+  const formatDate = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // mois commence à 0
+    const year = String(date.getFullYear()).slice(2); // deux derniers chiffres de l’année
+    return `${day}-${month}-${year}`;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+  try {
     const formData = {
       roadName,
       date,
       departureTime,
       arrivalTime,
+      departureLocation,
+      arrivalLocation,
+      distance,
+      selectedWeather,
     };
 
-    console.log('Données du trajet:', formData);
-    console.log(formData.date);
-
+    const formattedDate = date.toISOString().split('T')[0]; // "2025-05-21"
     const durationMs = formData.arrivalTime.getTime() - formData.departureTime.getTime();
     const durationMin = Math.floor(durationMs / (1000 * 60));
-    // const hours = Math.floor(durationMin / 60);
-    // const minutes = durationMin % 60;
 
-    const distance = 10;
+    console.log('Données du trajet:', formData);
 
-    sendRoadsData(id.current, formData.roadName, formData.date, durationMin, distance);
-    id.current += 1;
+    // Préparer les données pour l'API
+    const sessionData: SessionData = {
+      title: formData.roadName,
+      date: formattedDate,             
+      startTime: formData.departureTime.toISOString(),
+      endTime: formData.arrivalTime.toISOString(),
+      duration: durationMin,
+      startLocation: formData.departureLocation, 
+      endLocation: formData.arrivalLocation,
+      distance: Number(distance),
+      weather: selectedWeather || 'CLEAR', 
+      roadbookId: "noid", //a6222aae-f8aa-4aa9-9fb4-6b3be9385221
+      notes: formData.roadName,
+    };
 
-    if (onSave) {
-      onSave(formData);
-    }
+      // Envoyer les données à l'API en utilisant la fonction importée
+      const createdSession = await sessionApi.createSession('', sessionData);
+      console.log('Session créée:', createdSession);
 
-    if (onClose) {
-      onClose();
+      refreshRoads();
+
+      if (onSave) {
+        onSave(formData);
+      }
+
+      if (onClose) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création de la session:', error);
+      // Afficher l'erreur à l'utilisateur, par exemple avec une alerte
     }
   };
 
@@ -98,7 +124,7 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
 
           <TextInput
             style={[styles.fullWidthInput, { color: colors.secondaryText }]}
-            placeholder="Trajet 3"
+            placeholder="Nom du trajet"
             placeholderTextColor="#999"
             value={roadName}
             onChangeText={setRoadName}
@@ -112,9 +138,15 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfWidthInput}>
+            <View style={styles.halfWidthInput}>
               <Text style={styles.requiredStar}>*</Text>
-              <Text style={styles.inputText}>Distance</Text>
+              <TextInput
+                style={[styles.inputText, { color: colors.secondaryText }]}
+                placeholder="Distance km"
+                placeholderTextColor="#999"
+                value={distance} 
+                onChangeText={setDistance} 
+              />
               <View style={styles.iconContainer}>
                 <MaterialCommunityIcons
                   name="map-marker-distance"
@@ -122,11 +154,10 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
                   color={colors.secondaryIcon}
                 />
               </View>
-            </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.timePickersContainer}>
-            <Text style={styles.requiredStar}>*</Text>
             <Text style={styles.inputText}>Début</Text>
             <TouchableOpacity
               onPress={() => setShowDeparturePicker(true)}
@@ -150,24 +181,50 @@ export default function AddRouteForm({ visible, onClose, onSave }) {
             <Text style={styles.inputText}>Fin</Text>
           </View>
 
-          <View style={styles.groupForm}>
-            <TouchableOpacity style={styles.halfWidthInput}>
-              <Text style={styles.inputText}>Météo</Text>
-              <View style={styles.iconContainer}>
-                <MaterialCommunityIcons
-                  name="weather-snowy-rainy"
-                  size={30}
-                  color={colors.secondaryIcon}
-                />
-              </View>
-            </TouchableOpacity>
+          <View style={styles.timePickersContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Départ"
+              placeholderTextColor="#999"
+              value={departureLocation}
+              onChangeText={setDepartureLocation}
+            />
+            <Ionicons name="chevron-forward" size={30} color={colors.secondaryDarker} />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Arrivée"
+              placeholderTextColor="#999"
+              value={arrivalLocation}
+              onChangeText={setArrivalLocation}
+            />
+          </View>
 
+          <View style={styles.groupForm}>
+            <View style={[styles.textInput, styles.fullWidthInput]}>
+              <Picker
+                selectedValue={selectedWeather}
+                onValueChange={(itemValue) => setSelectedWeather(itemValue)}
+                style={{ flex: 1, color: colors.secondaryText, fontSize: 13 }} 
+                dropdownIconColor={colors.secondaryIcon}
+              >
+                <Picker.Item label="Clair" value="CLEAR" />
+                <Picker.Item label="Nuageux" value="CLOUDY" />
+                <Picker.Item label="Pluvieux" value="RAINY" />
+                <Picker.Item label="Neigeux" value="SNOWY" />
+                <Picker.Item label="Brouillard" value="FOGGY" />
+                <Picker.Item label="Venteux" value="WINDY" />
+                <Picker.Item label="Autre" value="OTHER" />
+              </Picker>
+            </View>
+
+
+            {/*
             <TouchableOpacity style={styles.halfWidthInput}>
               <Text style={styles.inputText}>Moniteur</Text>
               <View style={styles.iconContainer}>
                 <MaterialIcons name="person" size={30} color={colors.secondaryIcon} />
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity>*/}
           </View>
 
           <View style={styles.buttonContainer}>
@@ -253,6 +310,10 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+    },
+    textInput:{
+      width: '35%',
+      color: colors.secondaryText,
     },
     groupForm: {
       flexDirection: 'row',

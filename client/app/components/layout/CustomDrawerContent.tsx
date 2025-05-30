@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,12 @@ import { useTheme } from '../../constants/theme';
 import SyncBadge from '../ui/SyncBadge';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CopyToClipboard } from '../common/ClipBoardCopy';
+import { User } from '../../types/auth.types';
+import { Platform, EventEmitter, NativeEventEmitter } from 'react-native';
+import { logger } from '../../utils/logger';
+
+// Émetteur d'événements pour React Native
+const eventEmitter = new NativeEventEmitter();
 
 const DrawerItem = ({
   label,
@@ -49,15 +55,86 @@ const DrawerItem = ({
   </TouchableOpacity>
 );
 
+// Vérifier si useAuth est disponible
+function useOptionalAuth() {
+  try {
+    return useAuth();
+  } catch (error) {
+    logger.warn('Auth provider not available in drawer');
+    return { user: null, logout: () => {} };
+  }
+}
+
 export default function CustomDrawerContent(props) {
   const router = useRouter();
   const theme = useTheme();
-  const { user, logout } = useAuth();
+  const { user: authUser, logout } = useOptionalAuth();
   const currentRoute = props.state?.routes[props.state.index]?.name || '';
+  
+  // Local state for user data to avoid stale references
+  const [user, setUser] = useState<User | null>(authUser);
+
+  // Update local state when auth user changes
+  useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+    }
+  }, [authUser]);
+
+  // Listen for profile update events
+  useEffect(() => {
+    // Custom event handler function
+    const handleProfileUpdate = (event: any) => {
+      try {
+        // Get updated user data from the event
+        const userData = Platform.OS === 'web' 
+          ? (event.detail?.user || (event as any).detail?.user)
+          : event?.user;
+          
+        if (userData) {
+          logger.info('CustomDrawer: Profile update event received');
+          setUser(userData);
+        }
+      } catch (error) {
+        logger.error('Error handling profile update in drawer:', error);
+      }
+    };
+
+    // Platform-specific event listener setup
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('profile:updated', handleProfileUpdate);
+    } else {
+      const subscription = eventEmitter.addListener(
+        'profileUpdated', 
+        handleProfileUpdate
+      );
+      
+      return () => {
+        subscription.remove();
+      };
+    }
+
+    // Cleanup function
+    return () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('profile:updated', handleProfileUpdate);
+      }
+    };
+  }, []);
 
   const navigateTo = (route: string) => {
     props.navigation.closeDrawer();
     router.push(route);
+  };
+
+  const handleLogout = () => {
+    try {
+      logout();
+    } catch (error) {
+      logger.error('Error during logout from drawer:', error);
+      // Fallback logout to navigation
+      router.replace('/');
+    }
   };
 
   return (
@@ -226,7 +303,7 @@ export default function CustomDrawerContent(props) {
 
       {/* Logout button */}
       <View style={styles.logoutContainer(theme)}>
-        <TouchableOpacity style={styles.logoutButton(theme)} onPress={logout}>
+        <TouchableOpacity style={styles.logoutButton(theme)} onPress={handleLogout}>
           <MaterialIcons
             name="logout"
             size={theme.typography.subtitle.fontSize}

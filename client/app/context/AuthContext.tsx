@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { User, LoginRequest, RegisterRequest } from '../types/auth.types';
 import { authApi } from '../services/api/auth.api';
+import usersApi from '../services/api/users.api';
 import {
   getAuthData,
   clearAuthData,
@@ -24,6 +25,7 @@ interface AuthContextType {
   refreshToken: () => Promise<boolean>;
   clearError: () => void;
   handleTokenError: (error: any) => Promise<void>;
+  updateProfile: (userData: Partial<User>) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -336,6 +338,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  /**
+   * Update user profile and keep authentication in sync
+   * This function ensures profile updates are reflected throughout the app
+   */
+  const updateProfile = async (userData: Partial<User>): Promise<User> => {
+    try {
+      console.log('Updating user profile:', userData);
+      
+      // Call the API to update the profile
+      const updatedUser = await usersApi.updateProfile(userData);
+      
+      // Update the auth context state
+      setUser(prev => prev ? { ...prev, ...updatedUser } : updatedUser);
+      
+      // Update the stored user data
+      const { accessToken, refreshToken } = await getAuthData();
+      if (accessToken && refreshToken) {
+        await saveAuthData(accessToken, refreshToken, updatedUser);
+      }
+      
+      // Dispatch an event to notify other parts of the app about the profile update
+      const profileUpdateEvent = new CustomEvent('profile:updated', { 
+        detail: { user: updatedUser }
+      });
+      window.dispatchEvent(profileUpdateEvent);
+      
+      return updatedUser;
+    } catch (err) {
+      logger.error('Error updating user profile:', err);
+      
+      // Handle token errors
+      if (err?.response?.status === 401) {
+        await handleTokenError(err);
+      } else {
+        // Set general error
+        const errorMessage = err.message || 'La mise à jour du profil a échoué';
+        setError(errorMessage);
+      }
+      
+      throw err;
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -348,6 +393,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshToken,
     clearError,
     handleTokenError,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

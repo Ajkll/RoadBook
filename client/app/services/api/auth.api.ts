@@ -37,14 +37,17 @@ const logDebug = (message: string, data?: unknown) => {
 const logError = (message: string, error: unknown) => {
   logger.error(`❌ AUTH API ERROR: ${message}`, error);
 
+  // Log error object details to help with debugging
+  logger.error('Error object details:', JSON.stringify(error));
+
   // Extract and log additional error details if available
   if (error.response) {
     logger.error('- Status:', error.response.status);
-    logger.error('- Data:', error.response.data);
-    logger.error('- Headers:', error.response.headers);
+    logger.error('- Data:', JSON.stringify(error.response.data));
+    logger.error('- Headers:', JSON.stringify(error.response.headers));
   } else if (error.request) {
     logger.error('- Request was made but no response received');
-    logger.error('- Request:', error.request);
+    logger.error('- Request:', JSON.stringify(error.request));
   } else {
     logger.error('- Error message:', error.message);
   }
@@ -53,18 +56,20 @@ const logError = (message: string, error: unknown) => {
   if (error.config) {
     logger.error('- Request URL:', error.config.url);
     logger.error('- Request Method:', error.config.method?.toUpperCase());
-    logger.error('- Request Headers:', error.config.headers);
+    logger.error('- Request Headers:', JSON.stringify(error.config.headers));
 
     // Don't log sensitive data in production, but helpful for debugging
-    if (DEBUG && error.config.data) {
+    if (error.config.data) {
       try {
         // Attempt to parse and sanitize sensitive data
         const configData = JSON.parse(error.config.data);
         const sanitizedData = { ...configData };
         if (sanitizedData.password) sanitizedData.password = '******';
-        logger.error('- Request Data (sanitized):', sanitizedData);
-      } catch {
-        logger.error('- Request Data: [Could not parse]');
+        if (sanitizedData.currentPassword) sanitizedData.currentPassword = '******';
+        if (sanitizedData.newPassword) sanitizedData.newPassword = '******';
+        logger.error('- Request Data (sanitized):', JSON.stringify(sanitizedData));
+      } catch (e) {
+        logger.error('- Request Data: [Could not parse]', error.config.data);
       }
     }
   }
@@ -475,23 +480,61 @@ export const authApi = {
   },
   
   // Changement de mot de passe
-  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+  changePassword: async (currentPassword: string, newPassword: string, confirmPassword?: string): Promise<void> => {
     logDebug('Changing user password');
+
+    // Validation des paramètres pour éviter les erreurs côté serveur
+    if (!currentPassword || typeof currentPassword !== 'string') {
+      throw new Error('Le mot de passe actuel est requis');
+    }
+    
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new Error('Le nouveau mot de passe est requis');
+    }
+    
+    // Si confirmPassword n'est pas fourni, utiliser newPassword comme valeur par défaut
+    const confirmPasswordToUse = confirmPassword || newPassword;
 
     return measureRequestTime('Change password request', async () => {
       try {
-        // Utilisation de l'endpoint spécifié dans la documentation de l'API
-        await apiClient.put('/users/me/password', {
-          currentPassword,
-          newPassword,
+        // Log détaillé des données envoyées (masquées)
+        logDebug('Password change request data:', {
+          currentPassword: '********',
+          newPassword: '********',
+          confirmPassword: '********',
+          currentPasswordType: typeof currentPassword,
+          newPasswordType: typeof newPassword,
+          confirmPasswordType: typeof confirmPasswordToUse,
+          currentPasswordLength: currentPassword.length,
+          newPasswordLength: newPassword.length
         });
         
-        logDebug('Password changed successfully');
+        // Préparer l'objet de données avec tous les champs requis
+        const passwordData = {
+          currentPassword,
+          newPassword,
+          confirmPassword: confirmPasswordToUse
+        };
+        
+        // Utiliser directement l'endpoint /users/me/password qui est le bon endpoint
+        const response = await apiClient.put('/users/me/password', passwordData);
+        
+        logDebug('Password changed successfully', response.data);
       } catch (error) {
+        // Log détaillé de l'erreur
+        logError('Password change request failed', error);
+        
         if (error.response?.status === 401) {
           throw new Error('Mot de passe actuel incorrect.');
         } else if (error.response?.status === 400) {
-          const errorMessage = error.response.data.message || 'Données de mot de passe invalides';
+          // Vérifier si l'erreur concerne le champ confirmPassword manquant
+          if (error.response?.data?.errors && 
+              error.response.data.errors.some(e => e.path && e.path.includes('confirmPassword'))) {
+            throw new Error('La confirmation du mot de passe est requise.');
+          }
+          
+          // Extraction du message d'erreur spécifique du serveur
+          const errorMessage = extractErrorMessage(error) || 'Données de mot de passe invalides';
           throw new Error(errorMessage);
         } else if (!error.response) {
           throw new Error(
@@ -628,6 +671,33 @@ export const authApi = {
             timestamp: new Date().toISOString(),
           },
         };
+      }
+    });
+  },
+  
+  // Demander une réinitialisation de mot de passe
+  requestPasswordReset: async (email: string): Promise<void> => {
+    logDebug('Requesting password reset');
+
+    return measureRequestTime('Password reset request', async () => {
+      try {
+        // Utilisation de l'endpoint pour la réinitialisation de mot de passe
+        await apiClient.post('/auth/forgot-password', { email });
+        
+        logDebug('Password reset requested successfully');
+      } catch (error) {
+        // Pour des raisons de sécurité, nous ne divulguons pas si l'email existe ou non
+        // On simule un succès même en cas d'erreur côté serveur (sauf erreurs réseau)
+        if (!error.response) {
+          throw new Error(
+            'Problème de connexion réseau. Veuillez vérifier votre connexion internet.'
+          );
+        }
+        
+        // Loggons l'erreur mais n'exposons pas de détails à l'utilisateur
+        logError('Password reset request failed', error);
+        
+        // Ne pas lever d'erreur pour éviter de divulguer si l'email existe ou non
       }
     });
   }

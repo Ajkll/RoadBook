@@ -64,7 +64,7 @@ const createStyles = (theme: any, variant: string) =>
       backgroundColor: variant === 'full' ? theme.colors.background : 'transparent',
     },
     image: {
-      height: variant === 'default' ? 200 : 150,
+      height: variant === 'default' ? 150 : 100,
       marginBottom: theme.spacing.md,
       opacity: theme.dark ? 0.9 : 1,
     },

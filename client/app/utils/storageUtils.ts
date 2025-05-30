@@ -8,6 +8,7 @@ export interface PendingDriveSession {
   id: string;
   elapsedTime: number;
   userId: string;
+  offline: boolean;
   path: { latitude: number; longitude: number }[];
   weather?: {
     temperature: number;
@@ -183,7 +184,7 @@ export const removePendingDriveSession = async (id: string): Promise<void> => {
     const updatedRoadRequests = roadRequests.filter((req) => req.driveSessionId !== id);
     await AsyncStorage.setItem(KEYS.PENDING_ROADINFO_REQUESTS, JSON.stringify(updatedRoadRequests));
 
-    // 3. delete weather api associées a une session
+    // delete weather api associées a une session
     const weatherRequests = await getPendingWeatherRequests();
     const updatedWeatherRequests = weatherRequests.filter((req) => req.driveSessionId !== id);
     await AsyncStorage.setItem(

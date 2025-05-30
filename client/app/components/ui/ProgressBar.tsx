@@ -6,12 +6,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
+
 interface DistanceProgressBarProps {
   title: string;
   distanceKm: number;
+  maxKm?: number;
 }
 
-const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ title, distanceKm }) => {
+const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ 
+  title, 
+  distanceKm = 0, 
+  maxKm = 1500 
+}) => {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -32,10 +38,11 @@ const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ title, distan
     }, [])
   );
 
+  // Calcul du pourcentage basé sur maxKm au lieu de goalKm
   const progress = useMemo(() => {
-    if (!goalKm || goalKm === 0) return 0;
-    return Math.min((distanceKm / goalKm) * 100, 100);
-  }, [distanceKm, goalKm]);
+    if (maxKm === 0) return 0;
+    return Math.min((distanceKm / maxKm) * 100, 100);
+  }, [distanceKm, maxKm]);
 
   const remainingDays = useMemo(() => {
     if (!goalDate) return null;
@@ -61,13 +68,18 @@ const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ title, distan
         </View>
 
         <Text style={styles.distanceText}>
-          {distanceKm} km parcourus {goalKm ? `/ ${goalKm} km` : ''}
+          {distanceKm} km parcourus / {maxKm} km
         </Text>
 
-        {goalKm && <Text style={styles.goalText}>🎯 Objectif : {goalKm} km</Text>}
+        {/* Affichage du kilomètrage restant */}
+        <Text style={styles.remainingText}>
+          Restant : {Math.max(0, maxKm - distanceKm)} km
+        </Text>
+
+        {goalKm && <Text style={styles.goalText}>🎯 Objectif personnel : {goalKm} km</Text>}
         {goalDate && (
           <Text style={styles.goalText}>
-            📅 Jusqu’au : {new Date(goalDate).toLocaleDateString()}
+            📅 Jusqu'au : {new Date(goalDate).toLocaleDateString()}
           </Text>
         )}
         {remainingDays !== null && (
@@ -104,13 +116,13 @@ const createStyles = (colors: ThemeColors) =>
     progressBackground: {
       width: '100%',
       height: 20,
-      backgroundColor: colors.secondary,
+      backgroundColor: '#333333', // Fond noir/gris foncé
       borderRadius: 10,
       overflow: 'hidden',
     },
     progressFill: {
       height: '100%',
-      backgroundColor: '#2B86EE',
+      backgroundColor: '#2B86EE', // Bleu pour le remplissage
       borderRadius: 10,
     },
     percentageBubble: {
@@ -136,6 +148,14 @@ const createStyles = (colors: ThemeColors) =>
       textAlign: 'center',
       fontSize: 14,
       color: colors.primaryText,
+      fontWeight: '600',
+    },
+    remainingText: {
+      marginTop: 5,
+      textAlign: 'center',
+      fontSize: 13,
+      color: colors.primaryText,
+      opacity: 0.8,
     },
     goalText: {
       marginTop: 5,
