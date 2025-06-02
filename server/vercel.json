@@ -5,7 +5,8 @@
       "src": "dist/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["dist/**"]
+        "includeFiles": ["dist/**"],
+        "memory": 1024
       }
     }
   ],
@@ -15,11 +16,6 @@
       "dest": "dist/index.js"
     }
   ],
-  "functions": {
-    "dist/index.js": {
-      "memory": 1024
-    }
-  },
   "env": {
     "NODE_ENV": "production",
     "VERCEL": "1"
