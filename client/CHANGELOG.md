@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.0.0](https://github.com/Yanstart/RoadBook/compare/v6.0.0...v7.0.0) (2025-06-07)
+
 ## [6.0.0](https://github.com/Yanstart/RoadBook/compare/v5.0.0...v6.0.0) (2025-06-07)
 
 ## [5.0.0](https://github.com/Yanstart/RoadBook/compare/v4.0.0...v5.0.0) (2025-06-07)
