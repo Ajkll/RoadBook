@@ -1,0 +1,6 @@
+tree 78434f0a94c77dc134f89e28472a8a53788b9e87
+parent 1cdf55fa871e86f9df33aace69a54de5078bf0f6
+author noel junior yando <yandofotsonoeljunior@gmail.com> 1741041495 +0000
+committer GitHub <noreply@github.com> 1741041495 +0000
+
+correction de bugs github action lié aux tests et au lintage dans notre 'monorepo' et configuration  de husky pour tout verifier en local

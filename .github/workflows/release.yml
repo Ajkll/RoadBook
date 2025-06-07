@@ -77,7 +77,7 @@ jobs:
             --no-wait \
             --json | tee eas-build.log
           
-          BUILD_ID=$(jq -r '.buildId' eas-build.log)
+          BUILD_ID=$(jq -r '.[0].id' eas-build.log)
           echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
           echo "EAS build started successfully. ID: ${BUILD_ID}"
 
