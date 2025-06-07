@@ -82,6 +82,8 @@ jobs:
           echo "EAS build started successfully. ID: ${BUILD_ID}"
 
       - name: Local build for GitHub artifacts
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
           cd client
           if [ ! -d "./android" ]; then
