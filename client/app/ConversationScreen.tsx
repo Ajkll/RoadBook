@@ -100,8 +100,8 @@ const styles = StyleSheet.create({
   envoie_message: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20, // Ajout de padding pour donner de l'espace autour des éléments.
-    paddingVertical: 20, // Ajout de padding vertical pour améliorer la disposition.
+    paddingHorizontal: 20, // Ajout de padding pour donner de l'espace autour des éléments...
+    paddingVertical: 20, // Ajout de padding vertical pour améliorer la disposition...
   },
 
   iconContainer: {
