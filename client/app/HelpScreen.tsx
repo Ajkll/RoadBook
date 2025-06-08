@@ -8,6 +8,7 @@ import { CopyToClipboard } from './components/common/ClipBoardCopy';
 import GoBackHomeButton from './components/common/GoBackHomeButton';
 import { useRouter } from 'expo-router';
 
+
 const HelpScreen = () => {
   const theme = useTheme();
   const router = useRouter();

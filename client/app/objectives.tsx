@@ -72,7 +72,7 @@ const ObjectifScreen = () => {
       const roadbookId = 'a6222aae-f8aa-4aa9-9fb4-6b3be9385221';
       const sessions = await sessionApi.getUserSessions(roadbookId);
       
-      // Total km parcourus
+      // Total km parcourus durant les sessions
       const totalDistance = sessions.reduce(
         (sum: number, session: any) => sum + (session.distance || 0),
         0
