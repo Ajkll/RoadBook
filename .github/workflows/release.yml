@@ -91,8 +91,6 @@ jobs:
           fi
           
           cd android
-          # Correction: Donner les permissions d'exécution à gradlew
-          chmod +x ./gradlew
           ./gradlew bundleRelease
           
           mkdir -p ../../build
