@@ -86,11 +86,25 @@ jobs:
           SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
           cd client
+          
+          # Toujours faire un prebuild propre
+          yarn expo prebuild --platform android --clean
+          
+          # Vérifier que le dossier Android et gradlew existent
           if [ ! -d "./android" ]; then
-            yarn expo prebuild --platform android --clean
+            echo "ERROR: Android directory not created by prebuild"
+            exit 1
+          fi
+          
+          if [ ! -f "./android/gradlew" ]; then
+            echo "ERROR: gradlew not found in android directory"
+            echo "Content of android directory:"
+            ls -la ./android/
+            exit 1
           fi
           
           cd android
+          # Donner les permissions d'exécution à gradlew
           chmod +x ./gradlew
           ./gradlew bundleRelease
           
