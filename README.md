@@ -232,7 +232,8 @@ Le pipeline CI/CD est configuré pour exécuter des tests lors des pushes sur le
 - **Tests unitaires et d'intégration** : Tests couvrant les fonctionnalités principales du projet.
 - **Tests de couverture** : Vérification de la couverture des tests.
 
-Les résultats des tests sont disponibles dans le rapport de la suite CI/CD.
+Les résultats des tests sont disponibles dans le rapport de la suite CI/CD pour une meilleure analyse.
+ce pipeline est non bloquant.
 
 ## Gestionnaire de paquets
 
