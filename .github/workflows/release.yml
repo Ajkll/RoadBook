@@ -91,6 +91,7 @@ jobs:
           fi
           
           cd android
+          chmod +x ./gradlew
           ./gradlew bundleRelease
           
           mkdir -p ../../build
