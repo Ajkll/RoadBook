@@ -81,6 +81,11 @@ jobs:
           echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
           echo "EAS build started successfully. ID: ${BUILD_ID}"
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '8.0.1'
+
       - name: Local build for GitHub artifacts
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: true
@@ -91,8 +96,22 @@ jobs:
           fi
           
           cd android
-          chmod +x ./gradlew
-          ./gradlew bundleRelease
+          
+          # Vérifier la structure du projet Android
+          echo "Android project structure:"
+          ls -la
+          
+          # Vérifier si gradlew existe
+          if [ -f "./gradlew" ]; then
+            echo "Found gradlew, making it executable"
+            chmod +x ./gradlew
+            ./gradlew bundleRelease
+          else
+            echo "gradlew not found, generating wrapper and building"
+            gradle wrapper --gradle-version=8.0.1
+            chmod +x ./gradlew
+            ./gradlew bundleRelease
+          fi
           
           mkdir -p ../../build
           AAB_PATH=$(find . -name "*.aab" -type f | grep -v intermediates | head -n 1)
