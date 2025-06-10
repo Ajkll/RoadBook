@@ -12,7 +12,6 @@ import {
 import MapView, {
   Marker,
   Polyline,
-  PROVIDER_GOOGLE,
   Region,
   AnimatedRegion,
   MarkerAnimated,
