@@ -1,0 +1,161 @@
+name: Development Build for Demo
+
+on:
+  push:
+    branches:
+      - demo-build
+    tags:
+      # Pour les versions de démo: demo-v1.0.0
+      - 'demo-v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch: # Permet de lancer manuellement
+
+# Définir les permissions globales
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  dev-build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.eas-build.outputs.build_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          yarn global add eas-cli
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: client/yarn.lock
+
+      - name: Install dependencies
+        run: |
+          cd client
+          yarn install
+
+      # Pas besoin de modifier eas.json, il est déjà bon !
+      - name: Verify EAS configuration
+        run: |
+          cd client
+          echo "Using existing eas.json configuration"
+          cat eas.json
+
+      - name: Build development APK with EAS
+        id: eas-build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          cd client
+          
+          export EXPO_CLI_PREVIEW_AUTH_TOKEN=$EXPO_TOKEN
+          export EXPO_TOKEN=$EXPO_TOKEN
+          
+          npx expo whoami || (echo "Expo authentication failed" && exit 1)
+          
+          # Build en mode development (utilise ton profil existant)
+          npx eas-cli build \
+            --platform android \
+            --profile development \
+            --non-interactive \
+            --wait \
+            --local \
+            --json | tee eas-build.log
+          
+          # Récupérer l'ID du build
+          BUILD_ID=$(jq -r '.[0].id' eas-build.log 2>/dev/null || echo "local-build")
+          echo "build_id=${BUILD_ID}" >> $GITHUB_OUTPUT
+          echo "EAS development build completed. ID: ${BUILD_ID}"
+
+      - name: Find and rename APK
+        run: |
+          cd client
+          
+          # Chercher l'APK généré
+          APK_PATH=$(find . -name "*.apk" -type f | head -n 1)
+          
+          if [ -n "$APK_PATH" ]; then
+            echo "Found APK at: $APK_PATH"
+            mkdir -p ../build
+            cp "$APK_PATH" ../build/RoadBook-Demo.apk
+            echo "APK copied to build/RoadBook-Demo.apk"
+          else
+            echo "ERROR: No APK found!"
+            echo "Searching for build artifacts..."
+            find . -name "*.apk" -o -name "*.aab" -o -name "*build*" -type f
+            exit 1
+          fi
+
+      - name: Upload demo APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-apk
+          path: build/RoadBook-Demo.apk
+          retention-days: 30
+
+  release-demo:
+    needs: dev-build
+    if: startsWith(github.ref, 'refs/tags/demo-v')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download demo APK
+        uses: actions/download-artifact@v4
+        with:
+          name: demo-apk
+          path: build
+
+      - name: Create Demo Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🎯 Demo ${{ github.ref_name }}"
+          body: |
+            ### 🎯 Version Démo - ${{ github.ref_name }}
+            
+            **APK prêt pour la démonstration !**
+            
+            📱 **Installation :**
+            1. Télécharger `RoadBook-Demo.apk`
+            2. Autoriser les sources inconnues sur Android
+            3. Installer l'APK
+            4. Lancer l'application
+            
+            🚀 **Fonctionnalités démo :**
+            - Suivi GPS en temps réel
+            - Cartographie sans limitation
+            - Toutes les fonctionnalités core
+            - Interface complète
+            
+            ⚠️ **Note :** Version de développement optimisée pour la démonstration.
+            
+            ---
+            
+            **Commit :** ${{ github.sha }}
+            **Date :** ${{ github.event.head_commit.timestamp }}
+          prerelease: false
+          files: |
+            build/RoadBook-Demo.apk
+
+  notify-demo-ready:
+    needs: dev-build
+    if: github.ref == 'refs/heads/demo-build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Demo Build Notification
+        run: |
+          echo "🎯 Demo build completed successfully!"
+          echo "📱 APK available in artifacts"
+          echo "🚀 Ready for demonstration"
