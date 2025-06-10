@@ -362,7 +362,11 @@ export default function StartDriveScreen() {
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        /*
+        provider={PROVIDER_GOOGLE} <---
+        idéalement il faut ce provider pour des fonctionnalités avancer en prod
+        comme direction etc (ce qui pourrais dans le future etre utile)
+        */
         showsUserLocation={false}
         showsMyLocationButton={false}
         initialRegion={
